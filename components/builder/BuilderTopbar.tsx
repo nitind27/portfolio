@@ -13,7 +13,8 @@ import {
   ChevronDown, CheckCircle2, Circle, Copy, Check, ExternalLink, Crown, Lock, Rocket,
 } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
-import { brand } from '@/lib/brand';
+import { brand, STORAGE_POLICY_DAYS } from '@/lib/brand';
+import { formatDaysRemaining, getDaysRemaining } from '@/lib/project-expiry';
 import PremiumModal from '../PremiumModal';
 import HostingerDeployModal from '../HostingerDeployModal';
 import { fetchPortfolioAccess, bindPortfolioSlot, accessToModalReason, type PremiumModalReason } from '@/lib/portfolio-access-client';
@@ -102,10 +103,21 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts }
   );
   const hasBoundSlot = Boolean(user?.premiumPortfolioId);
 
+  const shareDaysLeft = portfolio ? getDaysRemaining(portfolio.createdAt) : 0;
+  const canTrialShare = !isPremium && shareDaysLeft > 0;
+  const canUseShare = isThisPortfolioUnlocked || canTrialShare || (isPremium && !hasBoundSlot);
+  const shareStatusText = !canUseShare
+    ? (hasBoundSlot ? '🔒 Premium slot used on another portfolio' : shareDaysLeft <= 0 ? `🔒 Free share expired (${STORAGE_POLICY_DAYS}-day limit)` : '🔒 Upgrade to share')
+    : canTrialShare && !isThisPortfolioUnlocked
+      ? `🟢 Free share · ${formatDaysRemaining(portfolio!.createdAt)} · copy link below`
+      : portfolio!.published
+        ? '🟢 Live — anyone with the link can view & copy'
+        : '⚫ Draft — publish to make the link public';
+
   const ensurePortfolioAccess = async (action: 'export' | 'share' | 'publish' | 'deploy'): Promise<boolean> => {
     if (!portfolio) return false;
     try {
-      const access = await fetchPortfolioAccess(portfolio.id);
+      const access = await fetchPortfolioAccess(portfolio.id, action, portfolio.createdAt);
       if (access.status === 'allowed') return true;
 
       if (access.status === 'bind_on_action') {
@@ -361,16 +373,12 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts }
       )}
       <div ref={shareRef} className="shrink-0">
         <button
-          onClick={async () => {
-            const allowed = await ensurePortfolioAccess('share');
-            if (!allowed) return;
-            setShowShare(v => !v); setShowExport(false);
-          }}
+          onClick={() => { setShowShare(v => !v); setShowExport(false); }}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
             showShare ? 'bg-white/15 text-white' : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
           }`}
         >
-          {!isThisPortfolioUnlocked ? <Lock className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
+          {!canUseShare ? <Lock className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
           <span className="hidden sm:inline">Share</span>
           <ChevronDown className={`w-3 h-3 transition-transform ${showShare ? 'rotate-180' : ''}`} />
         </button>
@@ -380,9 +388,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts }
             {/* Header */}
             <div className="px-4 pt-4 pb-3 border-b border-white/10">
               <p className="text-sm font-semibold text-white">Share Portfolio</p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {!isThisPortfolioUnlocked ? (hasBoundSlot ? '🔒 ₹99 plan bound to another portfolio' : '🔒 Premium required to share') : portfolio.published ? '🟢 Live — anyone with the link can view' : '⚫ Draft — publish to make it public'}
-              </p>
+              <p className="text-xs text-gray-500 mt-0.5">{shareStatusText}</p>
             </div>
 
             {/* URL row */}

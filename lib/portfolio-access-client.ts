@@ -1,12 +1,22 @@
-import type { PortfolioAccessStatus } from './types';
+import type { PortfolioAccessStatus, PortfolioAccessAction } from './types';
 
 export type PremiumModalReason = 'export' | 'share' | 'publish' | 'deploy' | 'general' | 'unlock_another';
 
-export async function fetchPortfolioAccess(portfolioId: string): Promise<{
+export async function fetchPortfolioAccess(
+  portfolioId: string,
+  action: PortfolioAccessAction = 'export',
+  createdAt?: string,
+): Promise<{
   status: PortfolioAccessStatus;
   boundPortfolioId: string | null;
+  shareDaysRemaining?: number;
 }> {
-  const res = await fetch(`/api/portfolio/access?portfolioId=${encodeURIComponent(portfolioId)}`);
+  const qs = new URLSearchParams({
+    portfolioId,
+    action,
+  });
+  if (createdAt) qs.set('createdAt', createdAt);
+  const res = await fetch(`/api/portfolio/access?${qs.toString()}`);
   if (!res.ok) throw new Error('Access check failed');
   return res.json();
 }

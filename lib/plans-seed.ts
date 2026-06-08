@@ -70,7 +70,7 @@ async function seedDefaultPlans(pool: ReturnType<typeof getPool>) {
       isDefault: true,
       features: {
         exportHtml: false, exportReact: false, exportNextjs: false,
-        shareLink: false, publishOnline: false, hostingerDeploy: false,
+        shareLink: true, publishOnline: true, hostingerDeploy: false,
         customCss: false, analytics: false, smtp: false, popupBuilder: true,
         sectionBlog: false, sectionTeam: false, sectionPricing: false,
         sectionFaq: true, sectionTestimonials: true, premiumLayouts: false,
@@ -121,6 +121,19 @@ export async function ensurePlansReady(): Promise<void> {
   if (ready) return;
   const pool = getPool();
   await ensureSchema(pool);
+
+  const freeFeatures = {
+    exportHtml: false, exportReact: false, exportNextjs: false,
+    shareLink: true, publishOnline: true, hostingerDeploy: false,
+    customCss: false, analytics: false, smtp: false, popupBuilder: true,
+    sectionBlog: false, sectionTeam: false, sectionPricing: false,
+    sectionFaq: true, sectionTestimonials: true, premiumLayouts: false,
+    unlockedPortfolios: 0, storageDays: 7,
+  };
+  await pool.execute(
+    `UPDATE subscription_plans SET features = ? WHERE slug = 'free'`,
+    [JSON.stringify(freeFeatures)],
+  ).catch(() => {});
 
   const [rows] = await pool.execute<RowDataPacket[]>(
     'SELECT COUNT(*) AS c FROM subscription_plans WHERE is_active = 1 AND price > 0',

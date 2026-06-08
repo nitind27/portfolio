@@ -3,7 +3,7 @@ import { getPool } from './db';
 import type { Portfolio } from './types';
 import { parseConfigJson, portfolioToCompact, compactToPortfolio } from './project-serialize';
 import { externalizePortfolioAssets } from './project-assets-server';
-import { isProjectExpired } from './project-expiry';
+import { isProjectExpiredWithPolicy } from './project-expiry';
 import { getUserFeatures, getDefaultPlan } from './plans-server';
 import type { AuthUser } from './types';
 import { STORAGE_POLICY_DAYS } from './brand';
@@ -65,7 +65,7 @@ export async function loadUserProjects(user: AuthUser): Promise<Portfolio[]> {
     try {
       const p = parseConfigJson(row.config);
       p.createdAt = p.createdAt || new Date(row.created_at as Date).toISOString();
-      if (isProjectExpired(p.createdAt) && storageDays < 365) {
+      if (isProjectExpiredWithPolicy(p.createdAt, storageDays)) {
         expiredIds.push(String(row.project_id));
         continue;
       }
@@ -94,7 +94,7 @@ export async function syncUserProjects(
   const pool = getPool();
   const storageDays = await getStorageDays(user);
   const now = new Date();
-  const kept = portfolios.filter(p => !isProjectExpired(p.createdAt) || storageDays >= 365);
+  const kept = portfolios.filter(p => !isProjectExpiredWithPolicy(p.createdAt, storageDays));
   const projectIds = kept.map(p => p.id);
 
   if (!options?.merge) {

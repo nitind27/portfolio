@@ -9,7 +9,7 @@ export const LOGO_SRC = `/logo/logo.png?v=${LOGO_VERSION}`;
 export const APP_TAGLINE = 'Building the future online.';
 export const APP_DESCRIPTION = 'Create professional websites, portfolios, and online stores — no code required.';
 export const STORAGE_POLICY_DAYS = 7;
-export const STORAGE_POLICY_TEXT = `Projects are stored on this device for ${STORAGE_POLICY_DAYS} days only. After that they are removed automatically. Upgrade to premium to export and deploy permanently.`;
+export const STORAGE_POLICY_TEXT = `Projects stay in your account for ${STORAGE_POLICY_DAYS} days on the free plan. You can publish and share a live link during that time — anyone with the link can view it. Upgrade to export, deploy, and keep projects longer.`;
 
 /** Fixed layout width — mobile browsers scale the full desktop site to fit */
 export const DESKTOP_VIEWPORT_WIDTH = 1280;

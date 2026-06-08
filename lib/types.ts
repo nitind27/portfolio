@@ -374,4 +374,5 @@ export interface AuthUser {
 }
 
 export type PortfolioAccessStatus = 'needs_payment' | 'allowed' | 'bind_on_action' | 'wrong_portfolio';
+export type PortfolioAccessAction = 'export' | 'share' | 'publish' | 'deploy';
 

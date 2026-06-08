@@ -1,23 +1,71 @@
+import type { PortfolioAccessAction } from './types';
 import type { PortfolioAccessStatus, AuthUser } from './types';
 import { canExport, type PlanFeatures } from './plans-types';
 import { getUserFeatures } from './plans-server';
+import { isProjectExpiredWithPolicy, getDaysRemaining } from './project-expiry';
 
-export async function getPortfolioAccess(user: AuthUser | null, portfolioId: string): Promise<{
+function paidSlotFeatures(features: PlanFeatures): boolean {
+  return canExport(features) || features.hostingerDeploy;
+}
+
+function withinShareWindow(createdAt: string | undefined, storageDays: number): boolean {
+  if (!createdAt) return true;
+  if (storageDays >= 365) return true;
+  return !isProjectExpiredWithPolicy(createdAt, storageDays);
+}
+
+export async function getPortfolioAccess(
+  user: AuthUser | null,
+  portfolioId: string,
+  action: PortfolioAccessAction = 'export',
+  options?: { createdAt?: string },
+): Promise<{
   status: PortfolioAccessStatus;
   boundPortfolioId: string | null;
   features?: PlanFeatures;
+  shareDaysRemaining?: number;
 }> {
   const features = await getUserFeatures(user);
-  const hasPaidFeatures = canExport(features) || features.shareLink || features.publishOnline || features.hostingerDeploy;
+  const storageDays = features.storageDays || 7;
+  const createdAt = options?.createdAt;
 
-  if (!user || !hasPaidFeatures) {
+  if (!user) {
+    return { status: 'needs_payment', boundPortfolioId: null, features };
+  }
+
+  if (action === 'share' || action === 'publish') {
+    const allowedByPlan = action === 'share' ? features.shareLink : features.publishOnline;
+    if (!allowedByPlan) {
+      return { status: 'needs_payment', boundPortfolioId: null, features };
+    }
+    if (!withinShareWindow(createdAt, storageDays)) {
+      return { status: 'needs_payment', boundPortfolioId: user.premiumPortfolioId, features };
+    }
+
+    if (!paidSlotFeatures(features)) {
+      return {
+        status: 'allowed',
+        boundPortfolioId: null,
+        features,
+        shareDaysRemaining: storageDays >= 365 ? undefined : getDaysRemaining(createdAt || new Date().toISOString(), storageDays),
+      };
+    }
+  }
+
+  const hasPaidFeatures = paidSlotFeatures(features) || (action === 'share' && features.shareLink) || features.publishOnline;
+
+  if (action === 'export' || action === 'deploy') {
+    if (!hasPaidFeatures || !paidSlotFeatures(features)) {
+      return { status: 'needs_payment', boundPortfolioId: null, features };
+    }
+  } else if (!hasPaidFeatures) {
     return { status: 'needs_payment', boundPortfolioId: null, features };
   }
 
   const bound = user.premiumPortfolioId;
   const slots = features.unlockedPortfolios || (user.isPremium ? 1 : 0);
 
-  if (slots <= 0) {
+  if (slots <= 0 && paidSlotFeatures(features)) {
     return { status: 'needs_payment', boundPortfolioId: null, features };
   }
 
@@ -40,6 +88,7 @@ export async function bindPortfolioToUser(userId: number, portfolioId: string) {
   const features = await getUserFeatures(user);
   const hasPaidFeatures = canExport(features) || features.shareLink || features.publishOnline;
   if (!hasPaidFeatures && !user.isPremium) throw new Error('NOT_PREMIUM');
+  if (!paidSlotFeatures(features)) throw new Error('FREE_SHARE_ONLY');
 
   const [rows] = await pool.execute(
     'SELECT premium_portfolio_id FROM users WHERE id = ? LIMIT 1',
