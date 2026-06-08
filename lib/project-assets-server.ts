@@ -2,7 +2,8 @@ import { createHash } from 'crypto';
 import { mkdir, writeFile, access } from 'fs/promises';
 import { join } from 'path';
 import type { Portfolio } from './types';
-import { getPrimaryUploadRoot, uploadApiPath } from './upload-paths';
+import { getPrimaryUploadRoot } from './upload-paths-server';
+import { uploadApiPath } from './upload-paths';
 
 const UPLOAD_ROOT = join(getPrimaryUploadRoot(), 'projects');
 

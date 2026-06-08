@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
-import { findUploadFile } from '@/lib/upload-paths';
+import { findUploadFile } from '@/lib/upload-paths-server';
 
 const MIME: Record<string, string> = {
   jpg: 'image/jpeg',
