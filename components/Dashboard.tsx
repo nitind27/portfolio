@@ -11,8 +11,8 @@ import { DASHBOARD_TOUR_STEPS } from '@/lib/tour-steps';
 import {
   Plus, Trash2, Copy, Edit3, LogOut, Layers, CheckCircle2,
   Circle, Search, Grid3x3, List, Clock, Globe, Crown, Shield,
-  BookOpen, Bot, Receipt,
 } from 'lucide-react';
+import DashboardHelpNav from './DashboardHelpNav';
 import PremiumModal from './PremiumModal';
 import ProjectExpiryBadge from './ProjectExpiryBadge';
 import BrandLogo from './BrandLogo';
@@ -70,21 +70,11 @@ export default function Dashboard() {
             Your projects · saved to your account
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="hidden md:flex items-center gap-1 mr-1">
-            <a href="/docs" title="Documentation"
-              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition">
-              <BookOpen className="w-4 h-4" />
-            </a>
-            <a href="/ask" title="Ask AI"
-              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition">
-              <Bot className="w-4 h-4" />
-            </a>
-            <a href="/billing" title="Billing"
-              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition">
-              <Receipt className="w-4 h-4" />
-            </a>
-          </div>
+        <div className="flex items-center gap-3">
+          <DashboardHelpNav />
+
+          <div className="hidden sm:block w-px h-8" style={{ background: brand.border }} />
+
           {user && (
             <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400 mr-2">
               {user.role === 'admin' && (
@@ -107,8 +97,12 @@ export default function Dashboard() {
               )}
             </div>
           )}
-          <button onClick={logout} className="flex items-center gap-2 text-gray-400 hover:text-white transition text-sm px-3 py-1.5 rounded-lg hover:bg-white/5">
-            <LogOut className="w-4 h-4" /> Sign Out
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition text-xs font-medium px-3 py-2 rounded-lg border border-transparent hover:border-white/10 hover:bg-white/[0.04]"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden md:inline">Sign out</span>
           </button>
         </div>
       </header>
