@@ -27,7 +27,16 @@ export function getPremiumPrice() {
 }
 
 export function getAppUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const url = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+  return url.replace(/\/$/, '');
+}
+
+/** Cashfree expects 10-digit Indian mobile without country code */
+export function formatCashfreePhone(phone: string | null | undefined): string {
+  const digits = String(phone || '').replace(/\D/g, '');
+  const ten = digits.length >= 10 ? digits.slice(-10) : digits;
+  if (/^[6-9]\d{9}$/.test(ten)) return ten;
+  return '9999999999';
 }
 
 export interface CashfreeOrderResponse {

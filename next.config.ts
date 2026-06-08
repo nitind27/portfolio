@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '50mb',
     },
   },
+  async rewrites() {
+    return [
+      { source: '/uploads/:path*', destination: '/api/uploads/:path*' },
+    ];
+  },
   turbopack: {
     root: projectRoot,
     resolveAlias: {

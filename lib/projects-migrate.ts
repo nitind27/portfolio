@@ -6,6 +6,7 @@ import { migrateTeamSection } from './team-utils';
 import { migratePricingSection } from './pricing-utils';
 import { migrateFAQSection } from './faq-utils';
 import { purgeExpiredPortfolios } from './project-expiry';
+import { rewritePortfolioAssetUrls } from './media-url';
 
 const defaultSMTP = {
   host: '', port: 587, secure: false, user: '', password: '', fromName: '', toEmail: '', provider: 'custom' as const,
@@ -72,5 +73,5 @@ export function migratePortfolios(portfolios: Portfolio[]): Portfolio[] {
       : { ...defaultNavbar },
     footer: portfolio.footer ? { ...defaultFooter, ...portfolio.footer } : { ...defaultFooter },
     sections: migratePortfolioSections(portfolio.sections),
-  }));
+  })).map(rewritePortfolioAssetUrls);
 }

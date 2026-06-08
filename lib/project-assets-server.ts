@@ -2,8 +2,9 @@ import { createHash } from 'crypto';
 import { mkdir, writeFile, access } from 'fs/promises';
 import { join } from 'path';
 import type { Portfolio } from './types';
+import { getPrimaryUploadRoot, uploadApiPath } from './upload-paths';
 
-const UPLOAD_ROOT = join(process.cwd(), 'public', 'uploads', 'projects');
+const UPLOAD_ROOT = join(getPrimaryUploadRoot(), 'projects');
 
 function parseDataImageUrl(dataUrl: string): { mime: string; buffer: Buffer } | null {
   const match = dataUrl.match(/^data:(image\/[^;,]+);base64,([\s\S]+)$/);
@@ -41,7 +42,7 @@ async function saveDataUrl(userId: number, projectId: string, dataUrl: string): 
   const dir = join(UPLOAD_ROOT, String(userId), projectId);
   const filename = `${hash}.${ext}`;
   const filepath = join(dir, filename);
-  const publicUrl = `/uploads/projects/${userId}/${projectId}/${filename}`;
+  const publicUrl = uploadApiPath(`projects/${userId}/${projectId}/${filename}`);
 
   if (!(await fileExists(filepath))) {
     await mkdir(dir, { recursive: true });

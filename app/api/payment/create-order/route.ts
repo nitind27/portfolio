@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ResultSetHeader } from 'mysql2';
 import { getPool } from '@/lib/db';
-import { createCashfreeOrder } from '@/lib/cashfree';
+import { createCashfreeOrder, getCashfreeCheckoutMode, formatCashfreePhone } from '@/lib/cashfree';
 import { getCurrentUser } from '@/lib/auth-server';
 import { getPlanById, getPlanBySlug, getUserPlan } from '@/lib/plans-server';
 import { canExport } from '@/lib/plans-types';
@@ -49,9 +49,9 @@ export async function POST(req: NextRequest) {
       orderId,
       amount,
       customerId: `user_${user.id}`,
-      customerName: user.name,
+      customerName: user.name || 'Customer',
       customerEmail: user.email,
-      customerPhone: user.phone,
+      customerPhone: formatCashfreePhone(user.phone),
     });
 
     await pool.execute<ResultSetHeader>(
@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
       planId: plan.id,
       planName: plan.name,
       repurchase,
+      checkoutMode: getCashfreeCheckoutMode(),
     });
   } catch (err) {
     console.error('Create order error:', err);

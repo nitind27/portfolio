@@ -13,6 +13,7 @@ import TeamEditor from './TeamEditor';
 import PricingEditor from './PricingEditor';
 import FAQEditor from './FAQEditor';
 import SectionAnimationEditor from './SectionAnimationEditor';
+import { resolveAssetUrl } from '@/lib/media-url';
 
 interface Props { sectionId: string; variant?: 'canvas' | 'sidebar'; }
 
@@ -77,7 +78,17 @@ function ImageUpload({ value, onChange, label }: { value: string; onChange: (v: 
         ) : value ? (
           <div className="relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={value} alt="preview" className="w-full object-cover" style={{ maxHeight: 140, display: 'block' }} />
+            <img
+              src={resolveAssetUrl(value)}
+              alt="preview"
+              className="w-full object-cover"
+              style={{ maxHeight: 140, display: 'block' }}
+              onError={e => {
+                const el = e.currentTarget as HTMLImageElement;
+                el.style.opacity = '0.35';
+                el.alt = 'Image failed to load';
+              }}
+            />
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition flex items-center justify-center gap-2">
               <span className="text-xs text-white font-medium bg-black/40 px-2 py-1 rounded">Click to change</span>
             </div>
@@ -175,11 +186,15 @@ function MultiImageUpload({ value, onChange, label }: { value: string[]; onChang
             <div key={i} className="relative group/thumb rounded-lg overflow-hidden border border-white/10 bg-white/5" style={{ aspectRatio: '1' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={src}
+                src={resolveAssetUrl(src)}
                 alt={`img-${i}`}
                 className="w-full h-full object-cover"
                 style={{ display: 'block' }}
-                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                onError={e => {
+                  const el = e.currentTarget as HTMLImageElement;
+                  el.style.opacity = '0.35';
+                  el.alt = 'Missing';
+                }}
               />
               {/* Hover overlay */}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/thumb:opacity-100 transition flex flex-col items-center justify-center gap-1">

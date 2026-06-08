@@ -82,7 +82,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
       if (!res.ok) throw new Error(data.error || 'Could not start payment');
 
       await loadCashfreeScript();
-      const mode = process.env.NEXT_PUBLIC_CASHFREE_ENV === 'production' ? 'production' : 'sandbox';
+      const mode = data.checkoutMode || (process.env.NEXT_PUBLIC_CASHFREE_ENV === 'production' ? 'production' : 'sandbox');
       const cashfree = window.Cashfree!({ mode });
       await cashfree.checkout({
         paymentSessionId: data.paymentSessionId,

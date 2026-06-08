@@ -1,4 +1,5 @@
 import type { Portfolio, PortfolioSection, PortfolioMeta, PortfolioHosting } from './types';
+import { rewritePortfolioAssetUrls } from './media-url';
 
 /** Compact on-disk format (v1) — short keys to minimize JSON size */
 interface CompactPortfolio {
@@ -124,7 +125,7 @@ export function compactToPortfolio(c: CompactPortfolio | Record<string, unknown>
 export function parseConfigJson(raw: unknown): Portfolio {
   if (!raw) throw new Error('Empty config');
   const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
-  return compactToPortfolio(data);
+  return rewritePortfolioAssetUrls(compactToPortfolio(data));
 }
 
 export function stringifyConfig(p: Portfolio): string {
