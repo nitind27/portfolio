@@ -13,14 +13,16 @@ import {
 import {
   exchangeGoogleCode,
   fetchGoogleProfile,
-  getAppBaseUrl,
+  getGoogleRedirectUri,
   isGoogleAuthConfigured,
+  resolveRequestOrigin,
 } from '@/lib/google-auth';
 
 const STATE_COOKIE = 'google_oauth_state';
+const REDIRECT_COOKIE = 'google_oauth_redirect';
 
-function redirectWithError(message: string) {
-  const url = new URL('/', getAppBaseUrl());
+function redirectWithError(req: NextRequest, message: string) {
+  const url = new URL('/', resolveRequestOrigin(req));
   url.searchParams.set('login', '1');
   url.searchParams.set('error', message);
   return NextResponse.redirect(url.toString());
@@ -28,28 +30,31 @@ function redirectWithError(message: string) {
 
 export async function GET(req: NextRequest) {
   if (!isGoogleAuthConfigured()) {
-    return redirectWithError('Google sign-in is not configured.');
+    return redirectWithError(req, 'Google sign-in is not configured.');
   }
 
   const { searchParams } = new URL(req.url);
   const error = searchParams.get('error');
   if (error) {
-    return redirectWithError('Google sign-in was cancelled.');
+    return redirectWithError(req, 'Google sign-in was cancelled.');
   }
 
   const code = searchParams.get('code');
   const state = searchParams.get('state');
   const jar = await cookies();
   const savedState = jar.get(STATE_COOKIE)?.value;
+  const redirectUri = jar.get(REDIRECT_COOKIE)?.value
+    || getGoogleRedirectUri(resolveRequestOrigin(req));
   jar.delete(STATE_COOKIE);
+  jar.delete(REDIRECT_COOKIE);
 
   if (!code || !state || !savedState || state !== savedState) {
-    return redirectWithError('Invalid Google sign-in session. Please try again.');
+    return redirectWithError(req, 'Invalid Google sign-in session. Please try again.');
   }
 
   try {
     await ensureAuthSchema();
-    const { access_token } = await exchangeGoogleCode(code);
+    const { access_token } = await exchangeGoogleCode(code, redirectUri);
     const profile = await fetchGoogleProfile(access_token);
     const pool = getPool();
 
@@ -79,7 +84,7 @@ export async function GET(req: NextRequest) {
 
       if (row) {
         if (row.google_id && row.google_id !== profile.id) {
-          return redirectWithError('This email is linked to another Google account.');
+          return redirectWithError(req, 'This email is linked to another Google account.');
         }
         await pool.execute(
           `UPDATE users SET google_id = ?, auth_provider = 'google', avatar_url = ?, name = ?
@@ -139,9 +144,9 @@ export async function GET(req: NextRequest) {
     const token = await createToken(user, TOKEN_TTL_REGISTER);
     await setAuthCookie(token, COOKIE_MAX_AGE_REGISTER);
 
-    return NextResponse.redirect(getAppBaseUrl());
+    return NextResponse.redirect(resolveRequestOrigin(req));
   } catch (err) {
     console.error('Google callback error:', err);
-    return redirectWithError('Google sign-in failed. Please try again.');
+    return redirectWithError(req, 'Google sign-in failed. Please try again.');
   }
 }

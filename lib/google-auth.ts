@@ -1,4 +1,5 @@
 import { randomBytes } from 'crypto';
+import type { NextRequest } from 'next/server';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -20,21 +21,34 @@ export function getAppBaseUrl() {
   return (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
 }
 
-export function getGoogleRedirectUri() {
-  return `${getAppBaseUrl()}/api/auth/google/callback`;
+/** Use actual request host so redirect_uri matches the URL user opened (fixes mismatch). */
+export function resolveRequestOrigin(req: NextRequest): string {
+  const forwardedHost = req.headers.get('x-forwarded-host');
+  const forwardedProto = req.headers.get('x-forwarded-proto');
+  if (forwardedHost) {
+    const host = forwardedHost.split(',')[0].trim();
+    const proto = (forwardedProto?.split(',')[0].trim() || 'https');
+    return `${proto}://${host}`;
+  }
+  return req.nextUrl.origin;
+}
+
+export function getGoogleRedirectUri(origin?: string) {
+  const base = (origin || getAppBaseUrl()).replace(/\/$/, '');
+  return `${base}/api/auth/google/callback`;
 }
 
 export function createOAuthState() {
   return randomBytes(24).toString('hex');
 }
 
-export function buildGoogleAuthUrl(state: string) {
+export function buildGoogleAuthUrl(state: string, redirectUri: string) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   if (!clientId) throw new Error('GOOGLE_CLIENT_ID is not configured');
 
   const params = new URLSearchParams({
     client_id: clientId,
-    redirect_uri: getGoogleRedirectUri(),
+    redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'openid email profile',
     state,
@@ -45,7 +59,7 @@ export function buildGoogleAuthUrl(state: string) {
   return `${GOOGLE_AUTH_URL}?${params.toString()}`;
 }
 
-export async function exchangeGoogleCode(code: string) {
+export async function exchangeGoogleCode(code: string, redirectUri: string) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   if (!clientId || !clientSecret) throw new Error('Google OAuth is not configured');
@@ -57,7 +71,7 @@ export async function exchangeGoogleCode(code: string) {
       code,
       client_id: clientId,
       client_secret: clientSecret,
-      redirect_uri: getGoogleRedirectUri(),
+      redirect_uri: redirectUri,
       grant_type: 'authorization_code',
     }),
   });
