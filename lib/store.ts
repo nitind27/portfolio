@@ -1,11 +1,22 @@
 'use client';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import {
+  fetchProjectsFromServer,
+  scheduleSaveProjectsToServer,
+  flushProjectSave,
+  shouldSkipProjectSync,
+  type PersistedSlice,
+} from './projects-storage';
+import { broadcastPreviewUpdate } from './preview-tab';
 import {
   Portfolio, PortfolioSection, ThemeConfig, SEOConfig, SMTPConfig,
-  PopupConfig, SocialLinks, SectionStyle, DeviceView, SectionType, SectionField
+  PopupConfig, NavbarConfig, FooterConfig, SocialLinks, SectionStyle, DeviceView, SectionType, SectionField, AuthUser,
+  CreatePortfolioOptions, PortfolioHosting,
 } from './types';
 import { TEMPLATES, SECTION_DEFAULTS } from './templates';
+import { applyPortfolioMeta } from './apply-portfolio-meta';
+import { applyLayoutPreset, getDefaultLayoutPresetId, LayoutPresetId } from './purpose-layouts';
+import { purgeExpiredPortfolios } from './project-expiry';
 
 function genId() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -27,9 +38,56 @@ const defaultSMTP: SMTPConfig = {
 
 const defaultSocial: SocialLinks = {};
 
-function createDefaultPortfolio(templateId: string): Portfolio {
+const defaultFooter: FooterConfig = {
+  enabled: true,
+  showCta: true,
+  ctaTitle: 'Ready to work together?',
+  ctaSubtitle: "Let's create something great. Reach out anytime.",
+  ctaButtonText: 'Get In Touch',
+  showBrand: true,
+  showDescription: true,
+  customDescription: '',
+  showLiveBadge: true,
+  showNavigation: true,
+  navHeading: 'Navigation',
+  showContact: true,
+  contactHeading: 'Contact',
+  showSocial: true,
+  socialHeading: 'Follow Me',
+  showCopyright: true,
+  copyrightText: '',
+  showBackToTop: true,
+  showBuiltWith: true,
+};
+
+const defaultNavbar: NavbarConfig = {
+  brandName: '',
+  tagline: '',
+  logoImage: '',
+  style: 'glass',
+  layout: 'standard',
+  showLogo: true,
+  showTagline: false,
+  showCta: true,
+  ctaText: 'Contact Me',
+  ctaLink: '#contact',
+  showSocial: false,
+  linkStyle: 'minimal',
+  linkGap: 14,
+  linkPaddingX: 10,
+  sticky: true,
+  desktopMenu: 'links',
+  desktopMenuStyle: 'drawer-right',
+  mobileMenu: 'drawer-right',
+  menuIcon: 'dots',
+  scrollBehavior: 'none',
+  scrollAnimation: 'smooth',
+};
+
+function createDefaultPortfolio(templateId: string, options?: CreatePortfolioOptions): Portfolio {
   const template = TEMPLATES.find(t => t.id === templateId) || TEMPLATES[0];
-  const sections: PortfolioSection[] = template.defaultSections.map((type, i) => {
+  const sectionTypes = options?.sections?.length ? options.sections : template.defaultSections;
+  const sections: PortfolioSection[] = sectionTypes.map((type, i) => {
     const def = SECTION_DEFAULTS[type];
     return {
       id: genId(),
@@ -42,23 +100,36 @@ function createDefaultPortfolio(templateId: string): Portfolio {
       order: i,
     };
   });
-  const name = 'My Portfolio';
-  return {
+  const name = options?.meta?.businessName?.trim() || 'My Website';
+  let portfolio: Portfolio = {
     id: genId(), name, templateId, sections,
-    theme: { ...template.defaultTheme, customCSS: '' },
-    seo: { title: name, description: '', keywords: '', ogImage: '', favicon: '', twitterHandle: '', canonicalUrl: '' },
+    theme: { ...template.defaultTheme },
+    seo: { title: name, description: options?.meta?.tagline || '', keywords: '', ogImage: '', favicon: '', twitterHandle: '', canonicalUrl: '' },
     smtp: { ...defaultSMTP },
     popup: { ...defaultPopup },
+    navbar: { ...defaultNavbar },
+    footer: { ...defaultFooter },
     social: { ...defaultSocial },
     language: 'en',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     published: false,
     slug: slugify(name),
+    meta: options?.meta,
   };
+  if (options?.meta) portfolio = applyPortfolioMeta(portfolio, options.meta);
+  const layoutId = (
+    options?.layoutPreset ||
+    template.defaultLayoutPreset ||
+    (options?.meta?.purpose ? getDefaultLayoutPresetId(options.meta.purpose) : null)
+  ) as LayoutPresetId | null;
+  if (layoutId) portfolio = applyLayoutPreset(portfolio, layoutId);
+  return portfolio;
 }
 
 const MAX_HISTORY = 30;
+
+export type MobilePanel = 'preview' | 'sections' | 'settings';
 
 interface BuilderState {
   portfolios: Portfolio[];
@@ -67,19 +138,35 @@ interface BuilderState {
   previewMode: boolean;
   activeSection: string | null;
   isAuthenticated: boolean;
+  user: AuthUser | null;
+  authLoading: boolean;
   canvasZoom: number;
   history: Portfolio[][];
   historyIndex: number;
+  hasSeenDashboardTour: boolean;
+  hasSeenBuilderTour: boolean;
+  projectsLoaded: boolean;
+  mobilePanel: MobilePanel;
+  popupPreviewNonce: number;
 
-  login: (password: string) => boolean;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  register: (data: { name: string; email: string; phone: string; password: string }) => Promise<{ ok: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  refreshSession: () => Promise<void>;
+  initAuth: () => Promise<void>;
+  completeDashboardTour: () => void;
+  completeBuilderTour: () => void;
+  setMobilePanel: (panel: MobilePanel) => void;
+  triggerPopupPreview: () => void;
 
-  createPortfolio: (templateId: string, name: string) => string;
+  createPortfolio: (templateId: string, name: string, options?: CreatePortfolioOptions) => string;
   deletePortfolio: (id: string) => void;
   duplicatePortfolio: (id: string) => void;
   setActivePortfolio: (id: string) => void;
   updatePortfolioName: (id: string, name: string) => void;
   togglePublished: (id: string) => void;
+  updatePortfolioHosting: (id: string, hosting: PortfolioHosting | undefined) => void;
+  purgeExpiredProjects: () => number;
 
   addSection: (type: SectionType) => void;
   removeSection: (sectionId: string) => void;
@@ -88,6 +175,7 @@ interface BuilderState {
   toggleSectionVisibility: (sectionId: string) => void;
   updateSectionStyle: (sectionId: string, style: Partial<SectionStyle>) => void;
   updateField: (sectionId: string, fieldId: string, value: any) => void;
+  updateFieldLabel: (sectionId: string, fieldId: string, label: string) => void;
   addField: (sectionId: string, field?: Partial<SectionField>) => void;
   removeField: (sectionId: string, fieldId: string) => void;
   reorderFields: (sectionId: string, fields: SectionField[]) => void;
@@ -97,6 +185,8 @@ interface BuilderState {
   updateSEO: (updates: Partial<SEOConfig>) => void;
   updateSMTP: (updates: Partial<SMTPConfig>) => void;
   updatePopup: (updates: Partial<PopupConfig>) => void;
+  updateNavbar: (updates: Partial<NavbarConfig>) => void;
+  updateFooter: (updates: Partial<FooterConfig>) => void;
   updateSocial: (updates: Partial<SocialLinks>) => void;
   updateLanguage: (lang: string) => void;
 
@@ -118,8 +208,39 @@ function updatePortfolios(portfolios: Portfolio[], activeId: string | null, upda
   return portfolios.map(p => p.id === activeId ? updater(p) : p);
 }
 
+function getPersistSlice(state: BuilderState): PersistedSlice {
+  return {
+    portfolios: state.portfolios,
+    hasSeenDashboardTour: state.hasSeenDashboardTour,
+    hasSeenBuilderTour: state.hasSeenBuilderTour,
+  };
+}
+
+async function hydrateProjectsFromServer(
+  set: (partial: Partial<BuilderState> | ((s: BuilderState) => Partial<BuilderState>)) => void,
+  get: () => BuilderState,
+) {
+  try {
+    const data = await fetchProjectsFromServer();
+    if (!data) {
+      set({ portfolios: [], activePortfolioId: null, projectsLoaded: false });
+      return;
+    }
+    const activeId = get().activePortfolioId;
+    set({
+      portfolios: data.portfolios,
+      hasSeenDashboardTour: data.hasSeenDashboardTour,
+      hasSeenBuilderTour: data.hasSeenBuilderTour,
+      projectsLoaded: true,
+      activePortfolioId: activeId && data.portfolios.some(p => p.id === activeId) ? activeId : null,
+    });
+  } catch (e) {
+    console.error('Failed to load projects:', e);
+    set({ projectsLoaded: false });
+  }
+}
+
 export const useBuilderStore = create<BuilderState>()(
-  persist(
     (set, get) => ({
       portfolios: [],
       activePortfolioId: null,
@@ -127,16 +248,89 @@ export const useBuilderStore = create<BuilderState>()(
       previewMode: false,
       activeSection: null,
       isAuthenticated: false,
+      user: null,
+      authLoading: true,
       canvasZoom: 100,
       history: [],
       historyIndex: -1,
+      hasSeenDashboardTour: false,
+      hasSeenBuilderTour: false,
+      projectsLoaded: false,
+      mobilePanel: 'preview',
+      popupPreviewNonce: 0,
 
-      login: (password) => {
-        const valid = password === (process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123');
-        if (valid) set({ isAuthenticated: true });
-        return valid;
+      initAuth: async () => {
+        set({ authLoading: true });
+        try {
+          const res = await fetch('/api/auth/me');
+          if (res.ok) {
+            const data = await res.json();
+            set({ user: data.user, isAuthenticated: true, authLoading: false });
+            await hydrateProjectsFromServer(set, get);
+          } else {
+            set({ user: null, isAuthenticated: false, authLoading: false, portfolios: [], activePortfolioId: null, projectsLoaded: false });
+          }
+        } catch {
+          set({ user: null, isAuthenticated: false, authLoading: false, portfolios: [], activePortfolioId: null, projectsLoaded: false });
+        }
       },
-      logout: () => set({ isAuthenticated: false }),
+      refreshSession: async () => {
+        try {
+          const res = await fetch('/api/auth/me');
+          if (res.ok) {
+            const data = await res.json();
+            set({ user: data.user, isAuthenticated: true });
+            return data.user;
+          }
+        } catch { /* ignore */ }
+        return null;
+      },
+      login: async (email, password) => {
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          const data = await res.json();
+          if (!res.ok) return { ok: false, error: data.error || 'Login failed' };
+          set({ user: data.user, isAuthenticated: true });
+          await hydrateProjectsFromServer(set, get);
+          return { ok: true };
+        } catch {
+          return { ok: false, error: 'Network error. Is the server running?' };
+        }
+      },
+      register: async (payload) => {
+        try {
+          const res = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok) return { ok: false, error: data.error || 'Registration failed' };
+          set({ user: data.user, isAuthenticated: true });
+          await hydrateProjectsFromServer(set, get);
+          return { ok: true };
+        } catch {
+          return { ok: false, error: 'Network error. Check MySQL connection.' };
+        }
+      },
+      logout: async () => {
+        if (get().isAuthenticated && get().projectsLoaded) {
+          try { await flushProjectSave(); } catch { /* ignore */ }
+        }
+        try { await fetch('/api/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
+        set({
+          isAuthenticated: false, user: null, portfolios: [], activePortfolioId: null,
+          projectsLoaded: false, hasSeenDashboardTour: false, hasSeenBuilderTour: false,
+        });
+      },
+      completeDashboardTour: () => set({ hasSeenDashboardTour: true }),
+      completeBuilderTour: () => set({ hasSeenBuilderTour: true }),
+      setMobilePanel: (panel) => set({ mobilePanel: panel }),
+      triggerPopupPreview: () => set({ popupPreviewNonce: Date.now() }),
 
       pushHistory: () => {
         const s = get();
@@ -161,10 +355,11 @@ export const useBuilderStore = create<BuilderState>()(
       canUndo: () => get().historyIndex > 0,
       canRedo: () => get().historyIndex < get().history.length - 1,
 
-      createPortfolio: (templateId, name) => {
-        const p = createDefaultPortfolio(templateId);
+      createPortfolio: (templateId, name, options) => {
+        const p = createDefaultPortfolio(templateId, { ...options, meta: options?.meta });
         p.name = name;
         p.slug = slugify(name);
+        if (p.seo) p.seo.title = name;
         set(s => ({ portfolios: [...s.portfolios, p], activePortfolioId: p.id }));
         return p.id;
       },
@@ -185,6 +380,22 @@ export const useBuilderStore = create<BuilderState>()(
       togglePublished: (id) => set(s => ({
         portfolios: s.portfolios.map(p => p.id === id ? { ...p, published: !p.published, updatedAt: new Date().toISOString() } : p),
       })),
+      updatePortfolioHosting: (id, hosting) => set(s => ({
+        portfolios: s.portfolios.map(p => p.id === id ? { ...p, hosting, updatedAt: new Date().toISOString() } : p),
+      })),
+      purgeExpiredProjects: () => {
+        const before = get().portfolios.length;
+        const kept = purgeExpiredPortfolios(get().portfolios);
+        const removed = before - kept.length;
+        if (removed > 0) {
+          const activeStillExists = kept.some(p => p.id === get().activePortfolioId);
+          set({
+            portfolios: kept,
+            activePortfolioId: activeStillExists ? get().activePortfolioId : '',
+          });
+        }
+        return removed;
+      },
 
       addSection: (type) => {
         get().pushHistory();
@@ -236,6 +447,15 @@ export const useBuilderStore = create<BuilderState>()(
           updatedAt: new Date().toISOString(),
         })),
       })),
+      updateFieldLabel: (sectionId, fieldId, label) => set(s => ({
+        portfolios: updatePortfolios(s.portfolios, s.activePortfolioId, p => ({
+          ...p,
+          sections: p.sections.map(sec => sec.id === sectionId
+            ? { ...sec, fields: sec.fields.map(f => f.id === fieldId ? { ...f, label } : f) }
+            : sec),
+          updatedAt: new Date().toISOString(),
+        })),
+      })),
       addField: (sectionId, field) => set(s => ({
         portfolios: updatePortfolios(s.portfolios, s.activePortfolioId, p => ({
           ...p, sections: p.sections.map(sec => sec.id === sectionId
@@ -281,6 +501,16 @@ export const useBuilderStore = create<BuilderState>()(
       updatePopup: (updates) => set(s => ({
         portfolios: updatePortfolios(s.portfolios, s.activePortfolioId, p => ({ ...p, popup: { ...p.popup, ...updates } })),
       })),
+      updateNavbar: (updates) => set(s => ({
+        portfolios: updatePortfolios(s.portfolios, s.activePortfolioId, p => ({
+          ...p, navbar: { ...(p.navbar || defaultNavbar), ...updates }, updatedAt: new Date().toISOString(),
+        })),
+      })),
+      updateFooter: (updates) => set(s => ({
+        portfolios: updatePortfolios(s.portfolios, s.activePortfolioId, p => ({
+          ...p, footer: { ...(p.footer || defaultFooter), ...updates }, updatedAt: new Date().toISOString(),
+        })),
+      })),
       updateSocial: (updates) => set(s => ({
         portfolios: updatePortfolios(s.portfolios, s.activePortfolioId, p => ({ ...p, social: { ...p.social, ...updates } })),
       })),
@@ -298,25 +528,21 @@ export const useBuilderStore = create<BuilderState>()(
         return s.portfolios.find(p => p.id === s.activePortfolioId) || null;
       },
     }),
-    { name: 'portfolio-builder-store', partialize: (s) => ({ portfolios: s.portfolios, isAuthenticated: s.isAuthenticated }),
-      onRehydrateStorage: () => (state) => {
-        // Migrate: repair any hero section fields that had their semantic ids replaced with random ids
-        if (!state) return;
-        state.portfolios = state.portfolios.map(portfolio => ({
-          ...portfolio,
-          sections: portfolio.sections.map(section => {
-            if (section.type !== 'hero') return section;
-            const def = SECTION_DEFAULTS['hero'];
-            // For each default field, if the section has a field with matching label but wrong id, fix the id
-            const repairedFields = section.fields.map(field => {
-              const match = def.fields.find(d => d.label === field.label && d.id !== field.id);
-              if (match) return { ...field, id: match.id };
-              return field;
-            });
-            return { ...section, fields: repairedFields };
-          }),
-        }));
-      },
-    }
-  )
 );
+
+if (typeof window !== 'undefined') {
+  useBuilderStore.subscribe((state, prev) => {
+    if (state.isAuthenticated && state.projectsLoaded && !shouldSkipProjectSync()) {
+      const changed =
+        state.portfolios !== prev.portfolios ||
+        state.hasSeenDashboardTour !== prev.hasSeenDashboardTour ||
+        state.hasSeenBuilderTour !== prev.hasSeenBuilderTour;
+      if (changed) scheduleSaveProjectsToServer(getPersistSlice(state));
+    }
+
+    if (state.portfolios !== prev.portfolios && state.activePortfolioId) {
+      const portfolio = state.portfolios.find(p => p.id === state.activePortfolioId);
+      if (portfolio) broadcastPreviewUpdate(portfolio);
+    }
+  });
+}

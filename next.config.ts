@@ -1,7 +1,21 @@
+import path from "path";
 import type { NextConfig } from "next";
 
+const projectRoot = path.resolve(__dirname);
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
+  turbopack: {
+    root: projectRoot,
+    resolveAlias: {
+      tailwindcss: path.join(projectRoot, "node_modules/tailwindcss"),
+    },
+  },
+  outputFileTracingRoot: projectRoot,
 };
 
 export default nextConfig;

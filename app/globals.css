@@ -2,8 +2,11 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #0a1628;
+  --foreground: #f1f5f9;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --navy: #0f172a;
 }
 
 * {
@@ -32,7 +35,7 @@ body {
 .drag-handle:active { cursor: grabbing; }
 
 /* Inline edit */
-[contenteditable]:focus { outline: 2px solid #6366f1; outline-offset: 2px; border-radius: 4px; }
+[contenteditable]:focus { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 4px; }
 
 /* Preview iframe */
 .preview-frame { border: none; width: 100%; height: 100%; }

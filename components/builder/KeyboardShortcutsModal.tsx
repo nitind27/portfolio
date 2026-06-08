@@ -27,7 +27,7 @@ export default function KeyboardShortcutsModal({ onClose }: { onClose: () => voi
       >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
-            <Keyboard className="w-5 h-5 text-indigo-400" />
+            <Keyboard className="w-5 h-5 text-blue-400" />
             <h3 className="font-semibold text-white">Keyboard Shortcuts</h3>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition">

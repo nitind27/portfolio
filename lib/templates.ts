@@ -1,4 +1,7 @@
-import { Template, ThemeConfig } from './types';
+import { Template, ThemeConfig, WebsitePurpose } from './types';
+import { EXTRA_TEMPLATES } from './templates-extra';
+import { PROFESSIONAL_TEMPLATES } from './templates-professional';
+import { V2_TEMPLATES } from './templates-v2';
 
 const defaultTheme: ThemeConfig = {
   primaryColor: '#6366f1',
@@ -13,11 +16,12 @@ const defaultTheme: ThemeConfig = {
   animation: 'moderate',
 };
 
-export const TEMPLATES: Template[] = [
+const BASE_TEMPLATES: Template[] = [
   {
     id: 'developer-dark',
     name: 'Dev Dark',
     category: 'developer',
+    purposes: ['personal-portfolio', 'resume-cv', 'freelancer-services'],
     thumbnail: '/templates/dev-dark.jpg',
     description: 'Sleek dark theme for software developers with code aesthetics',
     defaultSections: ['hero', 'about', 'skills', 'experience', 'projects', 'contact'],
@@ -27,6 +31,7 @@ export const TEMPLATES: Template[] = [
     id: 'developer-neon',
     name: 'Dev Neon',
     category: 'developer',
+    purposes: ['personal-portfolio', 'saas-startup'],
     thumbnail: '/templates/dev-neon.jpg',
     description: 'Cyberpunk neon glow theme for modern developers',
     defaultSections: ['hero', 'skills', 'projects', 'experience', 'contact'],
@@ -36,6 +41,7 @@ export const TEMPLATES: Template[] = [
     id: 'designer-minimal',
     name: 'Designer Minimal',
     category: 'designer',
+    purposes: ['personal-portfolio', 'freelancer-services', 'photography-studio'],
     thumbnail: '/templates/designer-minimal.jpg',
     description: 'Clean minimal layout for UI/UX designers and creatives',
     defaultSections: ['hero', 'about', 'projects', 'gallery', 'testimonials', 'contact'],
@@ -45,6 +51,7 @@ export const TEMPLATES: Template[] = [
     id: 'designer-bold',
     name: 'Designer Bold',
     category: 'designer',
+    purposes: ['agency-studio', 'personal-portfolio', 'blog-writer'],
     thumbnail: '/templates/designer-bold.jpg',
     description: 'Bold typographic layout for senior designers',
     defaultSections: ['hero', 'about', 'projects', 'gallery', 'contact'],
@@ -54,6 +61,7 @@ export const TEMPLATES: Template[] = [
     id: 'photographer-bold',
     name: 'Photographer Bold',
     category: 'photographer',
+    purposes: ['photography-studio', 'event-wedding'],
     thumbnail: '/templates/photographer-bold.jpg',
     description: 'Full-screen gallery-first layout for photographers',
     defaultSections: ['hero', 'gallery', 'about', 'services', 'testimonials', 'contact'],
@@ -63,6 +71,7 @@ export const TEMPLATES: Template[] = [
     id: 'photographer-light',
     name: 'Photographer Light',
     category: 'photographer',
+    purposes: ['photography-studio', 'event-wedding'],
     thumbnail: '/templates/photographer-light.jpg',
     description: 'Airy light theme for wedding and portrait photographers',
     defaultSections: ['hero', 'gallery', 'about', 'services', 'contact'],
@@ -72,6 +81,7 @@ export const TEMPLATES: Template[] = [
     id: 'model-glamour',
     name: 'Model Glamour',
     category: 'model',
+    purposes: ['personal-portfolio', 'music-artist'],
     thumbnail: '/templates/model-glamour.jpg',
     description: 'Elegant and bold layout for models and influencers',
     defaultSections: ['hero', 'gallery', 'about', 'videos', 'contact'],
@@ -81,24 +91,29 @@ export const TEMPLATES: Template[] = [
     id: 'agency-corporate',
     name: 'Agency Corporate',
     category: 'agency',
+    purposes: ['agency-studio', 'business-company'],
     thumbnail: '/templates/agency-corporate.jpg',
     description: 'Professional multi-section layout for agencies and studios',
     defaultSections: ['hero', 'about', 'services', 'team', 'projects', 'stats', 'testimonials', 'contact'],
     defaultTheme: { ...defaultTheme, primaryColor: '#0ea5e9', backgroundColor: '#ffffff', textColor: '#0f172a', spacing: 'relaxed' },
+    defaultLayoutPreset: 'business-corporate',
   },
   {
     id: 'startup-modern',
     name: 'Startup Modern',
     category: 'agency',
+    purposes: ['saas-startup', 'agency-studio', 'business-company'],
     thumbnail: '/templates/startup-modern.jpg',
     description: 'High-energy startup landing page with bold sections',
     defaultSections: ['hero', 'stats', 'services', 'team', 'pricing', 'testimonials', 'contact'],
     defaultTheme: { ...defaultTheme, primaryColor: '#7c3aed', secondaryColor: '#4f46e5', accentColor: '#f59e0b', backgroundColor: '#0f0a1e', textColor: '#f8fafc', fontFamily: 'Poppins', borderRadius: 'lg', animation: 'expressive' },
+    defaultLayoutPreset: 'one-page',
   },
   {
     id: 'creative-vibrant',
     name: 'Creative Vibrant',
     category: 'creative',
+    purposes: ['personal-portfolio', 'music-artist', 'blog-writer'],
     thumbnail: '/templates/creative-vibrant.jpg',
     description: 'Colorful and expressive layout for artists and creatives',
     defaultSections: ['hero', 'about', 'projects', 'gallery', 'skills', 'contact'],
@@ -108,6 +123,7 @@ export const TEMPLATES: Template[] = [
     id: 'freelancer-pro',
     name: 'Freelancer Pro',
     category: 'minimal',
+    purposes: ['freelancer-services', 'business-company', 'fitness-coach'],
     thumbnail: '/templates/freelancer-pro.jpg',
     description: 'Clean professional layout for freelancers and consultants',
     defaultSections: ['hero', 'about', 'services', 'skills', 'pricing', 'testimonials', 'contact'],
@@ -117,6 +133,7 @@ export const TEMPLATES: Template[] = [
     id: 'resume-classic',
     name: 'Resume Classic',
     category: 'minimal',
+    purposes: ['resume-cv', 'personal-portfolio'],
     thumbnail: '/templates/resume-classic.jpg',
     description: 'Clean resume-style layout for job seekers',
     defaultSections: ['hero', 'about', 'experience', 'skills', 'projects', 'contact'],
@@ -126,6 +143,7 @@ export const TEMPLATES: Template[] = [
     id: 'minimal-clean',
     name: 'Minimal Clean',
     category: 'minimal',
+    purposes: ['resume-cv', 'business-company', 'blog-writer'],
     thumbnail: '/templates/minimal-clean.jpg',
     description: 'Ultra-minimal typography-focused layout',
     defaultSections: ['hero', 'about', 'experience', 'projects', 'contact'],
@@ -135,12 +153,20 @@ export const TEMPLATES: Template[] = [
     id: 'music-artist',
     name: 'Music Artist',
     category: 'creative',
+    purposes: ['music-artist', 'event-wedding'],
     thumbnail: '/templates/music-artist.jpg',
     description: 'Dark immersive layout for musicians and bands',
     defaultSections: ['hero', 'about', 'videos', 'gallery', 'contact'],
     defaultTheme: { ...defaultTheme, primaryColor: '#e11d48', secondaryColor: '#be123c', accentColor: '#fbbf24', backgroundColor: '#09090b', textColor: '#fafafa', fontFamily: 'Raleway', borderRadius: 'md', animation: 'expressive' },
   },
 ];
+
+export const TEMPLATES: Template[] = [...BASE_TEMPLATES, ...EXTRA_TEMPLATES, ...PROFESSIONAL_TEMPLATES, ...V2_TEMPLATES];
+
+export function getTemplatesForPurpose(purpose: WebsitePurpose): Template[] {
+  const fromPurpose = TEMPLATES.filter(t => t.purposes.includes(purpose));
+  return fromPurpose.length ? fromPurpose : TEMPLATES;
+}
 
 export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ id: string; label: string; type: any; value: any; options?: string[] }> }> = {
   hero: {
@@ -161,11 +187,18 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
   about: {
     title: 'About',
     fields: [
+      { id: 'aboutLayout', label: 'Layout Style', type: 'select', value: 'split', options: ['split', 'centered', 'wide'] },
       { id: 'title', label: 'Section Title', type: 'text', value: 'About Me' },
-      { id: 'bio', label: 'Bio', type: 'richtext', value: 'I am a passionate developer with 5+ years of experience building modern web applications.' },
-      { id: 'image', label: 'About Image', type: 'image', value: '' },
+      { id: 'subtitle', label: 'Tagline', type: 'text', value: 'Turning ideas into elegant digital experiences' },
+      { id: 'role', label: 'Professional Title', type: 'text', value: 'Full Stack Developer & UI Designer' },
+      { id: 'bio', label: 'Bio / Story', type: 'richtext', value: 'I am a passionate developer with 5+ years of experience building modern web applications. I love crafting clean, user-focused products that solve real problems and delight users.' },
+      { id: 'image', label: 'Profile Photo', type: 'image', value: '' },
+      { id: 'highlights', label: 'Key Highlights', type: 'list', value: ['5+ Years Experience', '50+ Projects Delivered', '20+ Happy Clients'] },
       { id: 'location', label: 'Location', type: 'text', value: 'New York, USA' },
       { id: 'email', label: 'Email', type: 'email', value: 'hello@example.com' },
+      { id: 'phone', label: 'Phone', type: 'text', value: '+1 (555) 123-4567' },
+      { id: 'website', label: 'Website', type: 'url', value: 'https://yoursite.com' },
+      { id: 'availability', label: 'Availability', type: 'text', value: 'Open to freelance & full-time opportunities' },
     ],
   },
   skills: {
@@ -185,6 +218,7 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
   projects: {
     title: 'Projects',
     fields: [
+      { id: 'projectsLayout', label: 'Layout Style', type: 'select', value: 'cards', options: ['cards', 'list'] },
       { id: 'title', label: 'Section Title', type: 'text', value: 'Featured Projects' },
       { id: 'projects', label: 'Projects', type: 'list', value: ['Project Alpha - A SaaS platform', 'Project Beta - Mobile app'] },
     ],
@@ -192,6 +226,7 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
   gallery: {
     title: 'Gallery',
     fields: [
+      { id: 'galleryLayout', label: 'Layout Style', type: 'select', value: 'masonry', options: ['masonry', 'grid', 'carousel'] },
       { id: 'title', label: 'Section Title', type: 'text', value: 'Gallery' },
       { id: 'images', label: 'Gallery Images', type: 'images', value: [] },
     ],
@@ -199,17 +234,28 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
   testimonials: {
     title: 'Testimonials',
     fields: [
+      { id: 'testimonialsLayout', label: 'Layout Style', type: 'select', value: 'cards', options: ['cards', 'carousel'] },
       { id: 'title', label: 'Section Title', type: 'text', value: 'What People Say' },
-      { id: 'testimonials', label: 'Testimonials', type: 'list', value: ['"Amazing work!" - Client A', '"Highly recommended!" - Client B'] },
+      { id: 'subtitle', label: 'Subtitle', type: 'text', value: 'What clients and colleagues say about working with me' },
+      { id: 'testimonialitems', label: 'Testimonials', type: 'testimonialitems', value: [
+        { id: 't1', quote: 'Amazing work! Delivered exactly what we needed on time and with great attention to detail.', author: 'Sarah Johnson', role: 'CEO', company: 'TechStart Inc.', rating: 5, image: '' },
+        { id: 't2', quote: 'Highly recommended! Professional, creative, and a pleasure to work with.', author: 'Michael Chen', role: 'Product Manager', company: 'DesignCo', rating: 5, image: '' },
+      ]},
     ],
   },
   contact: {
     title: 'Contact',
     fields: [
+      { id: 'contactLayout', label: 'Layout Style', type: 'select', value: 'split', options: ['split', 'centered', 'minimal'] },
       { id: 'title', label: 'Section Title', type: 'text', value: 'Get In Touch' },
-      { id: 'email', label: 'Contact Email', type: 'email', value: 'hello@example.com' },
-      { id: 'phone', label: 'Phone', type: 'text', value: '+1 (555) 000-0000' },
-      { id: 'message', label: 'Intro Message', type: 'textarea', value: "Have a project in mind? Let's talk!" },
+      { id: 'subtitle', label: 'Subtitle', type: 'text', value: "Let's build something amazing together" },
+      { id: 'message', label: 'Intro Message', type: 'textarea', value: "Have a project in mind or want to collaborate? I'd love to hear from you. Fill out the form and I'll respond as soon as possible." },
+      { id: 'email', label: 'Email Address', type: 'email', value: 'hello@example.com' },
+      { id: 'phone', label: 'Phone Number', type: 'text', value: '+1 (555) 123-4567' },
+      { id: 'location', label: 'Location', type: 'text', value: 'New York, USA' },
+      { id: 'address', label: 'Office Address', type: 'text', value: '123 Creative Street, Manhattan, NY 10001' },
+      { id: 'hours', label: 'Working Hours', type: 'text', value: 'Mon – Fri, 9:00 AM – 6:00 PM' },
+      { id: 'responseTime', label: 'Response Time', type: 'text', value: 'Usually replies within 24 hours' },
     ],
   },
   videos: {
@@ -222,6 +268,7 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
   services: {
     title: 'Services',
     fields: [
+      { id: 'servicesLayout', label: 'Layout Style', type: 'select', value: 'cards', options: ['cards', 'list'] },
       { id: 'title', label: 'Section Title', type: 'text', value: 'Services' },
       { id: 'services', label: 'Services', type: 'list', value: ['Web Design', 'Development', 'Consulting'] },
     ],
@@ -230,7 +277,12 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
     title: 'Team',
     fields: [
       { id: 'title', label: 'Section Title', type: 'text', value: 'Our Team' },
-      { id: 'members', label: 'Team Members', type: 'list', value: ['Alice - CEO', 'Bob - CTO', 'Carol - Designer'] },
+      { id: 'subtitle', label: 'Subtitle', type: 'text', value: 'The people behind the work' },
+      { id: 'teamitems', label: 'Team Members', type: 'teamitems', value: [
+        { id: 'm1', name: 'Alice Morgan', role: 'CEO & Founder', bio: 'Leading vision and strategy with 15+ years in tech.', image: '', linkedin: '', twitter: '', email: '' },
+        { id: 'm2', name: 'Bob Chen', role: 'CTO', bio: 'Full-stack engineer passionate about scalable architecture.', image: '', linkedin: '', twitter: '', email: '' },
+        { id: 'm3', name: 'Carol Design', role: 'Lead Designer', bio: 'Crafting beautiful, user-centered digital experiences.', image: '', linkedin: '', twitter: '', email: '' },
+      ]},
     ],
   },
   stats: {
@@ -263,12 +315,25 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
   pricing: {
     title: 'Pricing',
     fields: [
+      { id: 'pricingLayout', label: 'Layout Style', type: 'select', value: 'columns-3', options: ['columns-3', 'columns-2', 'featured'] },
       { id: 'title', label: 'Section Title', type: 'text', value: 'Pricing Plans' },
       { id: 'subtitle', label: 'Subtitle', type: 'text', value: 'Simple, transparent pricing' },
-      { id: 'plans', label: 'Plans (Name | Price | Features...)', type: 'list', value: [
-        'Starter | $99 | 1 Page | Basic Design | 1 Revision',
-        'Pro | $299 | 5 Pages | Custom Design | Unlimited Revisions | SEO',
-        'Agency | $799 | 10+ Pages | Full Custom | Priority Support | Analytics',
+      { id: 'pricingplans', label: 'Pricing Plans', type: 'pricingplans', value: [
+        {
+          id: 'p1', name: 'Starter', price: '$99', period: '/project', description: 'Perfect for small projects',
+          features: ['1 Page', 'Basic Design', '1 Revision', 'Email Support'],
+          ctaText: 'Get Started', ctaLink: '', featured: false,
+        },
+        {
+          id: 'p2', name: 'Pro', price: '$299', period: '/project', description: 'Best for growing businesses',
+          features: ['5 Pages', 'Custom Design', 'Unlimited Revisions', 'SEO Setup', 'Priority Support'],
+          ctaText: 'Get Started', ctaLink: '', featured: true,
+        },
+        {
+          id: 'p3', name: 'Agency', price: '$799', period: '/project', description: 'Full-service solution',
+          features: ['10+ Pages', 'Full Custom Build', 'Analytics Dashboard', 'Dedicated Manager', 'SLA Support'],
+          ctaText: 'Contact Us', ctaLink: '', featured: false,
+        },
       ]},
     ],
   },
@@ -276,10 +341,11 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
     title: 'FAQ',
     fields: [
       { id: 'title', label: 'Section Title', type: 'text', value: 'Frequently Asked Questions' },
-      { id: 'faqs', label: 'Q&A (Question | Answer)', type: 'list', value: [
-        'What services do you offer? | I offer web design, development, and consulting services.',
-        'How long does a project take? | Typically 2-6 weeks depending on complexity.',
-        'Do you offer revisions? | Yes, I offer unlimited revisions until you are satisfied.',
+      { id: 'subtitle', label: 'Subtitle', type: 'text', value: 'Common questions answered' },
+      { id: 'faqitems', label: 'Questions & Answers', type: 'faqitems', value: [
+        { id: 'f1', question: 'What services do you offer?', answer: 'I offer web design, development, and consulting services tailored to your needs.' },
+        { id: 'f2', question: 'How long does a project take?', answer: 'Typically 2–6 weeks depending on complexity, scope, and revision rounds.' },
+        { id: 'f3', question: 'Do you offer revisions?', answer: 'Yes — I offer revisions until you are fully satisfied with the final result.' },
       ]},
     ],
   },
@@ -287,9 +353,20 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
     title: 'Blog',
     fields: [
       { id: 'title', label: 'Section Title', type: 'text', value: 'Latest Posts' },
-      { id: 'posts', label: 'Posts (Title | Date | Summary)', type: 'list', value: [
-        'Getting Started with React | Jan 2025 | A beginner guide to React development.',
-        'Design Systems in 2025 | Feb 2025 | How to build scalable design systems.',
+      { id: 'subtitle', label: 'Subtitle', type: 'text', value: 'Thoughts, tutorials, and updates from my work' },
+      { id: 'blogposts', label: 'Blog Posts', type: 'blogposts', value: [
+        {
+          id: 'bp1', title: 'Getting Started with React', date: 'Jan 2025',
+          summary: 'A beginner guide to React development.',
+          body: 'React is one of the most popular libraries for building modern user interfaces. In this article, we cover components, hooks, state management, and best practices.\n\nStart with Vite, learn JSX syntax, and build small projects to reinforce your skills.',
+          image: '', link: '', linkLabel: 'View tutorial', list: ['React', 'JavaScript', 'Frontend'],
+        },
+        {
+          id: 'bp2', title: 'Design Systems in 2025', date: 'Feb 2025',
+          summary: 'How to build scalable design systems.',
+          body: 'Design systems help teams ship consistent UI faster. We explore tokens, component libraries, documentation, and how to align design and engineering workflows.',
+          image: '', link: '', linkLabel: 'Learn more', list: ['Design', 'UI/UX', 'Figma'],
+        },
       ]},
     ],
   },

@@ -24,9 +24,13 @@ const SECTION_GROUPS: { label: string; types: SectionType[] }[] = [
   { label: 'Other', types: ['custom'] },
 ];
 
-function SortableSection({ section }: { section: PortfolioSection }) {
+interface Props {
+  onSectionSelect: (sectionId: string) => void;
+}
+
+function SortableSection({ section, onSectionSelect }: { section: PortfolioSection; onSectionSelect: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
-  const { toggleSectionVisibility, removeSection, setActiveSection, activeSection } = useBuilderStore();
+  const { toggleSectionVisibility, removeSection, activeSection, setMobilePanel } = useBuilderStore();
   const isActive = activeSection === section.id;
 
   return (
@@ -34,9 +38,12 @@ function SortableSection({ section }: { section: PortfolioSection }) {
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
       className={`group flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-all ${
-        isActive ? 'bg-indigo-600/20 border border-indigo-500/40' : 'hover:bg-white/5 border border-transparent'
+        isActive ? 'bg-blue-600/20 border border-blue-500/40' : 'hover:bg-white/5 border border-transparent'
       } ${!section.visible ? 'opacity-40' : ''}`}
-      onClick={() => setActiveSection(isActive ? null : section.id)}
+      onClick={() => {
+        onSectionSelect(section.id);
+        setMobilePanel('preview');
+      }}
     >
       <button {...attributes} {...listeners} className="drag-handle text-gray-700 hover:text-gray-400 shrink-0 cursor-grab active:cursor-grabbing" onClick={e => e.stopPropagation()}>
         <GripVertical className="w-3.5 h-3.5" />
@@ -45,7 +52,7 @@ function SortableSection({ section }: { section: PortfolioSection }) {
       <span className="flex-1 text-xs font-medium truncate text-gray-300">{section.title}</span>
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition shrink-0">
         <button onClick={e => { e.stopPropagation(); toggleSectionVisibility(section.id); }}
-          className={`p-1 rounded transition ${section.visible ? 'hover:text-indigo-400' : 'text-gray-600 hover:text-gray-400'}`}>
+          className={`p-1 rounded transition ${section.visible ? 'hover:text-blue-400' : 'text-gray-600 hover:text-gray-400'}`}>
           {section.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
         </button>
         <button onClick={e => { e.stopPropagation(); removeSection(section.id); }}
@@ -57,7 +64,7 @@ function SortableSection({ section }: { section: PortfolioSection }) {
   );
 }
 
-export default function BuilderSidebar() {
+export default function BuilderSidebar({ onSectionSelect }: Props) {
   const { getActivePortfolio, reorderSections, addSection } = useBuilderStore();
   const portfolio = getActivePortfolio();
   const [showAdd, setShowAdd] = useState(false);
@@ -90,7 +97,7 @@ export default function BuilderSidebar() {
   );
 
   return (
-    <aside className="w-52 border-r border-white/10 bg-[#0d0d0d] flex flex-col overflow-hidden shrink-0">
+    <aside data-tour="sections-panel" className="w-full h-full border-r border-white/10 bg-[#0d0d0d] flex flex-col overflow-hidden min-w-0">
       {/* Header */}
       <div className="p-2.5 border-b border-white/10 space-y-2">
         <div className="flex items-center justify-between">
@@ -104,7 +111,7 @@ export default function BuilderSidebar() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search sections..."
-            className="w-full bg-white/5 border border-white/10 rounded-lg pl-6 pr-2 py-1 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500/50"
+            className="w-full bg-white/5 border border-white/10 rounded-lg pl-6 pr-2 py-1 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50"
           />
         </div>
       </div>
@@ -114,7 +121,7 @@ export default function BuilderSidebar() {
         <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
             {sections.map(section => (
-              <SortableSection key={section.id} section={section} />
+              <SortableSection key={section.id} section={section} onSectionSelect={onSectionSelect} />
             ))}
           </SortableContext>
         </DndContext>
@@ -126,7 +133,7 @@ export default function BuilderSidebar() {
       {/* Add section */}
       <div className="p-2 border-t border-white/10">
         <button onClick={() => setShowAdd(!showAdd)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-xs font-medium transition">
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 text-xs font-medium transition">
           <Plus className="w-3.5 h-3.5" />
           {showAdd ? 'Close' : 'Add Section'}
         </button>

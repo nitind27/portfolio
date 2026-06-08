@@ -3,28 +3,47 @@ import { useBuilderStore } from '@/lib/store';
 import { TEMPLATES } from '@/lib/templates';
 import { HexColorPicker } from 'react-colorful';
 import { useState, useMemo } from 'react';
-import { ThemeConfig, SMTPConfig, PopupConfig, SocialLinks } from '@/lib/types';
+import { ThemeConfig, SMTPConfig, PopupConfig, NavbarConfig, NavbarMenuStyle, NavbarScrollBehavior, NavbarScrollAnimation, FooterConfig, SocialLinks } from '@/lib/types';
 import { RightTab } from '../Builder';
-import { Check, TestTube, Loader, ExternalLink } from 'lucide-react';
+import { Check, TestTube, Loader, ExternalLink, Eye } from 'lucide-react';
+import PopupCard from '../shared/PopupCard';
+import TemplatesGallery from '../shared/TemplatesGallery';
+import SectionEditor from './SectionEditor';
 
 interface Props { tab: RightTab; setTab: (t: RightTab) => void; }
 
 export default function BuilderRightPanel({ tab }: Props) {
-  const { getActivePortfolio, updateTheme, switchTemplate, updateSEO, updateSMTP, updatePopup, updateSocial } = useBuilderStore();
+  const {
+    getActivePortfolio, updateTheme, switchTemplate, updateSEO, updateSMTP, updatePopup,
+    updateNavbar, updateFooter, updateSocial, activeSection, previewMode,
+  } = useBuilderStore();
   const portfolio = getActivePortfolio();
   if (!portfolio) return null;
 
+  const showSectionEditor = tab === 'sections' && Boolean(activeSection && !previewMode);
+
   return (
-    <aside className="w-64 border-l border-white/10 bg-[#0d0d0d] overflow-y-auto shrink-0 flex flex-col">
-      {tab === 'theme' && <ThemePanel theme={portfolio.theme} onUpdate={updateTheme} />}
-      {tab === 'templates' && <TemplatesPanel current={portfolio.templateId} onSwitch={switchTemplate} />}
-      {tab === 'seo' && <SEOPanel seo={portfolio.seo} onUpdate={updateSEO} />}
-      {tab === 'smtp' && <SMTPPanel smtp={portfolio.smtp} onUpdate={updateSMTP} />}
-      {tab === 'popup' && <PopupPanel popup={portfolio.popup} theme={portfolio.theme} onUpdate={updatePopup} />}
-      {tab === 'social' && <SocialPanel social={portfolio.social} onUpdate={updateSocial} />}
-      {tab === 'analytics' && <AnalyticsPanel portfolio={portfolio} />}
-      {tab === 'css' && <CSSPanel theme={portfolio.theme} onUpdate={updateTheme} />}
-      {tab === 'sections' && <SectionsInfo />}
+    <aside
+      data-tour="settings-panel"
+      className="w-full h-full border-l border-white/10 bg-[#0d0d0d] overflow-hidden flex flex-col min-w-0"
+    >
+      {showSectionEditor ? (
+        <SectionEditor key={activeSection} sectionId={activeSection!} variant="sidebar" />
+      ) : (
+        <div className="flex-1 overflow-y-auto">
+          {tab === 'theme' && <ThemePanel theme={portfolio.theme} onUpdate={updateTheme} />}
+          {tab === 'navbar' && portfolio.navbar && <NavbarPanel navbar={portfolio.navbar} onUpdate={updateNavbar} portfolioName={portfolio.name} />}
+          {tab === 'footer' && portfolio.footer && <FooterPanel footer={portfolio.footer} onUpdate={updateFooter} />}
+          {tab === 'templates' && <TemplatesPanel current={portfolio.templateId} onSwitch={switchTemplate} />}
+          {tab === 'seo' && <SEOPanel seo={portfolio.seo} onUpdate={updateSEO} />}
+          {tab === 'smtp' && <SMTPPanel smtp={portfolio.smtp} onUpdate={updateSMTP} />}
+          {tab === 'popup' && <PopupPanel popup={portfolio.popup} theme={portfolio.theme} onUpdate={updatePopup} />}
+          {tab === 'social' && <SocialPanel social={portfolio.social} onUpdate={updateSocial} />}
+          {tab === 'analytics' && <AnalyticsPanel portfolio={portfolio} />}
+          {tab === 'css' && <CSSPanel theme={portfolio.theme} onUpdate={updateTheme} />}
+          {tab === 'sections' && <SectionsInfo />}
+        </div>
+      )}
     </aside>
   );
 }
@@ -33,19 +52,387 @@ function SectionsInfo() {
   return (
     <div className="p-4">
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Section Editor</p>
-      <p className="text-sm text-gray-400 leading-relaxed">Click any section in the left panel to open its editor. Drag the grip handle to reorder.</p>
+      <p className="text-sm text-gray-400 leading-relaxed">
+        Click a section in the left list, preview header, or on the page — the editor stays on the right and switches to that section.
+      </p>
       <div className="mt-4 space-y-2">
         {[
-          { icon: '🖱️', text: 'Click section to edit' },
-          { icon: '⠿', text: 'Drag to reorder' },
-          { icon: '👁️', text: 'Toggle visibility' },
-          { icon: '🗑️', text: 'Delete section' },
+          { icon: '🔗', text: 'Header nav links open section editor' },
+          { icon: '👁️', text: 'Live preview while you edit' },
+          { icon: '⠿', text: 'Drag sections to reorder' },
         ].map((tip, i) => (
           <div key={i} className="flex items-center gap-2 text-xs text-gray-500">
             <span>{tip.icon}</span><span>{tip.text}</span>
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+const MENU_STYLE_OPTIONS: { id: NavbarMenuStyle; label: string }[] = [
+  { id: 'drawer-right', label: 'Side Drawer' },
+  { id: 'drawer-left', label: 'Left Drawer' },
+  { id: 'fullscreen', label: 'Full Screen' },
+  { id: 'bottom-popup', label: 'Bottom Popup' },
+];
+
+function MenuStylePicker({ label, value, onChange }: { label: string; value: NavbarMenuStyle; onChange: (v: NavbarMenuStyle) => void }) {
+  return (
+    <div>
+      <p className="text-xs text-gray-400 mb-1.5">{label}</p>
+      <div className="grid grid-cols-2 gap-1">
+        {MENU_STYLE_OPTIONS.map(o => (
+          <button key={o.id} onClick={() => onChange(o.id)}
+            className={`py-1.5 text-[10px] rounded transition ${value === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Navbar Panel ─────────────────────────────────────────────────────────────
+const SCROLL_BEHAVIOR_OPTIONS: { id: NavbarScrollBehavior; label: string }[] = [
+  { id: 'none', label: 'None' },
+  { id: 'float-on-scroll', label: 'Float on Scroll' },
+  { id: 'compact-on-scroll', label: 'Compact' },
+];
+
+const SCROLL_ANIMATION_OPTIONS: { id: NavbarScrollAnimation; label: string }[] = [
+  { id: 'smooth', label: 'Smooth' },
+  { id: 'fade', label: 'Fade' },
+  { id: 'slide', label: 'Slide' },
+  { id: 'scale', label: 'Scale' },
+  { id: 'spring', label: 'Spring' },
+];
+
+function NavbarPanel({ navbar, onUpdate, portfolioName }: { navbar: NavbarConfig; onUpdate: (u: Partial<NavbarConfig>) => void; portfolioName: string }) {
+  const inputCls = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500';
+  const desktopMenu = navbar.desktopMenu ?? 'links';
+  const scrollBehavior = navbar.scrollBehavior ?? 'none';
+
+  const Toggle = ({ label, val, fieldKey }: { label: string; val: boolean; fieldKey: keyof NavbarConfig }) => (
+    <label className="flex items-center justify-between cursor-pointer p-2 bg-white/5 rounded-lg">
+      <span className="text-xs text-gray-300">{label}</span>
+      <div onClick={() => onUpdate({ [fieldKey]: !val } as Partial<NavbarConfig>)}
+        className={`w-9 h-5 rounded-full transition relative shrink-0 ${val ? 'bg-blue-600' : 'bg-white/10'}`}>
+        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${val ? 'left-4' : 'left-0.5'}`} />
+      </div>
+    </label>
+  );
+
+  return (
+    <div className="p-3 space-y-4">
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Navbar</p>
+        <p className="text-xs text-gray-600 mt-1">Customize your site header layout and style.</p>
+      </div>
+
+      <div>
+        <label className="text-xs text-gray-400 block mb-1">Brand Name</label>
+        <input value={navbar.brandName} onChange={e => onUpdate({ brandName: e.target.value })} placeholder={portfolioName}
+          className={inputCls} />
+        <p className="text-[10px] text-gray-600 mt-1">Leave empty to use portfolio name</p>
+      </div>
+
+      <Toggle label="Show Logo" val={navbar.showLogo} fieldKey="showLogo" />
+      {navbar.showLogo && (
+        <div>
+          <label className="text-xs text-gray-400 block mb-1">Logo Image URL</label>
+          <input value={navbar.logoImage} onChange={e => onUpdate({ logoImage: e.target.value })} placeholder="https:// or paste uploaded image"
+            className={inputCls} />
+        </div>
+      )}
+
+      <Toggle label="Show Tagline" val={navbar.showTagline} fieldKey="showTagline" />
+      {navbar.showTagline && (
+        <div>
+          <label className="text-xs text-gray-400 block mb-1">Tagline</label>
+          <input value={navbar.tagline} onChange={e => onUpdate({ tagline: e.target.value })} placeholder="Designer & Developer"
+            className={inputCls} />
+        </div>
+      )}
+
+      <div>
+        <p className="text-xs text-gray-400 mb-1.5">Navbar Style</p>
+        <div className="grid grid-cols-2 gap-1">
+          {(['glass', 'solid', 'gradient', 'transparent'] as const).map(s => (
+            <button key={s} onClick={() => onUpdate({ style: s })}
+              className={`py-1.5 text-xs rounded capitalize transition ${navbar.style === s ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs text-gray-400 mb-1.5">Layout</p>
+        <div className="grid grid-cols-3 gap-1">
+          {(['standard', 'centered', 'minimal'] as const).map(l => (
+            <button key={l} onClick={() => onUpdate({ layout: l })}
+              className={`py-1.5 text-xs rounded capitalize transition ${navbar.layout === l ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-2.5 bg-white/[0.03] border border-white/10 rounded-xl space-y-3">
+        <div>
+          <p className="text-xs font-semibold text-gray-300">Desktop / Web Menu</p>
+          <p className="text-[10px] text-gray-600 mt-0.5">How navigation appears on desktop & tablet preview</p>
+        </div>
+        <div className="grid grid-cols-3 gap-1">
+          {([
+            { id: 'links' as const, label: 'Links Bar' },
+            { id: 'menu' as const, label: 'Menu Btn' },
+            { id: 'floating' as const, label: 'Floating' },
+          ]).map(o => (
+            <button key={o.id} onClick={() => onUpdate({ desktopMenu: o.id })}
+              className={`py-1.5 text-[10px] rounded transition ${desktopMenu === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+        {desktopMenu === 'menu' && (
+          <MenuStylePicker label="Desktop popup style" value={navbar.desktopMenuStyle ?? 'drawer-right'} onChange={v => onUpdate({ desktopMenuStyle: v })} />
+        )}
+      </div>
+
+      <div className="p-2.5 bg-white/[0.03] border border-white/10 rounded-xl space-y-3">
+        <div>
+          <p className="text-xs font-semibold text-gray-300">Mobile Menu</p>
+          <p className="text-[10px] text-gray-600 mt-0.5">How navigation opens on mobile preview</p>
+        </div>
+        <MenuStylePicker label="Mobile menu style" value={navbar.mobileMenu ?? 'drawer-right'} onChange={v => onUpdate({ mobileMenu: v })} />
+        <div>
+          <p className="text-xs text-gray-400 mb-1.5">Menu Icon</p>
+          <div className="grid grid-cols-2 gap-1">
+            {([
+              { id: 'dots' as const, label: '⋮ Three Dots' },
+              { id: 'hamburger' as const, label: '☰ Hamburger' },
+            ]).map(o => (
+              <button key={o.id} onClick={() => onUpdate({ menuIcon: o.id })}
+                className={`py-1.5 text-xs rounded transition ${(navbar.menuIcon ?? 'dots') === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs text-gray-400 mb-1.5">Link Style</p>
+        <div className="grid grid-cols-3 gap-1">
+          {(['minimal', 'underline', 'pill'] as const).map(l => (
+            <button key={l} onClick={() => onUpdate({ linkStyle: l })}
+              className={`py-1.5 text-xs rounded capitalize transition ${navbar.linkStyle === l ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-2.5 bg-white/5 rounded-lg space-y-3">
+        <p className="text-xs font-medium text-gray-300">Link Spacing</p>
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs text-gray-400">Gap between links</label>
+            <span className="text-[10px] text-blue-400 font-mono">{navbar.linkGap ?? 14}px</span>
+          </div>
+          <input type="range" min={4} max={40} step={1}
+            value={navbar.linkGap ?? 14}
+            onChange={e => onUpdate({ linkGap: Number(e.target.value) })}
+            className="w-full accent-blue-500" />
+          <div className="flex gap-1 mt-1.5">
+            {([{ label: 'Tight', val: 8 }, { label: 'Normal', val: 14 }, { label: 'Wide', val: 24 }] as const).map(p => (
+              <button key={p.label} onClick={() => onUpdate({ linkGap: p.val })}
+                className={`flex-1 py-1 text-[10px] rounded transition ${(navbar.linkGap ?? 14) === p.val ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-500 hover:bg-white/10'}`}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs text-gray-400">Link padding (left/right)</label>
+            <span className="text-[10px] text-blue-400 font-mono">{navbar.linkPaddingX ?? 10}px</span>
+          </div>
+          <input type="range" min={0} max={24} step={1}
+            value={navbar.linkPaddingX ?? 10}
+            onChange={e => onUpdate({ linkPaddingX: Number(e.target.value) })}
+            className="w-full accent-blue-500" />
+        </div>
+      </div>
+
+      <div className="p-2.5 bg-white/[0.03] border border-white/10 rounded-xl space-y-3">
+        <div>
+          <p className="text-xs font-semibold text-gray-300">Scroll Effect</p>
+          <p className="text-[10px] text-gray-600 mt-0.5">Navbar behavior when scrolling down (desktop & tablet)</p>
+        </div>
+        <div className="grid grid-cols-3 gap-1">
+          {SCROLL_BEHAVIOR_OPTIONS.map(o => (
+            <button key={o.id} onClick={() => onUpdate({
+                scrollBehavior: o.id,
+                ...(o.id !== 'none' && !navbar.sticky ? { sticky: true } : {}),
+              })}
+              className={`py-1.5 text-[10px] rounded transition ${scrollBehavior === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+        {scrollBehavior === 'float-on-scroll' && (
+          <p className="text-[10px] text-gray-600">Top par full navbar, scroll par floating pill style mein change hoga.</p>
+        )}
+        {scrollBehavior !== 'none' && (
+          <div>
+            <p className="text-xs text-gray-400 mb-1.5">Scroll Animation</p>
+            <div className="grid grid-cols-3 gap-1">
+              {SCROLL_ANIMATION_OPTIONS.map(o => (
+                <button key={o.id} onClick={() => onUpdate({ scrollAnimation: o.id })}
+                  className={`py-1.5 text-[10px] rounded transition ${(navbar.scrollAnimation ?? 'smooth') === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <Toggle label="Sticky Navbar" val={navbar.sticky} fieldKey="sticky" />
+      <Toggle label="Show CTA Button" val={navbar.showCta} fieldKey="showCta" />
+      {navbar.showCta && (
+        <>
+          <div>
+            <label className="text-xs text-gray-400 block mb-1">CTA Text</label>
+            <input value={navbar.ctaText} onChange={e => onUpdate({ ctaText: e.target.value })} className={inputCls} />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 block mb-1">CTA Link</label>
+            <input value={navbar.ctaLink} onChange={e => onUpdate({ ctaLink: e.target.value })} placeholder="#contact" className={inputCls} />
+          </div>
+        </>
+      )}
+      <Toggle label="Show Social Icons" val={navbar.showSocial} fieldKey="showSocial" />
+    </div>
+  );
+}
+
+// ── Footer Panel ───────────────────────────────────────────────────────────────
+function FooterPanel({ footer, onUpdate }: { footer: FooterConfig; onUpdate: (u: Partial<FooterConfig>) => void }) {
+  const inputCls = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500';
+
+  const Toggle = ({ label, val, fieldKey, hint }: { label: string; val: boolean; fieldKey: keyof FooterConfig; hint?: string }) => (
+    <label className="flex items-center justify-between cursor-pointer p-2 bg-white/5 rounded-lg gap-2">
+      <div>
+        <span className="text-xs text-gray-300">{label}</span>
+        {hint && <p className="text-[10px] text-gray-600 mt-0.5">{hint}</p>}
+      </div>
+      <div onClick={() => onUpdate({ [fieldKey]: !val } as Partial<FooterConfig>)}
+        className={`w-9 h-5 rounded-full transition relative shrink-0 ${val ? 'bg-blue-600' : 'bg-white/10'}`}>
+        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${val ? 'left-4' : 'left-0.5'}`} />
+      </div>
+    </label>
+  );
+
+  const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div className="p-2.5 bg-white/5 rounded-lg space-y-2">
+      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{title}</p>
+      {children}
+    </div>
+  );
+
+  return (
+    <div className="p-3 space-y-3">
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Footer</p>
+        <p className="text-xs text-gray-600 mt-1">Choose what appears in your site footer.</p>
+      </div>
+
+      <Toggle label="Enable Footer" val={footer.enabled} fieldKey="enabled" />
+
+      {footer.enabled && (
+        <>
+          <Section title="CTA Strip">
+            <Toggle label="Show CTA Banner" val={footer.showCta} fieldKey="showCta" />
+            {footer.showCta && (
+              <>
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Title</label>
+                  <input value={footer.ctaTitle} onChange={e => onUpdate({ ctaTitle: e.target.value })} className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Subtitle</label>
+                  <input value={footer.ctaSubtitle} onChange={e => onUpdate({ ctaSubtitle: e.target.value })} className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Button Text</label>
+                  <input value={footer.ctaButtonText} onChange={e => onUpdate({ ctaButtonText: e.target.value })} className={inputCls} />
+                </div>
+              </>
+            )}
+          </Section>
+
+          <Section title="Brand Column">
+            <Toggle label="Show Brand / Logo" val={footer.showBrand} fieldKey="showBrand" />
+            <Toggle label="Show Description" val={footer.showDescription} fieldKey="showDescription" hint="Uses SEO description if custom text is empty" />
+            {footer.showDescription && (
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Custom Description</label>
+                <textarea value={footer.customDescription} onChange={e => onUpdate({ customDescription: e.target.value })} rows={3}
+                  placeholder="Leave empty to use SEO description"
+                  className={`${inputCls} resize-none`} />
+              </div>
+            )}
+            <Toggle label="Show Live Badge" val={footer.showLiveBadge} fieldKey="showLiveBadge" hint="Only when portfolio is published" />
+          </Section>
+
+          <Section title="Navigation Column">
+            <Toggle label="Show Section Links" val={footer.showNavigation} fieldKey="showNavigation" />
+            {footer.showNavigation && (
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Column Heading</label>
+                <input value={footer.navHeading} onChange={e => onUpdate({ navHeading: e.target.value })} className={inputCls} />
+              </div>
+            )}
+          </Section>
+
+          <Section title="Contact Column">
+            <Toggle label="Show Contact Info" val={footer.showContact} fieldKey="showContact" hint="From Contact section fields" />
+            {footer.showContact && (
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Column Heading</label>
+                <input value={footer.contactHeading} onChange={e => onUpdate({ contactHeading: e.target.value })} className={inputCls} />
+              </div>
+            )}
+          </Section>
+
+          <Section title="Social Column">
+            <Toggle label="Show Social Links" val={footer.showSocial} fieldKey="showSocial" hint="From Social panel" />
+            {footer.showSocial && (
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Column Heading</label>
+                <input value={footer.socialHeading} onChange={e => onUpdate({ socialHeading: e.target.value })} className={inputCls} />
+              </div>
+            )}
+          </Section>
+
+          <Section title="Bottom Bar">
+            <Toggle label="Show Copyright" val={footer.showCopyright} fieldKey="showCopyright" />
+            {footer.showCopyright && (
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Custom Copyright Text</label>
+                <input value={footer.copyrightText} onChange={e => onUpdate({ copyrightText: e.target.value })} placeholder="Leave empty for default"
+                  className={inputCls} />
+              </div>
+            )}
+            <Toggle label="Show Back to Top" val={footer.showBackToTop} fieldKey="showBackToTop" />
+            <Toggle label="Show Built With Credit" val={footer.showBuiltWith} fieldKey="showBuiltWith" />
+          </Section>
+        </>
+      )}
     </div>
   );
 }
@@ -83,7 +470,7 @@ function ThemePanel({ theme, onUpdate }: { theme: ThemeConfig; onUpdate: (u: Par
         <div className="flex gap-1">
           {(['colors', 'typography', 'layout'] as const).map(t => (
             <button key={t} onClick={() => setActiveTab(t)}
-              className={`flex-1 py-1 text-xs rounded transition capitalize ${activeTab === t ? 'bg-indigo-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+              className={`flex-1 py-1 text-xs rounded transition capitalize ${activeTab === t ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
               {t}
             </button>
           ))}
@@ -152,7 +539,7 @@ function ThemePanel({ theme, onUpdate }: { theme: ThemeConfig; onUpdate: (u: Par
               <div className="flex gap-1">
                 {(['sm', 'md', 'lg'] as const).map(s => (
                   <button key={s} onClick={() => onUpdate({ fontSize: s })}
-                    className={`flex-1 py-1.5 text-xs rounded transition uppercase ${theme.fontSize === s ? 'bg-indigo-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                    className={`flex-1 py-1.5 text-xs rounded transition uppercase ${theme.fontSize === s ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
                     {s}
                   </button>
                 ))}
@@ -174,8 +561,8 @@ function ThemePanel({ theme, onUpdate }: { theme: ThemeConfig; onUpdate: (u: Par
                   { v: 'full', preview: 'rounded-full', label: 'Full' },
                 ] as const).map(({ v, preview, label }) => (
                   <button key={v} onClick={() => onUpdate({ borderRadius: v })}
-                    className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border transition ${theme.borderRadius === v ? 'border-indigo-500 bg-indigo-500/15' : 'border-white/10 hover:bg-white/5'}`}>
-                    <div className={`w-5 h-5 border-2 ${theme.borderRadius === v ? 'border-indigo-400' : 'border-gray-500'} ${preview}`} />
+                    className={`flex flex-col items-center gap-1 py-2 px-1 rounded-lg border transition ${theme.borderRadius === v ? 'border-blue-500 bg-blue-500/15' : 'border-white/10 hover:bg-white/5'}`}>
+                    <div className={`w-5 h-5 border-2 ${theme.borderRadius === v ? 'border-blue-400' : 'border-gray-500'} ${preview}`} />
                     <span className="text-xs text-gray-400">{label}</span>
                   </button>
                 ))}
@@ -190,10 +577,10 @@ function ThemePanel({ theme, onUpdate }: { theme: ThemeConfig; onUpdate: (u: Par
                   { v: 'relaxed', label: 'Relaxed', bars: 5 },
                 ] as const).map(({ v, label, bars }) => (
                   <button key={v} onClick={() => onUpdate({ spacing: v })}
-                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border transition ${theme.spacing === v ? 'border-indigo-500 bg-indigo-500/15' : 'border-white/10 hover:bg-white/5'}`}>
+                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border transition ${theme.spacing === v ? 'border-blue-500 bg-blue-500/15' : 'border-white/10 hover:bg-white/5'}`}>
                     <div className="flex flex-col gap-0.5 w-6">
                       {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className={`h-1 rounded-full ${theme.spacing === v ? 'bg-indigo-400' : 'bg-gray-600'}`} style={{ marginBottom: i < 2 ? bars * 1.5 : 0 }} />
+                        <div key={i} className={`h-1 rounded-full ${theme.spacing === v ? 'bg-blue-400' : 'bg-gray-600'}`} style={{ marginBottom: i < 2 ? bars * 1.5 : 0 }} />
                       ))}
                     </div>
                     <span className="text-xs text-gray-400">{label}</span>
@@ -211,7 +598,7 @@ function ThemePanel({ theme, onUpdate }: { theme: ThemeConfig; onUpdate: (u: Par
                   { v: 'expressive', label: 'Expressive', icon: '🚀', desc: 'Bold spring' },
                 ] as const).map(({ v, label, icon, desc }) => (
                   <button key={v} onClick={() => onUpdate({ animation: v })}
-                    className={`p-2.5 rounded-xl border text-left transition ${theme.animation === v ? 'border-indigo-500 bg-indigo-500/15' : 'border-white/10 hover:border-white/20 hover:bg-white/5'}`}>
+                    className={`p-2.5 rounded-xl border text-left transition ${theme.animation === v ? 'border-blue-500 bg-blue-500/15' : 'border-white/10 hover:border-white/20 hover:bg-white/5'}`}>
                     <div className="text-xl mb-1">{icon}</div>
                     <p className="text-xs font-semibold text-white">{label}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
@@ -228,41 +615,20 @@ function ThemePanel({ theme, onUpdate }: { theme: ThemeConfig; onUpdate: (u: Par
 
 // ── Templates Panel ──────────────────────────────────────────────────────────
 function TemplatesPanel({ current, onSwitch }: { current: string; onSwitch: (id: string) => void }) {
-  const [filter, setFilter] = useState('all');
-  const categories = ['all', 'developer', 'designer', 'photographer', 'model', 'agency', 'minimal', 'creative'];
-  const filtered = TEMPLATES.filter(t => filter === 'all' || t.category === filter);
-
   return (
     <div className="p-3 space-y-3">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Templates</p>
-      <div className="flex flex-wrap gap-1">
-        {categories.map(c => (
-          <button key={c} onClick={() => setFilter(c)}
-            className={`px-2 py-0.5 text-xs rounded-full transition capitalize ${filter === c ? 'bg-indigo-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
-            {c}
-          </button>
-        ))}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Templates</p>
+        <p className="text-[11px] text-gray-600 mt-1">Switch design — colors, fonts & layout update instantly.</p>
       </div>
-      <div className="space-y-2">
-        {filtered.map(t => (
-          <button key={t.id} onClick={() => onSwitch(t.id)}
-            className={`w-full text-left p-3 rounded-xl border transition ${current === t.id ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 hover:border-white/20 hover:bg-white/5'}`}>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-sm font-medium">{t.name}</span>
-              {current === t.id && <Check className="w-3.5 h-3.5 text-indigo-400" />}
-            </div>
-            <p className="text-xs text-gray-500 mb-2">{t.description}</p>
-            <div className="flex items-center justify-between">
-              <div className="flex gap-1">
-                {[t.defaultTheme.primaryColor, t.defaultTheme.secondaryColor, t.defaultTheme.accentColor, t.defaultTheme.backgroundColor].map((c, i) => (
-                  <div key={i} className="w-4 h-4 rounded-full border border-white/10" style={{ background: c }} />
-                ))}
-              </div>
-              <span className="text-xs text-gray-600 capitalize">{t.category}</span>
-            </div>
-          </button>
-        ))}
-      </div>
+      <TemplatesGallery
+        templates={TEMPLATES}
+        selectedId={current}
+        onSelect={onSwitch}
+        compact
+        showSearch
+        showCategories
+      />
     </div>
   );
 }
@@ -298,10 +664,10 @@ function SEOPanel({ seo, onUpdate }: { seo: any; onUpdate: (u: any) => void }) {
           </div>
           {f.type === 'textarea' ? (
             <textarea value={seo[f.key] || ''} onChange={e => onUpdate({ [f.key]: e.target.value })} rows={3} placeholder={f.placeholder}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 resize-none" />
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 resize-none" />
           ) : (
             <input type={f.type} value={seo[f.key] || ''} onChange={e => onUpdate({ [f.key]: e.target.value })} placeholder={f.placeholder}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500" />
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-blue-500" />
           )}
         </div>
       ))}
@@ -318,20 +684,41 @@ const SMTP_PRESETS: Record<string, Partial<SMTPConfig>> = {
   custom:   { host: '',                   port: 587, secure: false },
 };
 
+function isSMTPConfigured(smtp: SMTPConfig) {
+  return Boolean(smtp.host?.trim() && smtp.user?.trim() && smtp.password?.trim());
+}
+
+const SMTP_PROVIDER_HINTS: Partial<Record<SMTPConfig['provider'], string>> = {
+  gmail: 'Gmail: use an App Password (2FA → Google Account → Security → App Passwords).',
+  outlook: 'Outlook / Microsoft 365: use your email and app password if 2FA is enabled.',
+  sendgrid: 'SendGrid: username must be apikey and password is your SendGrid API key.',
+  mailgun: 'Mailgun: use SMTP credentials from your Mailgun domain settings.',
+};
+
 function SMTPPanel({ smtp, onUpdate }: { smtp: SMTPConfig; onUpdate: (u: Partial<SMTPConfig>) => void }) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<'idle' | 'ok' | 'fail'>('idle');
+  const [testError, setTestError] = useState('');
+  const configured = isSMTPConfigured(smtp);
 
   const testConnection = async () => {
-    setTesting(true); setTestResult('idle');
+    setTesting(true); setTestResult('idle'); setTestError('');
     try {
       const res = await fetch('/api/contact', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Test', email: smtp.user, message: 'SMTP test from Portfolio Builder', smtp }),
+        body: JSON.stringify({ name: 'Test', email: smtp.user, message: 'SMTP test from Webquro', smtp }),
       });
-      setTestResult(res.ok ? 'ok' : 'fail');
-    } catch { setTestResult('fail'); }
-    finally { setTesting(false); }
+      if (res.ok) {
+        setTestResult('ok');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setTestError(data.error || 'Connection failed');
+        setTestResult('fail');
+      }
+    } catch {
+      setTestError('Network error');
+      setTestResult('fail');
+    } finally { setTesting(false); }
   };
 
   return (
@@ -339,21 +726,25 @@ function SMTPPanel({ smtp, onUpdate }: { smtp: SMTPConfig; onUpdate: (u: Partial
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email / SMTP</p>
       <p className="text-xs text-gray-500">Connect your email to receive contact form submissions.</p>
 
+      <div className={`rounded-lg px-3 py-2 text-xs border ${configured ? 'bg-green-500/10 border-green-500/25 text-green-300' : 'bg-amber-500/10 border-amber-500/25 text-amber-300'}`}>
+        {configured ? '✓ SMTP configured — contact form can send emails' : '⚠ Fill host, username & password to enable the contact form'}
+      </div>
+
       <div>
         <p className="text-xs text-gray-400 mb-1.5">Provider Preset</p>
         <div className="grid grid-cols-3 gap-1">
           {(['gmail', 'outlook', 'sendgrid', 'mailgun', 'custom'] as const).map(p => (
             <button key={p} onClick={() => onUpdate({ ...SMTP_PRESETS[p], provider: p })}
-              className={`py-1.5 text-xs rounded transition capitalize ${smtp.provider === p ? 'bg-indigo-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+              className={`py-1.5 text-xs rounded transition capitalize ${smtp.provider === p ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
               {p}
             </button>
           ))}
         </div>
       </div>
 
-      {smtp.provider === 'gmail' && (
+      {SMTP_PROVIDER_HINTS[smtp.provider] && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5 text-xs text-amber-300 leading-relaxed">
-          Use an App Password. Enable 2FA → Google Account → Security → App Passwords.
+          {SMTP_PROVIDER_HINTS[smtp.provider]}
         </div>
       )}
 
@@ -369,13 +760,13 @@ function SMTPPanel({ smtp, onUpdate }: { smtp: SMTPConfig; onUpdate: (u: Partial
           <label className="text-xs text-gray-400 block mb-1">{f.label}</label>
           <input type={f.type} value={(smtp as any)[f.key] || ''} placeholder={f.placeholder}
             onChange={e => onUpdate({ [f.key]: f.key === 'port' ? Number(e.target.value) : e.target.value } as any)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500" />
+            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-blue-500" />
         </div>
       ))}
 
       <label className="flex items-center gap-2 cursor-pointer">
         <div onClick={() => onUpdate({ secure: !smtp.secure })}
-          className={`w-9 h-5 rounded-full transition relative shrink-0 ${smtp.secure ? 'bg-indigo-600' : 'bg-white/10'}`}>
+          className={`w-9 h-5 rounded-full transition relative shrink-0 ${smtp.secure ? 'bg-blue-600' : 'bg-white/10'}`}>
           <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${smtp.secure ? 'left-4' : 'left-0.5'}`} />
         </div>
         <span className="text-xs text-gray-400">Use SSL/TLS (port 465)</span>
@@ -387,30 +778,63 @@ function SMTPPanel({ smtp, onUpdate }: { smtp: SMTPConfig; onUpdate: (u: Partial
         {testing ? 'Testing...' : 'Send Test Email'}
       </button>
       {testResult === 'ok' && <p className="text-xs text-green-400 text-center">✅ Test email sent!</p>}
-      {testResult === 'fail' && <p className="text-xs text-red-400 text-center">❌ Failed. Check credentials.</p>}
+      {testResult === 'fail' && (
+        <p className="text-xs text-red-400 text-center">
+          ❌ Failed{testError ? `: ${testError}` : '. Check credentials.'}
+        </p>
+      )}
     </div>
   );
 }
 
 // ── Popup Panel ──────────────────────────────────────────────────────────────
 function PopupPanel({ popup, theme, onUpdate }: { popup: PopupConfig; theme: ThemeConfig; onUpdate: (u: Partial<PopupConfig>) => void }) {
+  const { triggerPopupPreview, setMobilePanel } = useBuilderStore();
   const [bgPicker, setBgPicker] = useState(false);
   const [txtPicker, setTxtPicker] = useState(false);
+  const [showInlinePreview, setShowInlinePreview] = useState(false);
+
+  const handleShowPreview = () => {
+    setShowInlinePreview(true);
+    triggerPopupPreview();
+    setMobilePanel('preview');
+  };
 
   return (
     <div className="p-3 space-y-3">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Landing Popup</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Landing Popup</p>
+        <button
+          type="button"
+          onClick={handleShowPreview}
+          className="flex items-center gap-1.5 text-[10px] font-semibold text-blue-300 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 px-2.5 py-1 rounded-lg transition"
+        >
+          <Eye className="w-3 h-3" /> Show
+        </button>
+      </div>
+
+      {showInlinePreview && (
+        <div className="rounded-xl border border-blue-500/30 bg-black/30 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] text-blue-400 uppercase tracking-wider font-medium">Live Preview</p>
+            <button type="button" onClick={() => setShowInlinePreview(false)} className="text-[10px] text-gray-500 hover:text-gray-300 transition">
+              Hide
+            </button>
+          </div>
+          <PopupCard popup={popup} theme={theme} compact showClose={false} />
+          <p className="text-[10px] text-gray-600">Updates as you edit. Click Show again to open full preview on canvas.</p>
+        </div>
+      )}
 
       <label className="flex items-center justify-between cursor-pointer p-2 bg-white/5 rounded-lg">
         <span className="text-sm text-gray-300">Enable Popup</span>
         <div onClick={() => onUpdate({ enabled: !popup.enabled })}
-          className={`w-10 h-5 rounded-full transition relative shrink-0 ${popup.enabled ? 'bg-indigo-600' : 'bg-white/10'}`}>
+          className={`w-10 h-5 rounded-full transition relative shrink-0 ${popup.enabled ? 'bg-blue-600' : 'bg-white/10'}`}>
           <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${popup.enabled ? 'left-5' : 'left-0.5'}`} />
         </div>
       </label>
 
-      {popup.enabled && (
-        <>
+      <>
           <div>
             <p className="text-xs text-gray-400 mb-1.5">Type</p>
             <div className="space-y-1">
@@ -420,7 +844,7 @@ function PopupPanel({ popup, theme, onUpdate }: { popup: PopupConfig; theme: The
                 { v: 'announcement', label: '📢 Announcement', desc: 'Important notice' },
               ] as const).map(({ v, label, desc }) => (
                 <button key={v} onClick={() => onUpdate({ type: v })}
-                  className={`w-full text-left p-2.5 rounded-lg border transition ${popup.type === v ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 hover:bg-white/5'}`}>
+                  className={`w-full text-left p-2.5 rounded-lg border transition ${popup.type === v ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 hover:bg-white/5'}`}>
                   <p className="text-xs font-medium">{label}</p>
                   <p className="text-xs text-gray-500">{desc}</p>
                 </button>
@@ -437,10 +861,10 @@ function PopupPanel({ popup, theme, onUpdate }: { popup: PopupConfig; theme: The
               <label className="text-xs text-gray-400 block mb-1">{f.label}</label>
               {f.textarea ? (
                 <textarea value={(popup as any)[f.key]} onChange={e => onUpdate({ [f.key]: e.target.value })} rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none" />
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 resize-none" />
               ) : (
                 <input value={(popup as any)[f.key]} onChange={e => onUpdate({ [f.key]: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500" />
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500" />
               )}
             </div>
           ))}
@@ -448,7 +872,7 @@ function PopupPanel({ popup, theme, onUpdate }: { popup: PopupConfig; theme: The
           <div>
             <label className="text-xs text-gray-400 block mb-1">Delay (seconds)</label>
             <input type="range" min={0} max={15} value={popup.delay} onChange={e => onUpdate({ delay: Number(e.target.value) })}
-              className="w-full accent-indigo-500" />
+              className="w-full accent-blue-500" />
             <p className="text-xs text-gray-600 text-right">{popup.delay}s</p>
           </div>
 
@@ -472,13 +896,20 @@ function PopupPanel({ popup, theme, onUpdate }: { popup: PopupConfig; theme: The
 
           <label className="flex items-center gap-2 cursor-pointer">
             <div onClick={() => onUpdate({ showOnce: !popup.showOnce })}
-              className={`w-9 h-5 rounded-full transition relative shrink-0 ${popup.showOnce ? 'bg-indigo-600' : 'bg-white/10'}`}>
+              className={`w-9 h-5 rounded-full transition relative shrink-0 ${popup.showOnce ? 'bg-blue-600' : 'bg-white/10'}`}>
               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${popup.showOnce ? 'left-4' : 'left-0.5'}`} />
             </div>
             <span className="text-xs text-gray-400">Show once per session</span>
           </label>
-        </>
-      )}
+
+          <button
+            type="button"
+            onClick={handleShowPreview}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition"
+          >
+            <Eye className="w-3.5 h-3.5" /> Show Popup Preview
+          </button>
+      </>
     </div>
   );
 }
@@ -508,7 +939,7 @@ function SocialPanel({ social, onUpdate }: { social: SocialLinks; onUpdate: (u: 
           <div className="flex gap-1.5">
             <input type="url" value={(social as any)[f.key] || ''} placeholder={f.placeholder}
               onChange={e => onUpdate({ [f.key]: e.target.value })}
-              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500" />
+              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-blue-500" />
             {(social as any)[f.key] && (
               <a href={(social as any)[f.key]} target="_blank" rel="noopener noreferrer"
                 className="p-1.5 bg-white/5 rounded-lg hover:bg-white/10 transition text-gray-400 hover:text-white">
@@ -537,10 +968,10 @@ function AnalyticsPanel({ portfolio }: { portfolio: any }) {
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-2">
         {[
-          { label: 'Total Views', value: totalViews, color: 'text-indigo-400' },
+          { label: 'Total Views', value: totalViews, color: 'text-blue-400' },
           { label: 'Unique Visitors', value: Math.floor(totalViews * 0.7), color: 'text-green-400' },
           { label: 'Sections', value: totalSections, color: 'text-blue-400' },
-          { label: 'Avg. Time', value: '2m 34s', color: 'text-purple-400' },
+          { label: 'Avg. Time', value: '2m 34s', color: 'text-blue-400' },
         ].map((s, i) => (
           <div key={i} className="bg-white/5 rounded-xl p-3 border border-white/5">
             <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
@@ -613,7 +1044,7 @@ a[href] {
         onChange={e => onUpdate({ customCSS: e.target.value })}
         placeholder={placeholder}
         spellCheck={false}
-        className="flex-1 w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-3 py-3 text-xs text-green-300 font-mono focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
+        className="flex-1 w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-3 py-3 text-xs text-green-300 font-mono focus:outline-none focus:border-blue-500 resize-none leading-relaxed"
         style={{ minHeight: 300 }}
       />
 
