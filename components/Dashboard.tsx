@@ -10,7 +10,8 @@ import OnboardingTour from './builder/OnboardingTour';
 import { DASHBOARD_TOUR_STEPS } from '@/lib/tour-steps';
 import {
   Plus, Trash2, Copy, Edit3, LogOut, Layers, CheckCircle2,
-  Circle, Search, Grid3x3, List, Clock, Globe, Crown, Shield
+  Circle, Search, Grid3x3, List, Clock, Globe, Crown, Shield,
+  BookOpen, Bot, Receipt,
 } from 'lucide-react';
 import PremiumModal from './PremiumModal';
 import ProjectExpiryBadge from './ProjectExpiryBadge';
@@ -70,6 +71,20 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-1 mr-1">
+            <a href="/docs" title="Documentation"
+              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition">
+              <BookOpen className="w-4 h-4" />
+            </a>
+            <a href="/ask" title="Ask AI"
+              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition">
+              <Bot className="w-4 h-4" />
+            </a>
+            <a href="/billing" title="Billing"
+              className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition">
+              <Receipt className="w-4 h-4" />
+            </a>
+          </div>
           {user && (
             <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400 mr-2">
               {user.role === 'admin' && (

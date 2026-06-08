@@ -62,7 +62,8 @@ const FAQS = [
   { q: 'Do I need coding skills?', a: 'No. Everything is visual — drag sections, edit content, pick colors, and preview instantly.' },
   { q: 'How long are projects stored?', a: `Projects stay in your account for ${STORAGE_POLICY_DAYS} days on the free plan. Export or go premium to keep them permanently.` },
   { q: 'Can I use my own domain?', a: 'Yes. Connect Hostinger and deploy to your chosen domain with a guided setup flow.' },
-  { q: 'What does premium include?', a: `Export ZIP, public share link, and one live deploy slot — from ₹${PREMIUM_PRICE} one-time per portfolio.` },
+  { q: 'What does premium include?', a: `Export ZIP, long-term share, and one live deploy slot — from ₹${PREMIUM_PRICE} one-time per portfolio. No refunds on premium purchases.` },
+  { q: 'What is the refund policy?', a: 'All premium sales are final. We do not offer refunds once payment is confirmed. See Privacy Policy and Documentation for details.' },
 ];
 
 function PrimaryBtn({ children, onClick, className = '' }: { children: React.ReactNode; onClick: () => void; className?: string }) {
@@ -580,10 +581,14 @@ export default function LandingPage() {
       <footer className="relative z-10 border-t border-white/[0.06] py-10" style={{ background: brand.navy }}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
           <BrandLogo size="xs" />
-          <div className="flex flex-wrap justify-center gap-6 text-xs text-[#64748b]">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-[#64748b]">
             {NAV_LINKS.map(l => (
               <a key={l.href} href={l.href} className="hover:text-white transition">{l.label}</a>
             ))}
+            <a href="/docs" className="hover:text-white transition">Docs</a>
+            <a href="/ask" className="hover:text-white transition">Ask AI</a>
+            <a href="/about" className="hover:text-white transition">About</a>
+            <a href="/privacy" className="hover:text-white transition">Privacy</a>
           </div>
           <p className="text-xs text-[#64748b]">
             © {new Date().getFullYear()} {APP_NAME}. {APP_TAGLINE}
