@@ -35,7 +35,8 @@ export function resolveRequestOrigin(req: NextRequest): string {
 
 export function getGoogleRedirectUri(origin?: string) {
   const base = (origin || getAppBaseUrl()).replace(/\/$/, '');
-  return `${base}/api/auth/google/callback`;
+  // Must match Google Cloud Console → Authorized redirect URIs exactly
+  return `${base}/api/auth/callback/google`;
 }
 
 export function createOAuthState() {

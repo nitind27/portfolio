@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import { handleGoogleOAuthCallback } from '@/lib/google-oauth-callback';
 
-/** Legacy path — kept for backwards compatibility */
 export async function GET(req: NextRequest) {
   return handleGoogleOAuthCallback(req);
 }
