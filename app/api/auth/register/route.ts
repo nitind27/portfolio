@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { getPool } from '@/lib/db';
 import { hashPassword, createToken, setAuthCookie, toAuthUser, TOKEN_TTL_REGISTER, COOKIE_MAX_AGE_REGISTER } from '@/lib/auth-server';
+import { ensureAuthSchema } from '@/lib/auth-schema';
 import { isValidEmail, isValidPhone, isValidPassword, normalizePhone } from '@/lib/validators';
 
 export async function POST(req: NextRequest) {
@@ -26,11 +27,16 @@ export async function POST(req: NextRequest) {
     }
 
     const pool = getPool();
+    await ensureAuthSchema();
     const [existing] = await pool.execute<RowDataPacket[]>(
-      'SELECT id FROM users WHERE email = ? LIMIT 1',
+      'SELECT id, auth_provider, google_id FROM users WHERE email = ? LIMIT 1',
       [email],
     );
     if (existing.length) {
+      const ex = existing[0] as { auth_provider?: string; google_id?: string | null };
+      if (ex.auth_provider === 'google' || ex.google_id) {
+        return NextResponse.json({ error: 'Email already registered with Google. Please sign in with Google.' }, { status: 409 });
+      }
       return NextResponse.json({ error: 'Email already registered. Please login.' }, { status: 409 });
     }
 

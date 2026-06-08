@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Search, Download, CreditCard } from 'lucide-react';
-import { SectionHeader, Badge, adminInput, adminSelect, adminCard, adminCardStyle } from '../ui';
+import { SectionHeader, Badge, adminInput, adminCard, adminCardStyle, AdminSelect } from '../ui';
 import type { AdminPaymentRow } from '@/lib/admin-data';
 
 interface Props {
@@ -72,13 +72,19 @@ export default function PaymentsTab({ payments }: Props) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search order, user…" className={adminInput + ' pl-9'} />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={adminSelect + ' w-36'}>
-          <option value="all">All status</option>
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="failed">Failed</option>
-          <option value="expired">Expired</option>
-        </select>
+        <AdminSelect
+          value={statusFilter}
+          onChange={setStatusFilter}
+          className="w-40"
+          aria-label="Filter by status"
+          options={[
+            { value: 'all', label: 'All status' },
+            { value: 'paid', label: 'Paid' },
+            { value: 'pending', label: 'Pending' },
+            { value: 'failed', label: 'Failed' },
+            { value: 'expired', label: 'Expired' },
+          ]}
+        />
       </div>
 
       <div className={`${adminCard} overflow-x-auto`} style={adminCardStyle}>

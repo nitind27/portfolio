@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import {
   ArrowRight, Globe, LayoutTemplate, Rocket, Shield, Sparkles,
   Clock, Palette, Zap, ChevronRight, Monitor, Smartphone, Download,
   Layers, MousePointer2, Wand2, Star, Check, HelpCircle,
 } from 'lucide-react';
-import LoginPage from './LoginPage';
+import { AuthModal, type AuthMode } from './LoginPage';
+import GoogleSignInPrompt from './GoogleSignInPrompt';
 import BrandLogo from './BrandLogo';
 import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION, APP_DOMAIN, STORAGE_POLICY_DAYS, brand } from '@/lib/brand';
 import { TEMPLATES } from '@/lib/templates';
@@ -178,30 +179,37 @@ function BuilderMockup() {
   );
 }
 
-export default function LandingPage() {
-  const [showAuth, setShowAuth] = useState(false);
+export default function LandingPage({
+  initialAuthOpen = false,
+  initialAuthMode = 'login' as AuthMode,
+  initialAuthError = '',
+}: {
+  initialAuthOpen?: boolean;
+  initialAuthMode?: AuthMode;
+  initialAuthError?: string;
+}) {
+  const [showAuth, setShowAuth] = useState(initialAuthOpen);
+  const [authMode, setAuthMode] = useState<AuthMode>(initialAuthMode);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  useEffect(() => {
+    if (initialAuthOpen) {
+      setShowAuth(true);
+      setAuthMode(initialAuthMode);
+    }
+  }, [initialAuthOpen, initialAuthMode]);
+
+  const openAuth = (mode: AuthMode = 'login') => {
+    setAuthMode(mode);
+    setShowAuth(true);
+  };
+
   const { scrollYProgress } = useScroll();
   const headerBg = useTransform(
     scrollYProgress,
     [0, 0.12],
     ['rgba(10, 29, 55, 0)', 'rgba(10, 29, 55, 0.92)'],
   );
-
-  if (showAuth) {
-    return (
-      <div className="min-h-screen" style={{ background: brand.bg }}>
-        <button
-          type="button"
-          onClick={() => setShowAuth(false)}
-          className="fixed top-4 left-4 z-50 text-sm text-[#8b9aab] hover:text-white transition flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-white/5 backdrop-blur-sm border border-white/10"
-        >
-          ← Back to home
-        </button>
-        <LoginPage />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: brand.bg, color: brand.text }}>
@@ -249,12 +257,12 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={() => setShowAuth(true)}
+              onClick={() => openAuth('login')}
               className="text-sm text-[#94a3b8] hover:text-white transition px-3 py-2 hidden sm:block"
             >
               Sign in
             </button>
-            <PrimaryBtn onClick={() => setShowAuth(true)} className="!px-4 !py-2.5 !text-sm">
+            <PrimaryBtn onClick={() => openAuth('register')} className="!px-4 !py-2.5 !text-sm">
               Start free
             </PrimaryBtn>
           </div>
@@ -288,7 +296,7 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-wrap gap-3 mb-10">
-              <PrimaryBtn onClick={() => setShowAuth(true)}>Create your site</PrimaryBtn>
+              <PrimaryBtn onClick={() => openAuth('register')}>Create your site</PrimaryBtn>
               <GhostBtn href="#how-it-works">See how it works</GhostBtn>
             </div>
 
@@ -501,7 +509,7 @@ export default function LandingPage() {
               </ul>
               <button
                 type="button"
-                onClick={() => setShowAuth(true)}
+                onClick={() => openAuth('login')}
                 className={`w-full py-3 rounded-xl font-semibold text-sm transition ${plan.highlight ? '' : 'border border-white/10 text-white hover:bg-white/5'}`}
                 style={plan.highlight ? { background: `linear-gradient(135deg, ${brand.accent}, ${brand.accentHover})`, color: brand.onAccent } : undefined}
               >
@@ -570,7 +578,7 @@ export default function LandingPage() {
             <p className="text-[#94a3b8] mb-8 max-w-md mx-auto">
               Join {APP_NAME} free. No credit card. Start designing in under a minute.
             </p>
-            <PrimaryBtn onClick={() => setShowAuth(true)} className="!px-10 !py-4 !text-base">
+            <PrimaryBtn onClick={() => openAuth('register')} className="!px-10 !py-4 !text-base">
               Get started free
             </PrimaryBtn>
           </div>
@@ -595,6 +603,15 @@ export default function LandingPage() {
           </p>
         </div>
       </footer>
+
+      <AuthModal
+        open={showAuth}
+        onClose={() => setShowAuth(false)}
+        initialMode={authMode}
+        initialError={initialAuthError}
+      />
+
+      <GoogleSignInPrompt forceShow={showAuth} />
     </div>
   );
 }

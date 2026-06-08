@@ -84,7 +84,10 @@ export function SectionHeader({ title, desc, action }: { title: string; desc?: s
   );
 }
 
-export const adminInput = 'w-full bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50 transition';
-export const adminSelect = adminInput + ' cursor-pointer';
+export const adminInput = 'w-full bg-[#0f2438] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/50 focus:bg-white/[0.06] transition shadow-inner shadow-black/10';
+export const adminSelect = adminInput + ' cursor-pointer appearance-none';
 export const adminCard = 'rounded-2xl border overflow-hidden';
 export const adminCardStyle = { background: brand.surface, borderColor: brand.border };
+
+export { default as AdminSelect } from './AdminSelect';
+export type { AdminSelectOption } from './AdminSelect';

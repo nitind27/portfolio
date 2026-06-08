@@ -23,8 +23,11 @@ export interface DbUser {
   id: number;
   name: string;
   email: string;
-  phone: string;
-  password_hash: string;
+  phone: string | null;
+  password_hash: string | null;
+  google_id?: string | null;
+  auth_provider?: 'local' | 'google';
+  avatar_url?: string | null;
   role: 'user' | 'admin';
   is_premium: number;
   premium_purchased_at: Date | null;

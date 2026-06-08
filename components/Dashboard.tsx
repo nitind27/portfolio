@@ -83,7 +83,9 @@ export default function Dashboard() {
                   <Shield className="w-3 h-3" /> Admin
                 </a>
               )}
-              <span>{user.name}</span>
+              <a href="/profile" className="hover:text-white transition truncate max-w-[120px]">
+                {user.name}
+              </a>
               {user.isPremium ? (
                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
                   <Crown className="w-3 h-3" /> Premium

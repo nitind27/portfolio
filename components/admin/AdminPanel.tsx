@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   LayoutDashboard, CreditCard, LayoutTemplate, Users, ArrowLeft,
-  Loader2, Shield, RefreshCw, Grid3x3, Receipt, Bell, ExternalLink,
+  Loader2, Shield, RefreshCw, Grid3x3, Receipt, Bell, ExternalLink, LogOut,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import BrandLogo from '../BrandLogo';
@@ -115,10 +115,13 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#060b14', color: brand.text }}>
-      {/* Sidebar */}
-      <aside className="w-64 shrink-0 border-r flex flex-col hidden md:flex" style={{ borderColor: brand.border, background: brand.navy }}>
-        <div className="p-5 border-b" style={{ borderColor: brand.border }}>
+    <div className="admin-panel min-h-screen" style={{ background: '#060b14', color: brand.text }}>
+      {/* Sidebar — fixed full height, footer always visible */}
+      <aside
+        className="fixed left-0 top-0 z-30 hidden md:flex flex-col w-64 h-screen border-r"
+        style={{ borderColor: brand.border, background: brand.navy }}
+      >
+        <div className="shrink-0 p-5 border-b" style={{ borderColor: brand.border }}>
           <BrandLogo size="sm" />
           <div className="mt-3 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -126,20 +129,27 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-3 space-y-5">
+        <nav className="flex-1 min-h-0 overflow-y-auto p-3 space-y-4 overscroll-contain">
           {groups.map(group => (
             <div key={group}>
-              <p className="text-[10px] uppercase tracking-wider text-gray-600 px-3 mb-2">{group}</p>
+              <p className="text-[10px] uppercase tracking-wider text-gray-600 px-3 mb-1.5">{group}</p>
               <div className="space-y-0.5">
                 {NAV.filter(n => n.group === group).map(item => (
                   <button key={item.id} onClick={() => setTab(item.id)}
-                    className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition ${
-                      tab === item.id ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-900/30' : 'text-gray-400 hover:text-white hover:bg-white/[0.04]'
-                    }`}>
-                    <item.icon className="w-4 h-4 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium leading-none">{item.label}</p>
-                      <p className={`text-[10px] mt-1 ${tab === item.id ? 'text-blue-100/70' : 'text-gray-600'}`}>{item.desc}</p>
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition ${
+                      tab === item.id
+                        ? 'text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white hover:bg-white/[0.04]'
+                    }`}
+                    style={tab === item.id ? {
+                      background: `linear-gradient(135deg, ${brand.accent}, ${brand.accentHover})`,
+                      boxShadow: `0 8px 24px ${brand.accentGlow}`,
+                    } : undefined}
+                  >
+                    <item.icon className="w-4 h-4 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium leading-tight truncate">{item.label}</p>
+                      <p className={`text-[10px] mt-0.5 truncate ${tab === item.id ? 'text-white/75' : 'text-gray-600'}`}>{item.desc}</p>
                     </div>
                   </button>
                 ))}
@@ -148,27 +158,48 @@ export default function AdminPanel() {
           ))}
         </nav>
 
-        <div className="p-3 border-t space-y-1" style={{ borderColor: brand.border }}>
-          <button onClick={() => router.push('/')} className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-gray-400 hover:text-white rounded-xl hover:bg-white/5">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to builder
+        <div className="shrink-0 p-3 border-t space-y-1" style={{ borderColor: brand.border, background: brand.navy }}>
+          {user && (
+            <div className="flex items-center gap-2 px-3 py-2 mb-1 rounded-xl bg-white/[0.03]">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                style={{ background: brand.accentMuted, color: brand.accentLight }}>
+                {user.name?.charAt(0)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-white truncate">{user.name}</p>
+                <p className="text-[10px] text-gray-600 truncate">{user.email}</p>
+              </div>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-gray-400 hover:text-white rounded-xl hover:bg-white/5 transition"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 shrink-0" /> Back to builder
           </button>
-          <button onClick={() => { logout(); router.push('/'); }} className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-gray-500 hover:text-red-400 rounded-xl hover:bg-red-500/5">
-            Sign out
+          <button
+            type="button"
+            onClick={() => { logout(); router.push('/'); }}
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-medium text-red-400/90 hover:text-red-300 rounded-xl border border-red-500/20 bg-red-500/[0.06] hover:bg-red-500/10 transition"
+          >
+            <LogOut className="w-3.5 h-3.5 shrink-0" /> Sign out
           </button>
         </div>
       </aside>
 
       {/* Mobile nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t flex overflow-x-auto" style={{ background: brand.navy, borderColor: brand.border }}>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t flex" style={{ background: brand.navy, borderColor: brand.border }}>
         {NAV.map(item => (
           <button key={item.id} onClick={() => setTab(item.id)}
-            className={`flex-1 min-w-[72px] py-3 flex flex-col items-center gap-0.5 text-[10px] ${tab === item.id ? 'text-blue-400' : 'text-gray-500'}`}>
-            <item.icon className="w-4 h-4" /> {item.label}
+            className={`flex-1 min-w-0 py-2.5 flex flex-col items-center gap-0.5 text-[9px] ${tab === item.id ? 'text-orange-400' : 'text-gray-500'}`}>
+            <item.icon className="w-4 h-4" />
+            <span className="truncate max-w-full px-1">{item.label}</span>
           </button>
         ))}
       </div>
 
-      <main className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
+      <main className="md:ml-64 flex flex-col min-h-screen min-w-0 pb-14 md:pb-0">
         {/* Top bar */}
         <header className="sticky top-0 z-20 border-b px-4 md:px-8 py-4 flex items-center justify-between gap-4 backdrop-blur-xl"
           style={{ background: 'rgba(6,11,20,0.85)', borderColor: brand.border }}>
@@ -183,6 +214,13 @@ export default function AdminPanel() {
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-[9px] font-bold text-black flex items-center justify-center">{stats.pendingPayments}</span>
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => { logout(); router.push('/'); }}
+              className="md:hidden flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs text-red-400 border border-red-500/25 bg-red-500/10"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
             <button onClick={loadAll} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border border-white/10 hover:bg-white/5 transition">
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />

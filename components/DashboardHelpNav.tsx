@@ -2,11 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Bot, Receipt, ChevronDown, HelpCircle } from 'lucide-react';
+import { BookOpen, Bot, Receipt, ChevronDown, HelpCircle, UserCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { brand } from '@/lib/brand';
 
 const LINKS = [
+  {
+    href: '/profile',
+    label: 'My Profile',
+    short: 'Profile',
+    icon: UserCircle,
+    hint: 'Account & password',
+  },
   {
     href: '/docs',
     label: 'Documentation',
@@ -153,8 +160,8 @@ export default function DashboardHelpNav() {
                   <span
                     className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
                     style={{
-                      background: link.accent ? brand.accentMuted : 'rgba(255,255,255,0.04)',
-                      color: link.accent ? brand.accentLight : brand.textMuted,
+                      background: 'accent' in link && link.accent ? brand.accentMuted : 'rgba(255,255,255,0.04)',
+                      color: 'accent' in link && link.accent ? brand.accentLight : brand.textMuted,
                     }}
                   >
                     <Icon className="w-4 h-4" />

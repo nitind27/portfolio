@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Search, Lock, Unlock, LayoutTemplate } from 'lucide-react';
 import { brand } from '@/lib/brand';
-import { SectionHeader, Badge, adminInput, adminSelect, adminCard, adminCardStyle } from '../ui';
+import { SectionHeader, Badge, adminInput, adminCard, adminCardStyle, AdminSelect } from '../ui';
 import type { SubscriptionPlan } from '@/lib/plans-types';
 
 interface AdminTemplate {
@@ -73,19 +73,42 @@ export default function TemplatesTab({ templates, plans, onRefresh }: Props) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search templates…" className={adminInput + ' pl-9'} />
         </div>
-        <select value={category} onChange={e => setCategory(e.target.value)} className={adminSelect + ' w-40'}>
-          {categories.map(c => <option key={c} value={c}>{c === 'all' ? 'All categories' : c}</option>)}
-        </select>
-        <select value={accessFilter} onChange={e => setAccessFilter(e.target.value as typeof accessFilter)} className={adminSelect + ' w-36'}>
-          <option value="all">All access</option>
-          <option value="free">Free only</option>
-          <option value="premium">Premium only</option>
-        </select>
-        <select value={bulkPlanId} onChange={e => setBulkPlanId(e.target.value)} className={adminSelect + ' w-44'}>
-          <option value="">Bulk assign plan…</option>
-          <option value="free">Set all filtered → Free</option>
-          {plans.filter(p => p.tier > 0).map(p => <option key={p.id} value={String(p.id)}>Set all → {p.name}</option>)}
-        </select>
+        <AdminSelect
+          value={category}
+          onChange={setCategory}
+          className="w-44"
+          aria-label="Filter by category"
+          options={categories.map(c => ({
+            value: c,
+            label: c === 'all' ? 'All categories' : c,
+          }))}
+        />
+        <AdminSelect
+          value={accessFilter}
+          onChange={v => setAccessFilter(v as typeof accessFilter)}
+          className="w-40"
+          aria-label="Filter by access"
+          options={[
+            { value: 'all', label: 'All access' },
+            { value: 'free', label: 'Free only' },
+            { value: 'premium', label: 'Premium only' },
+          ]}
+        />
+        <AdminSelect
+          value={bulkPlanId}
+          onChange={setBulkPlanId}
+          className="w-48"
+          placeholder="Bulk assign plan…"
+          aria-label="Bulk assign plan"
+          options={[
+            { value: '', label: 'Bulk assign plan…' },
+            { value: 'free', label: 'Set all filtered → Free' },
+            ...plans.filter(p => p.tier > 0).map(p => ({
+              value: String(p.id),
+              label: `Set all → ${p.name}`,
+            })),
+          ]}
+        />
         <button onClick={bulkApply} disabled={!bulkPlanId} className="px-4 py-2 rounded-xl text-xs border border-white/10 hover:bg-white/5 disabled:opacity-40">
           Apply bulk
         </button>
@@ -109,11 +132,20 @@ export default function TemplatesTab({ templates, plans, onRefresh }: Props) {
               <p className="font-medium text-sm text-white truncate">{t.name}</p>
               <p className="text-[10px] text-gray-600 font-mono truncate">{t.id}</p>
               <p className="text-[10px] text-gray-500 mt-1 capitalize">{t.categoryLabel}</p>
-              <select value={t.minPlanId ?? ''} onChange={e => updateRule(t.id, e.target.value ? Number(e.target.value) : null)}
-                className={adminSelect + ' mt-3 text-xs py-1.5'}>
-                <option value="">Free for all</option>
-                {plans.filter(p => p.tier > 0).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+              <AdminSelect
+                size="sm"
+                value={String(t.minPlanId ?? '')}
+                onChange={v => updateRule(t.id, v ? Number(v) : null)}
+                className="mt-3"
+                aria-label={`Plan for ${t.name}`}
+                options={[
+                  { value: '', label: 'Free for all' },
+                  ...plans.filter(p => p.tier > 0).map(p => ({
+                    value: String(p.id),
+                    label: p.name,
+                  })),
+                ]}
+              />
             </div>
           ))}
         </div>
@@ -140,11 +172,20 @@ export default function TemplatesTab({ templates, plans, onRefresh }: Props) {
                     {t.minPlanId ? <Badge variant="warning">Premium</Badge> : <Badge variant="success">Free</Badge>}
                   </td>
                   <td className="px-4 py-3">
-                    <select value={t.minPlanId ?? ''} onChange={e => updateRule(t.id, e.target.value ? Number(e.target.value) : null)}
-                      className={adminSelect + ' text-xs py-1.5 max-w-[160px]'}>
-                      <option value="">Free</option>
-                      {plans.filter(p => p.tier > 0).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
+                    <AdminSelect
+                      size="sm"
+                      value={String(t.minPlanId ?? '')}
+                      onChange={v => updateRule(t.id, v ? Number(v) : null)}
+                      className="max-w-[180px]"
+                      aria-label={`Plan for ${t.name}`}
+                      options={[
+                        { value: '', label: 'Free' },
+                        ...plans.filter(p => p.tier > 0).map(p => ({
+                          value: String(p.id),
+                          label: p.name,
+                        })),
+                      ]}
+                    />
                   </td>
                 </tr>
               ))}

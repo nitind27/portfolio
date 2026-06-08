@@ -371,6 +371,14 @@ export interface AuthUser {
   planId: number | null;
   planSlug?: string | null;
   planName?: string | null;
+  authProvider?: 'local' | 'google';
+  hasPassword?: boolean;
+  avatarUrl?: string | null;
+}
+
+export interface UserProfile extends AuthUser {
+  memberSince: string;
+  googleLinked: boolean;
 }
 
 export type PortfolioAccessStatus = 'needs_payment' | 'allowed' | 'bind_on_action' | 'wrong_portfolio';

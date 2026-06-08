@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 import type { RowDataPacket } from 'mysql2';
 import { getPool, type DbUser } from './db';
+import { ensureAuthSchema } from './auth-schema';
 
 const COOKIE_NAME = 'pb_auth';
 const TOKEN_TTL = '1d';
@@ -18,7 +19,8 @@ import type { AuthUser } from './types';
 export type { AuthUser };
 
 const USER_FIELDS = `u.id, u.name, u.email, u.phone, u.role, u.is_premium, u.premium_purchased_at,
-  u.premium_portfolio_id, u.plan_id, sp.slug AS plan_slug, sp.name AS plan_name`;
+  u.premium_portfolio_id, u.plan_id, u.auth_provider, u.avatar_url, u.password_hash,
+  sp.slug AS plan_slug, sp.name AS plan_name`;
 
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -35,6 +37,9 @@ export async function verifyPassword(password: string, hash: string) {
 }
 
 export function toAuthUser(row: Pick<DbUser, 'id' | 'name' | 'email' | 'phone' | 'role' | 'is_premium' | 'premium_purchased_at' | 'premium_portfolio_id' | 'plan_id'> & {
+  auth_provider?: DbUser['auth_provider'];
+  avatar_url?: DbUser['avatar_url'];
+  password_hash?: DbUser['password_hash'];
   plan_slug?: string | null;
   plan_name?: string | null;
 }): AuthUser {
@@ -42,7 +47,7 @@ export function toAuthUser(row: Pick<DbUser, 'id' | 'name' | 'email' | 'phone' |
     id: row.id,
     name: row.name,
     email: row.email,
-    phone: row.phone,
+    phone: row.phone || '',
     role: row.role || 'user',
     isPremium: Boolean(row.is_premium),
     premiumPurchasedAt: row.premium_purchased_at ? new Date(row.premium_purchased_at).toISOString() : null,
@@ -50,6 +55,9 @@ export function toAuthUser(row: Pick<DbUser, 'id' | 'name' | 'email' | 'phone' |
     planId: row.plan_id ?? null,
     planSlug: row.plan_slug ?? null,
     planName: row.plan_name ?? null,
+    authProvider: row.auth_provider || 'local',
+    hasPassword: Boolean(row.password_hash),
+    avatarUrl: row.avatar_url || null,
   };
 }
 
@@ -110,6 +118,7 @@ export async function getCurrentUser(req?: NextRequest): Promise<AuthUser | null
   const decoded = await verifyToken(token);
   if (!decoded) return null;
 
+  await ensureAuthSchema();
   const pool = getPool();
   const [rows] = await pool.execute<RowDataPacket[]>(
     `SELECT ${USER_FIELDS}
@@ -129,6 +138,7 @@ export async function refreshAuthCookie(user: AuthUser) {
 }
 
 export async function fetchUserById(userId: number): Promise<AuthUser | null> {
+  await ensureAuthSchema();
   const pool = getPool();
   const [rows] = await pool.execute<RowDataPacket[]>(
     `SELECT ${USER_FIELDS}

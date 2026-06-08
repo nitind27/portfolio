@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { Search, User, Mail, Phone, Crown, Shield, ChevronRight, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { brand } from '@/lib/brand';
-import { SectionHeader, Badge, adminInput, adminSelect, adminCard, adminCardStyle } from '../ui';
+import { SectionHeader, Badge, adminInput, adminCard, adminCardStyle, AdminSelect } from '../ui';
 import type { SubscriptionPlan } from '@/lib/plans-types';
 
 interface AdminUser {
@@ -69,15 +69,27 @@ export default function UsersTab({ users, plans, onRefresh }: Props) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, email, phone…" className={adminInput + ' pl-9'} />
         </div>
-        <select value={planFilter} onChange={e => setPlanFilter(e.target.value)} className={adminSelect + ' w-36'}>
-          <option value="all">All plans</option>
-          {plans.map(p => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
-        </select>
-        <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className={adminSelect + ' w-32'}>
-          <option value="all">All roles</option>
-          <option value="user">Users</option>
-          <option value="admin">Admins</option>
-        </select>
+        <AdminSelect
+          value={planFilter}
+          onChange={setPlanFilter}
+          className="w-40"
+          aria-label="Filter by plan"
+          options={[
+            { value: 'all', label: 'All plans' },
+            ...plans.map(p => ({ value: String(p.id), label: p.name })),
+          ]}
+        />
+        <AdminSelect
+          value={roleFilter}
+          onChange={setRoleFilter}
+          className="w-36"
+          aria-label="Filter by role"
+          options={[
+            { value: 'all', label: 'All roles' },
+            { value: 'user', label: 'Users' },
+            { value: 'admin', label: 'Admins' },
+          ]}
+        />
       </div>
 
       <div className={`${adminCard} overflow-x-auto`} style={adminCardStyle}>
@@ -111,17 +123,27 @@ export default function UsersTab({ users, plans, onRefresh }: Props) {
                   </div>
                 </td>
                 <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                  <select value={u.planId ?? ''} onChange={e => updateUser(u.id, 'set_plan', { planId: Number(e.target.value) })}
-                    className={adminSelect + ' text-xs py-1.5'}>
-                    {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
+                  <AdminSelect
+                    size="sm"
+                    value={String(u.planId ?? '')}
+                    onChange={v => updateUser(u.id, 'set_plan', { planId: Number(v) })}
+                    className="min-w-[120px]"
+                    aria-label="User plan"
+                    options={plans.map(p => ({ value: String(p.id), label: p.name }))}
+                  />
                 </td>
                 <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                  <select value={u.role} onChange={e => updateUser(u.id, 'set_role', { role: e.target.value })}
-                    className={adminSelect + ' text-xs py-1.5'}>
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  <AdminSelect
+                    size="sm"
+                    value={u.role}
+                    onChange={v => updateUser(u.id, 'set_role', { role: v })}
+                    className="w-28"
+                    aria-label="User role"
+                    options={[
+                      { value: 'user', label: 'User' },
+                      { value: 'admin', label: 'Admin' },
+                    ]}
+                  />
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-green-400 font-mono text-xs">₹{u.totalPaid}</span>
@@ -179,18 +201,24 @@ export default function UsersTab({ users, plans, onRefresh }: Props) {
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 mb-1.5 block">Assign plan</label>
-                  <select value={selected.planId ?? ''} onChange={e => updateUser(selected.id, 'set_plan', { planId: Number(e.target.value) })}
-                    className={adminSelect}>
-                    {plans.map(p => <option key={p.id} value={p.id}>{p.name} — ₹{p.price}</option>)}
-                  </select>
+                  <AdminSelect
+                    value={String(selected.planId ?? '')}
+                    onChange={v => updateUser(selected.id, 'set_plan', { planId: Number(v) })}
+                    aria-label="Assign plan"
+                    options={plans.map(p => ({ value: String(p.id), label: `${p.name} — ₹${p.price}` }))}
+                  />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 mb-1.5 block">Role</label>
-                  <select value={selected.role} onChange={e => updateUser(selected.id, 'set_role', { role: e.target.value })}
-                    className={adminSelect}>
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  <AdminSelect
+                    value={selected.role}
+                    onChange={v => updateUser(selected.id, 'set_role', { role: v })}
+                    aria-label="Assign role"
+                    options={[
+                      { value: 'user', label: 'User' },
+                      { value: 'admin', label: 'Admin' },
+                    ]}
+                  />
                 </div>
                 <p className="text-[10px] text-gray-600">Joined {new Date(selected.createdAt).toLocaleString('en-IN')}</p>
               </div>
