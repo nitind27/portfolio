@@ -119,7 +119,7 @@ export default function AdminPanel() {
       {/* Sidebar */}
       <aside className="w-64 shrink-0 border-r flex flex-col hidden md:flex" style={{ borderColor: brand.border, background: brand.navy }}>
         <div className="p-5 border-b" style={{ borderColor: brand.border }}>
-          <BrandLogo size="sm" onDark={false} />
+          <BrandLogo size="sm" />
           <div className="mt-3 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
             <span className="text-[10px] text-gray-500 uppercase tracking-widest font-medium">Control Center</span>

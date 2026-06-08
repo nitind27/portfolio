@@ -6,6 +6,7 @@ import PortfolioPreview from '../preview/PortfolioPreview';
 import SectionEditor from './SectionEditor';
 import { Eye } from 'lucide-react';
 import type { RightTab } from '../Builder';
+import { previewSiteUrl } from '@/lib/brand';
 
 const DEVICE_WIDTHS: Record<string, number | string> = {
   desktop: '100%',
@@ -75,7 +76,7 @@ export default function BuilderCanvas({ rightTab, onSectionSelect }: { rightTab:
                     <div className="w-3 h-3 rounded-full bg-green-500/70" />
                   </div>
                   <div className="flex-1 bg-white/5 rounded-md px-3 py-1 text-xs text-gray-500 text-center truncate">
-                    {portfolio.slug}.portfolio.dev
+                    {previewSiteUrl(portfolio.slug)}
                   </div>
                 </div>
 

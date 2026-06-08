@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { RowDataPacket } from 'mysql2';
 import { getPool, type DbUser } from '@/lib/db';
-import { verifyPassword, createToken, setAuthCookie, toAuthUser } from '@/lib/auth-server';
+import { verifyPassword, createToken, setAuthCookie, toAuthUser, TOKEN_TTL_REMEMBER, COOKIE_MAX_AGE_DEFAULT, COOKIE_MAX_AGE_REMEMBER } from '@/lib/auth-server';
 
 const USER_SQL = `SELECT u.id, u.name, u.email, u.phone, u.password_hash, u.role,
   u.is_premium, u.premium_purchased_at, u.premium_portfolio_id, u.plan_id,
@@ -32,9 +32,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
+    const rememberMe = Boolean(body.rememberMe);
+    const tokenTtl = rememberMe ? TOKEN_TTL_REMEMBER : '1d';
+    const cookieMaxAge = rememberMe ? COOKIE_MAX_AGE_REMEMBER : COOKIE_MAX_AGE_DEFAULT;
+
     const user = toAuthUser(row);
-    const token = await createToken(user);
-    await setAuthCookie(token);
+    const token = await createToken(user, tokenTtl);
+    await setAuthCookie(token, cookieMaxAge);
 
     return NextResponse.json({ user });
   } catch (err) {

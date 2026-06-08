@@ -3,7 +3,7 @@
  * Usage: node scripts/seed-admin.mjs
  *
  * Env (from .env.local):
- *   ADMIN_EMAIL    default admin@webquro.com
+ *   ADMIN_EMAIL    default admin@site99.com
  *   ADMIN_PASSWORD default admin123 (or NEXT_PUBLIC_ADMIN_PASSWORD)
  */
 
@@ -28,9 +28,9 @@ function loadEnvLocal() {
 
 loadEnvLocal();
 
-const email = (process.env.ADMIN_EMAIL || 'admin@webquro.com').toLowerCase();
+const email = (process.env.ADMIN_EMAIL || 'admin@site99.com').toLowerCase();
 const password = process.env.ADMIN_PASSWORD || process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
-const name = process.env.ADMIN_NAME || 'Webquro Admin';
+const name = process.env.ADMIN_NAME || 'site99 Admin';
 const phone = process.env.ADMIN_PHONE || '9876543210';
 
 async function main() {

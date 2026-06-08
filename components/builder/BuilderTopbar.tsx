@@ -211,7 +211,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts }
       >
         <ArrowLeft className="w-4 h-4" />
       </button>
-      <BrandLogo size="xs" className="hidden sm:inline-flex" />
+      <BrandLogo size="xs" className="hidden sm:inline-flex shrink-0" />
 
       {/* Portfolio name + status */}
       <div className="flex items-center gap-1.5 shrink-0">

@@ -16,6 +16,7 @@ import {
 import { DynamicFieldsGrid } from './DynamicFields';
 import { getSectionPad, isNarrowDeviceView, isMobileDeviceView } from '@/lib/responsive';
 import { getMotionVariants, getMotionViewport, getSectionHoverProps } from '@/lib/section-animation';
+import { APP_NAME } from '@/lib/brand';
 
 interface Props {
   portfolio: Portfolio;
@@ -1240,7 +1241,7 @@ function SiteFooter({ portfolio, sections, theme, social, isMobile }: {
               </p>
             ) : <div />}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
-              {footer.showBuiltWith && <p style={{ opacity: 0.28, fontSize: '0.78rem' }}>Built with Webquro</p>}
+              {footer.showBuiltWith && <p style={{ opacity: 0.28, fontSize: '0.78rem' }}>Built with {APP_NAME}</p>}
               {footer.showBackToTop && (
                 <button type="button" onClick={scrollPreviewToTop}
                   style={{

@@ -44,7 +44,7 @@ export default function ResizeHandle({ side, onResize, onResizeEnd }: Props) {
         side === 'left' ? 'right-0 translate-x-1/2' : 'left-0 -translate-x-1/2'
       }`}
     >
-      <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-transparent group-hover:bg-blue-500/50 group-active:bg-blue-500 transition-colors" />
+      <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-transparent group-hover:bg-[#f28c28]/50 group-active:bg-[#f28c28] transition-colors" />
     </div>
   );
 }

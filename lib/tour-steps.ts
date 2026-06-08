@@ -1,9 +1,11 @@
 import { TourStep } from '@/components/builder/OnboardingTour';
 
+import { APP_NAME } from './brand';
+
 export const DASHBOARD_TOUR_STEPS: TourStep[] = [
   {
     placement: 'center',
-    title: 'Welcome to Webquro!',
+    title: `Welcome to ${APP_NAME}!`,
     description: 'Create stunning portfolios in minutes. Let us walk you through the basics — it only takes a minute.',
   },
   {

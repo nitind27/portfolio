@@ -127,7 +127,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
           <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
             onClick={e => e.stopPropagation()}
             className="bg-[#111] border border-white/10 rounded-2xl max-w-lg w-full overflow-hidden max-h-[90vh] overflow-y-auto">
-            <div className="relative px-6 pt-6 pb-4 border-b border-white/10 bg-gradient-to-br from-blue-600/20 to-[#0f172a]">
+            <div className="relative px-6 pt-6 pb-4 border-b border-white/10 bg-gradient-to-br from-[#f28c28]/20 to-[#0a1d37]">
               <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition">
                 <X className="w-4 h-4" />
               </button>
@@ -190,7 +190,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
               {error && <p className="text-red-400 text-sm">{error}</p>}
 
               <button onClick={handleUpgrade} disabled={loading || !selectedPlanId}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition">
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#f28c28] to-[#e07d10] hover:from-[#ffa033] hover:to-[#f28c28] disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition">
                 {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting payment…</> : <>Pay ₹{selectedPlan?.price ?? '…'} with Cashfree</>}
               </button>
 

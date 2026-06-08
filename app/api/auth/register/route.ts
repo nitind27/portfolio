@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { getPool } from '@/lib/db';
-import { hashPassword, createToken, setAuthCookie, toAuthUser } from '@/lib/auth-server';
+import { hashPassword, createToken, setAuthCookie, toAuthUser, TOKEN_TTL_REGISTER, COOKIE_MAX_AGE_REGISTER } from '@/lib/auth-server';
 import { isValidEmail, isValidPhone, isValidPassword, normalizePhone } from '@/lib/validators';
 
 export async function POST(req: NextRequest) {
@@ -67,8 +67,8 @@ export async function POST(req: NextRequest) {
       plan_name: planId ? 'Free' : null,
     });
 
-    const token = await createToken(user);
-    await setAuthCookie(token);
+    const token = await createToken(user, TOKEN_TTL_REGISTER);
+    await setAuthCookie(token, COOKIE_MAX_AGE_REGISTER);
 
     return NextResponse.json({ user });
   } catch (err) {

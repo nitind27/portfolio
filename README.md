@@ -1,6 +1,6 @@
-# Portfolio Builder
+# site99
 
-A professional-grade portfolio builder built with Next.js 15, TypeScript, Tailwind CSS, Framer Motion, and Zustand.
+Website builder for portfolios, landing pages, and online stores — built with Next.js, TypeScript, Tailwind CSS, Framer Motion, and Zustand.
 
 ## Getting Started
 

@@ -36,7 +36,7 @@ export default function PaymentsTab({ payments }: Props) {
     const blob = new Blob([header + rows], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `webquro-payments-${Date.now()}.csv`;
+    a.download = `site99-payments-${Date.now()}.csv`;
     a.click();
   };
 

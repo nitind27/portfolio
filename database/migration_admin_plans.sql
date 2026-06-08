@@ -1,4 +1,4 @@
--- Webquro Admin Panel — roles, subscription plans, template & feature rules
+-- site99 Admin Panel — roles, subscription plans, template & feature rules
 -- Run after schema.sql and migration_hostinger.sql
 
 USE portfolio_builder;

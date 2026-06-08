@@ -5,42 +5,46 @@ import { APP_NAME, LOGO_SRC, brand } from '@/lib/brand';
 
 type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
-const heights: Record<Size, number> = {
-  xs: 28,
-  sm: 36,
-  md: 44,
-  lg: 56,
-  xl: 72,
+/** Logo file is ~500×500 — square lockup (icon + SITE99 + tagline) */
+const sizes: Record<Size, number> = {
+  xs: 36,
+  sm: 44,
+  md: 52,
+  lg: 72,
+  xl: 92,
 };
 
 interface Props {
   size?: Size;
-  /** White pill behind logo — best on dark headers */
-  onDark?: boolean;
   className?: string;
+  /** Light card behind logo — keeps navy wordmark readable on dark headers */
+  pad?: boolean;
 }
 
-export default function BrandLogo({ size = 'md', onDark = true, className = '' }: Props) {
-  const h = heights[size];
+export default function BrandLogo({ size = 'md', className = '', pad = true }: Props) {
+  const px = sizes[size];
+  const padY = size === 'xs' ? 3 : size === 'sm' ? 4 : 5;
+  const padX = size === 'xs' ? 6 : size === 'sm' ? 8 : 10;
 
   return (
     <div
-      className={`inline-flex items-center shrink-0 ${className}`}
-      style={onDark ? {
-        background: '#ffffff',
-        borderRadius: 10,
-        padding: size === 'xs' ? '4px 8px' : size === 'sm' ? '5px 10px' : '6px 12px',
-        boxShadow: `0 1px 0 ${brand.border}, 0 4px 20px ${brand.accentGlow}`,
+      className={`inline-flex items-center justify-center shrink-0 ${className}`}
+      style={pad ? {
+        background: 'linear-gradient(180deg, #ffffff 0%, #f4f7fb 100%)',
+        borderRadius: size === 'xs' ? 8 : 10,
+        padding: `${padY}px ${padX}px`,
+        boxShadow: `0 0 0 1px rgba(255,255,255,0.08), 0 4px 16px ${brand.accentGlow}`,
       } : undefined}
     >
       <Image
         src={LOGO_SRC}
         alt={APP_NAME}
-        width={Math.round(h * 2.2)}
-        height={h}
-        className="object-contain object-left"
-        style={{ height: h, width: 'auto', maxWidth: Math.round(h * 2.4) }}
+        width={px}
+        height={px}
+        className="object-contain"
+        style={{ width: px, height: px, display: 'block' }}
         priority
+        unoptimized
       />
     </div>
   );

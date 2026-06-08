@@ -163,6 +163,20 @@ const BASE_TEMPLATES: Template[] = [
 
 export const TEMPLATES: Template[] = [...BASE_TEMPLATES, ...EXTRA_TEMPLATES, ...PROFESSIONAL_TEMPLATES, ...V2_TEMPLATES];
 
+/** Legacy template ids mapped to current ids */
+const TEMPLATE_ID_ALIASES: Record<string, string> = {
+  'webquro-pro': 'site99-pro',
+};
+
+export function resolveTemplateId(templateId: string) {
+  return TEMPLATE_ID_ALIASES[templateId] || templateId;
+}
+
+export function findTemplate(templateId: string) {
+  const id = resolveTemplateId(templateId);
+  return TEMPLATES.find(t => t.id === id);
+}
+
 export function getTemplatesForPurpose(purpose: WebsitePurpose): Template[] {
   const fromPurpose = TEMPLATES.filter(t => t.purposes.includes(purpose));
   return fromPurpose.length ? fromPurpose : TEMPLATES;

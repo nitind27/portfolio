@@ -1,4 +1,4 @@
--- Portfolio Builder — User & Payment tables only
+-- site99 — User & Payment tables only
 -- Import this file in phpMyAdmin (create database first, then import)
 
 CREATE DATABASE IF NOT EXISTS portfolio_builder

@@ -6,7 +6,12 @@ import type { RowDataPacket } from 'mysql2';
 import { getPool, type DbUser } from './db';
 
 const COOKIE_NAME = 'pb_auth';
-const TOKEN_TTL = '7d';
+const TOKEN_TTL = '1d';
+const TOKEN_TTL_REMEMBER = '30d';
+const TOKEN_TTL_REGISTER = '7d';
+const COOKIE_MAX_AGE_DEFAULT = 60 * 60 * 24; // 1 day
+const COOKIE_MAX_AGE_REMEMBER = 60 * 60 * 24 * 30; // 30 days
+const COOKIE_MAX_AGE_REGISTER = 60 * 60 * 24 * 7; // 7 days
 
 import type { AuthUser } from './types';
 
@@ -48,7 +53,7 @@ export function toAuthUser(row: Pick<DbUser, 'id' | 'name' | 'email' | 'phone' |
   };
 }
 
-export async function createToken(user: AuthUser) {
+export async function createToken(user: AuthUser, expiresIn: string = TOKEN_TTL) {
   return new SignJWT({
     sub: String(user.id),
     email: user.email,
@@ -57,9 +62,11 @@ export async function createToken(user: AuthUser) {
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime(TOKEN_TTL)
+    .setExpirationTime(expiresIn)
     .sign(getJwtSecret());
 }
+
+export { TOKEN_TTL_REMEMBER, TOKEN_TTL_REGISTER, COOKIE_MAX_AGE_DEFAULT, COOKIE_MAX_AGE_REMEMBER, COOKIE_MAX_AGE_REGISTER };
 
 export async function verifyToken(token: string) {
   const { payload } = await jwtVerify(token, getJwtSecret());
@@ -72,14 +79,14 @@ export async function verifyToken(token: string) {
   };
 }
 
-export async function setAuthCookie(token: string) {
+export async function setAuthCookie(token: string, maxAge = COOKIE_MAX_AGE_DEFAULT) {
   const jar = await cookies();
   jar.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge,
   });
 }
 
@@ -117,8 +124,8 @@ export async function getCurrentUser(req?: NextRequest): Promise<AuthUser | null
 }
 
 export async function refreshAuthCookie(user: AuthUser) {
-  const token = await createToken(user);
-  await setAuthCookie(token);
+  const token = await createToken(user, TOKEN_TTL_REGISTER);
+  await setAuthCookie(token, COOKIE_MAX_AGE_REGISTER);
 }
 
 export async function fetchUserById(userId: number): Promise<AuthUser | null> {

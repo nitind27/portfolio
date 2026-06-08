@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { APP_NAME, LOGO_SRC, DESKTOP_VIEWPORT_WIDTH } from '@/lib/brand';
+import { APP_NAME, APP_DESCRIPTION, LOGO_SRC, DESKTOP_VIEWPORT_WIDTH } from '@/lib/brand';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: `${APP_NAME} — Build & Launch Your Website`,
-  description: 'Create professional websites, portfolios, and online stores. No code required.',
+  description: APP_DESCRIPTION,
   icons: {
     icon: LOGO_SRC,
     apple: LOGO_SRC,

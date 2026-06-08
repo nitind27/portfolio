@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { APP_NAME } from '@/lib/brand';
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
             <p style="font-weight:600;color:#555;margin-bottom:0.5rem;">Message</p>
             <p style="line-height:1.7;color:#333;">${message.replace(/\n/g, '<br/>')}</p>
           </div>
-          <p style="margin-top:1.5rem;font-size:0.8rem;color:#999;">Sent via Webquro contact form</p>
+          <p style="margin-top:1.5rem;font-size:0.8rem;color:#999;">Sent via ${APP_NAME} contact form</p>
         </div>
       `,
     });

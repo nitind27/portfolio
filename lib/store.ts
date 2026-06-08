@@ -13,7 +13,7 @@ import {
   PopupConfig, NavbarConfig, FooterConfig, SocialLinks, SectionStyle, DeviceView, SectionType, SectionField, AuthUser,
   CreatePortfolioOptions, PortfolioHosting,
 } from './types';
-import { TEMPLATES, SECTION_DEFAULTS } from './templates';
+import { TEMPLATES, SECTION_DEFAULTS, findTemplate, resolveTemplateId } from './templates';
 import { applyPortfolioMeta } from './apply-portfolio-meta';
 import { applyLayoutPreset, getDefaultLayoutPresetId, LayoutPresetId } from './purpose-layouts';
 import { purgeExpiredPortfolios } from './project-expiry';
@@ -85,7 +85,7 @@ const defaultNavbar: NavbarConfig = {
 };
 
 function createDefaultPortfolio(templateId: string, options?: CreatePortfolioOptions): Portfolio {
-  const template = TEMPLATES.find(t => t.id === templateId) || TEMPLATES[0];
+  const template = findTemplate(templateId) || TEMPLATES[0];
   const sectionTypes = options?.sections?.length ? options.sections : template.defaultSections;
   const sections: PortfolioSection[] = sectionTypes.map((type, i) => {
     const def = SECTION_DEFAULTS[type];
@@ -149,7 +149,7 @@ interface BuilderState {
   mobilePanel: MobilePanel;
   popupPreviewNonce: number;
 
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<{ ok: boolean; error?: string }>;
   register: (data: { name: string; email: string; phone: string; password: string }) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -285,12 +285,12 @@ export const useBuilderStore = create<BuilderState>()(
         } catch { /* ignore */ }
         return null;
       },
-      login: async (email, password) => {
+      login: async (email, password, rememberMe = false) => {
         try {
           const res = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, rememberMe }),
           });
           const data = await res.json();
           if (!res.ok) return { ok: false, error: data.error || 'Login failed' };
@@ -483,12 +483,12 @@ export const useBuilderStore = create<BuilderState>()(
         })),
       })),
       switchTemplate: (templateId) => {
-        const template = TEMPLATES.find(t => t.id === templateId);
+        const template = findTemplate(templateId);
         if (!template) return;
         get().pushHistory();
         set(s => ({
           portfolios: updatePortfolios(s.portfolios, s.activePortfolioId, p => ({
-            ...p, templateId, theme: { ...template.defaultTheme, customCSS: p.theme.customCSS }, updatedAt: new Date().toISOString(),
+            ...p, templateId: resolveTemplateId(templateId), theme: { ...template.defaultTheme, customCSS: p.theme.customCSS }, updatedAt: new Date().toISOString(),
           })),
         }));
       },

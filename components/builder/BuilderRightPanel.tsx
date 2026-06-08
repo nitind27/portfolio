@@ -6,6 +6,7 @@ import { useState, useMemo } from 'react';
 import { ThemeConfig, SMTPConfig, PopupConfig, NavbarConfig, NavbarMenuStyle, NavbarScrollBehavior, NavbarScrollAnimation, FooterConfig, SocialLinks } from '@/lib/types';
 import { RightTab } from '../Builder';
 import { Check, TestTube, Loader, ExternalLink, Eye } from 'lucide-react';
+import { APP_NAME } from '@/lib/brand';
 import PopupCard from '../shared/PopupCard';
 import TemplatesGallery from '../shared/TemplatesGallery';
 import SectionEditor from './SectionEditor';
@@ -706,7 +707,7 @@ function SMTPPanel({ smtp, onUpdate }: { smtp: SMTPConfig; onUpdate: (u: Partial
     try {
       const res = await fetch('/api/contact', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Test', email: smtp.user, message: 'SMTP test from Webquro', smtp }),
+        body: JSON.stringify({ name: 'Test', email: smtp.user, message: `SMTP test from ${APP_NAME}`, smtp }),
       });
       if (res.ok) {
         setTestResult('ok');

@@ -6,7 +6,7 @@ import { Loader2, ExternalLink, RefreshCw, Radio } from 'lucide-react';
 import type { Portfolio } from '@/lib/types';
 import PortfolioPreview from './PortfolioPreview';
 import { readPreviewSnapshot, subscribePreviewUpdates, writePreviewSnapshot } from '@/lib/preview-tab';
-import { brand } from '@/lib/brand';
+import { brand, APP_NAME } from '@/lib/brand';
 
 export default function PreviewTabPage() {
   const params = useParams();
@@ -60,7 +60,7 @@ export default function PreviewTabPage() {
 
   useEffect(() => {
     if (portfolio?.name) {
-      document.title = `${portfolio.name} — Preview · Webquro`;
+      document.title = `${portfolio.name} — Preview · ${APP_NAME}`;
     }
   }, [portfolio?.name]);
 

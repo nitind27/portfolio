@@ -1,3 +1,5 @@
+import { APP_NAME } from './brand';
+
 const API_VERSION = '2023-08-01';
 
 function getBaseUrl() {
@@ -59,7 +61,7 @@ export async function createCashfreeOrder(params: {
       order_meta: {
         return_url: `${getAppUrl()}/payment/callback?order_id={order_id}`,
       },
-      order_note: 'Webquro Premium',
+      order_note: `${APP_NAME} Premium`,
     }),
   });
 
