@@ -4,6 +4,7 @@ import { getPool } from '@/lib/db';
 import { createCashfreeOrder, getCashfreeCheckoutMode, formatCashfreePhone } from '@/lib/cashfree';
 import { getCurrentUser } from '@/lib/auth-server';
 import { getPlanById, getPlanBySlug, getUserPlan } from '@/lib/plans-server';
+import { ensurePlansReady } from '@/lib/plans-seed';
 import { canExport } from '@/lib/plans-types';
 
 export async function POST(req: NextRequest) {
@@ -16,6 +17,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const repurchase = Boolean(body?.repurchase);
     const planIdParam = body?.planId != null ? Number(body.planId) : null;
+
+    await ensurePlansReady();
 
     let plan = planIdParam ? await getPlanById(planIdParam) : null;
     if (!plan) plan = await getPlanBySlug('pro');

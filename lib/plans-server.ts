@@ -10,6 +10,7 @@ import {
   DEFAULT_FREE_FEATURES,
 } from './plans-types';
 import { TEMPLATES } from './templates';
+import { ensurePlansReady } from './plans-seed';
 
 interface DbPlanRow extends RowDataPacket {
   id: number;
@@ -43,6 +44,7 @@ function rowToPlan(row: DbPlanRow): SubscriptionPlan {
 }
 
 export async function getDefaultPlan(): Promise<SubscriptionPlan> {
+  await ensurePlansReady();
   const pool = getPool();
   const [rows] = await pool.execute<DbPlanRow[]>(
     'SELECT * FROM subscription_plans WHERE is_default = 1 AND is_active = 1 LIMIT 1',
@@ -63,6 +65,7 @@ export async function getDefaultPlan(): Promise<SubscriptionPlan> {
 }
 
 export async function getPlanById(id: number): Promise<SubscriptionPlan | null> {
+  await ensurePlansReady();
   const pool = getPool();
   const [rows] = await pool.execute<DbPlanRow[]>(
     'SELECT * FROM subscription_plans WHERE id = ? LIMIT 1',
@@ -72,6 +75,7 @@ export async function getPlanById(id: number): Promise<SubscriptionPlan | null> 
 }
 
 export async function getPlanBySlug(slug: string): Promise<SubscriptionPlan | null> {
+  await ensurePlansReady();
   const pool = getPool();
   const [rows] = await pool.execute<DbPlanRow[]>(
     'SELECT * FROM subscription_plans WHERE slug = ? LIMIT 1',
@@ -81,6 +85,7 @@ export async function getPlanBySlug(slug: string): Promise<SubscriptionPlan | nu
 }
 
 export async function getAllPlans(activeOnly = false): Promise<SubscriptionPlan[]> {
+  await ensurePlansReady();
   const pool = getPool();
   const [rows] = await pool.execute<DbPlanRow[]>(
     activeOnly
@@ -108,6 +113,7 @@ export async function userHasPaidAccess(user: AuthUser | null): Promise<boolean>
 }
 
 export async function ensureTemplateRulesSeeded() {
+  await ensurePlansReady();
   const pool = getPool();
   for (const t of TEMPLATES) {
     await pool.execute(

@@ -52,7 +52,9 @@ const REASON_TEXT: Record<string, string> = {
 export default function PremiumModal({ open, onClose, reason = 'general' }: Props) {
   const { user, refreshSession } = useBuilderStore();
   const [loading, setLoading] = useState(false);
+  const [plansLoading, setPlansLoading] = useState(false);
   const [error, setError] = useState('');
+  const [plansError, setPlansError] = useState('');
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
 
@@ -60,11 +62,25 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
 
   useEffect(() => {
     if (!open) return;
-    fetch('/api/plans').then(r => r.json()).then(d => {
-      const paid = (d.plans || []).filter((p: SubscriptionPlan) => p.price > 0);
-      setPlans(paid);
-      if (paid[0]) setSelectedPlanId(paid[0].id);
-    }).catch(() => {});
+    setPlansLoading(true);
+    setPlansError('');
+    fetch('/api/plans')
+      .then(async r => {
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Could not load plans');
+        return d;
+      })
+      .then(d => {
+        const paid = (d.plans || []).filter((p: SubscriptionPlan) => p.price > 0);
+        setPlans(paid);
+        if (paid[0]) setSelectedPlanId(paid[0].id);
+        else setPlansError('No paid plans configured. Contact support.');
+      })
+      .catch((err: unknown) => {
+        setPlans([]);
+        setPlansError(err instanceof Error ? err.message : 'Could not load plans');
+      })
+      .finally(() => setPlansLoading(false));
   }, [open]);
 
   const selectedPlan = plans.find(p => p.id === selectedPlanId);
@@ -144,7 +160,11 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
             </div>
 
             <div className="p-6 space-y-4">
-              {plans.length > 0 ? (
+              {plansLoading ? (
+                <p className="text-sm text-gray-400 flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading plans…
+                </p>
+              ) : plans.length > 0 ? (
                 <div className="space-y-2">
                   {plans.map(p => (
                     <button key={p.id} type="button" onClick={() => setSelectedPlanId(p.id)}
@@ -169,7 +189,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">Loading plans… (run database migration if empty)</p>
+                <p className="text-sm text-amber-400/90">{plansError || 'No plans available.'}</p>
               )}
 
               <div className="space-y-2.5">
@@ -189,7 +209,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
 
               {error && <p className="text-red-400 text-sm">{error}</p>}
 
-              <button onClick={handleUpgrade} disabled={loading || !selectedPlanId}
+              <button onClick={handleUpgrade} disabled={loading || plansLoading || !selectedPlanId}
                 className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#f28c28] to-[#e07d10] hover:from-[#ffa033] hover:to-[#f28c28] disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition">
                 {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting payment…</> : <>Pay ₹{selectedPlan?.price ?? '…'} with Cashfree</>}
               </button>

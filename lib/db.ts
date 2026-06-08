@@ -12,6 +12,7 @@ export function getPool(): mysql.Pool {
       database: process.env.MYSQL_DATABASE || 'portfolio_builder',
       waitForConnections: true,
       connectionLimit: 10,
+      connectTimeout: 10_000,
       timezone: '+00:00',
     });
   }
