@@ -2,7 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { PortfolioSection, ThemeConfig, HeadingAnimStyle } from '@/lib/types';
-import { getMotionVariants, getMotionViewport, getSectionHoverProps } from '@/lib/section-animation';
+import { getMotionVariants, getMotionViewport, getSectionHoverProps, resolveTriggerLoad } from '@/lib/section-animation';
+import { useInViewViewport, usePreviewScrollRoot } from './preview-motion';
 
 // ── Typewriter heading ──────────────────────────────────────────────────────
 function TypewriterText({ text, color, style }: { text: string; color: string; style?: React.CSSProperties }) {
@@ -44,12 +45,13 @@ function TypewriterText({ text, color, style }: { text: string; color: string; s
 
 // ── Word pop heading ─────────────────────────────────────────────────────────
 function WordPopText({ text, color, style }: { text: string; color: string; style?: React.CSSProperties }) {
+  const viewport = useInViewViewport();
   const words = text.split(' ');
   return (
     <h2 style={{ ...style, display: 'flex', flexWrap: 'wrap', gap: '0.3em' }}>
       {words.map((w, i) => (
         <motion.span key={i} initial={{ opacity: 0, scale: 0.7, y: 8 }} whileInView={{ opacity: 1, scale: 1, y: 0 }}
-          viewport={{ once: true }} transition={{ delay: i * 0.07, type: 'spring', stiffness: 300, damping: 18 }}
+          viewport={viewport} transition={{ delay: i * 0.07, type: 'spring', stiffness: 300, damping: 18 }}
           style={{ color, display: 'inline-block' }}>
           {w}
         </motion.span>
@@ -60,9 +62,10 @@ function WordPopText({ text, color, style }: { text: string; color: string; styl
 
 // ── Blur reveal heading ──────────────────────────────────────────────────────
 function BlurRevealText({ text, color, style }: { text: string; color: string; style?: React.CSSProperties }) {
+  const viewport = useInViewViewport();
   return (
     <motion.h2 initial={{ filter: 'blur(14px)', opacity: 0, y: 10 }} whileInView={{ filter: 'blur(0px)', opacity: 1, y: 0 }}
-      viewport={{ once: true }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
+      viewport={viewport} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
       style={{ ...style, color }}>
       {text}
     </motion.h2>
@@ -74,6 +77,7 @@ export function SectionHeader({ title, subtitle, theme, centered, badge, compact
   title: string; subtitle?: string; theme: ThemeConfig; centered?: boolean; badge?: string; compact?: boolean;
   headingAnim?: HeadingAnimStyle;
 }) {
+  const viewport = useInViewViewport();
   const h2Style: React.CSSProperties = {
     fontSize: compact ? 'clamp(1.35rem, 5vw, 1.85rem)' : 'clamp(1.65rem, 4vw, 2.35rem)',
     fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em', wordBreak: 'break-word',
@@ -100,7 +104,7 @@ export function SectionHeader({ title, subtitle, theme, centered, badge, compact
             <motion.span
               initial={{ scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
-              viewport={{ once: true }}
+              viewport={viewport}
               transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
               style={{
                 position: 'absolute', bottom: -4, left: 0, height: 3, width: '100%', transformOrigin: 'left',
@@ -111,7 +115,17 @@ export function SectionHeader({ title, subtitle, theme, centered, badge, compact
           </h2>
         );
       default:
-        return <h2 style={{ ...h2Style, color: theme.primaryColor }}>{title}</h2>;
+        return (
+          <motion.h2
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={viewport}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            style={{ ...h2Style, color: theme.primaryColor }}
+          >
+            {title}
+          </motion.h2>
+        );
     }
   };
 
@@ -119,7 +133,7 @@ export function SectionHeader({ title, subtitle, theme, centered, badge, compact
     <div style={{ marginBottom: compact ? '1.75rem' : '2.75rem', textAlign: centered ? 'center' : 'left' }}>
       {badge && (
         <motion.span
-          initial={{ opacity: 0, y: -8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          initial={{ opacity: 0, y: -8 }} whileInView={{ opacity: 1, y: 0 }} viewport={viewport}
           transition={{ duration: 0.4 }}
           style={{
             display: 'inline-block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.14em',
@@ -129,7 +143,7 @@ export function SectionHeader({ title, subtitle, theme, centered, badge, compact
           }}>{badge}</motion.span>
       )}
       <motion.div
-        initial={{ scaleX: 0 }} whileInView={{ scaleX: 1 }} viewport={{ once: true }}
+        initial={{ scaleX: 0 }} whileInView={{ scaleX: 1 }} viewport={viewport}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         style={{
           width: 52, height: 4, transformOrigin: centered ? 'center' : 'left',
@@ -141,7 +155,7 @@ export function SectionHeader({ title, subtitle, theme, centered, badge, compact
       {renderHeading()}
       {subtitle && (
         <motion.p
-          initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={viewport}
           transition={{ duration: 0.5, delay: 0.1 }}
           style={{
             opacity: 0.58, marginTop: '0.75rem', fontSize: compact ? '0.92rem' : '1.02rem', lineHeight: 1.7,
@@ -157,11 +171,12 @@ export function SectionShell({ id, pad, altBg, section, theme, variants, childre
   section?: PortfolioSection; theme?: ThemeConfig;
   variants?: any; children: React.ReactNode; style?: React.CSSProperties;
 }) {
+  const scrollRoot = usePreviewScrollRoot();
   const resolvedVariants = section && theme ? getMotionVariants(section, theme) : variants;
-  const viewport = section && theme ? getMotionViewport(section, theme) : { once: true, margin: '-40px' as const };
+  const baseViewport = section && theme ? getMotionViewport(section, theme) : { once: true as const, margin: '-24px' as const, amount: 0.12 as const };
+  const viewport = scrollRoot?.current ? { ...baseViewport, root: scrollRoot } : baseViewport;
   const whileHover = section ? getSectionHoverProps(section) : undefined;
-  const anim = section?.style?.animation;
-  const triggerLoad = anim?.custom && anim.trigger === 'load';
+  const triggerLoad = section ? resolveTriggerLoad(section) : false;
 
   return (
     <motion.section

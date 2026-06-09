@@ -9,6 +9,7 @@ import ResizeHandle from './builder/ResizeHandle';
 import { useDesktopLayout } from './builder/useDesktopLayout';
 import KeyboardShortcutsModal from './builder/KeyboardShortcutsModal';
 import OnboardingTour from './builder/OnboardingTour';
+import BuilderHelpFab from './builder/BuilderHelpFab';
 import { BUILDER_TOUR_STEPS } from '@/lib/tour-steps';
 import { clampSidebarWidth, loadBuilderLayout, saveBuilderLayout } from '@/lib/builder-layout';
 import { Layers, Eye, Settings2 } from 'lucide-react';
@@ -27,8 +28,11 @@ export default function Builder() {
   const {
     undo, redo, canUndo, canRedo, setPreviewMode, previewMode,
     hasSeenBuilderTour, completeBuilderTour, mobilePanel, setMobilePanel,
-    setActiveSection,
+    setActiveSection, activeSection, getActivePortfolio,
   } = useBuilderStore();
+
+  const portfolio = getActivePortfolio();
+  const activeSectionData = portfolio?.sections.find(s => s.id === activeSection);
 
   const focusSectionEditor = useCallback((sectionId: string) => {
     setActiveSection(sectionId);
@@ -94,9 +98,18 @@ export default function Builder() {
     completeBuilderTour();
   };
 
+  const restartTour = () => {
+    setShowTour(true);
+  };
+
   return (
     <div className="h-screen bg-[#0a0a0a] text-white flex flex-col overflow-hidden">
-      <BuilderTopbar rightTab={rightTab} setRightTab={setRightTab} onShowShortcuts={() => setShowShortcuts(true)} />
+      <BuilderTopbar
+        rightTab={rightTab}
+        setRightTab={setRightTab}
+        onShowShortcuts={() => setShowShortcuts(true)}
+        onShowTour={restartTour}
+      />
 
       <div className="flex flex-1 overflow-hidden min-h-0">
         <div
@@ -116,7 +129,7 @@ export default function Builder() {
           style={isDesktop ? { width: rightWidth } : undefined}
         >
           <ResizeHandle side="right" onResize={resizeRight} onResizeEnd={saveLayout} />
-          <BuilderRightPanel tab={rightTab} setTab={setRightTab} />
+          <BuilderRightPanel tab={rightTab} setTab={setRightTab} onShowTour={restartTour} />
         </div>
       </div>
 
@@ -146,6 +159,18 @@ export default function Builder() {
           steps={BUILDER_TOUR_STEPS}
           onComplete={handleTourComplete}
           onStepChange={handleTourStep}
+        />
+      )}
+
+      {portfolio && (
+        <BuilderHelpFab
+          rightTab={rightTab}
+          setRightTab={setRightTab}
+          activeSectionType={activeSectionData?.type}
+          activeSectionTitle={activeSectionData?.title}
+          previewMode={previewMode}
+          sectionCount={portfolio.sections.length}
+          onShowTour={restartTour}
         />
       )}
     </div>

@@ -201,7 +201,7 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
   about: {
     title: 'About',
     fields: [
-      { id: 'aboutLayout', label: 'Layout Style', type: 'select', value: 'split', options: ['split', 'centered', 'wide'] },
+      { id: 'aboutLayout', label: 'Layout Style', type: 'select', value: 'split', options: ['split', 'image-right', 'centered', 'wide', 'stacked', 'minimal', 'overlap', 'card'] },
       { id: 'imageStyle', label: 'Photo Style', type: 'select', value: 'default', options: ['default', 'rotate', 'rotate-hover', 'floating', 'circle-glow', 'tilt-3d', 'morph-border'] },
       { id: 'title', label: 'Section Title', type: 'text', value: 'About Me' },
       { id: 'subtitle', label: 'Tagline', type: 'text', value: 'Turning ideas into elegant digital experiences' },
@@ -316,7 +316,8 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
     title: 'Custom Section',
     fields: [
       { id: 'title', label: 'Section Title', type: 'text', value: 'Custom Section' },
-      { id: 'content', label: 'Content', type: 'richtext', value: 'Add your custom content here.' },
+      { id: 'subtitle', label: 'Subtitle', type: 'text', value: 'Build anything — stats, cards, videos, CTAs & more' },
+      { id: 'content', label: 'Intro Text', type: 'richtext', value: 'Use the layout picker and content blocks below to design a unique section. Mix headings, stats, icon cards, videos, and buttons.' },
     ],
   },
   social: {

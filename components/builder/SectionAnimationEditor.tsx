@@ -7,6 +7,7 @@ import {
 } from '@/lib/types';
 import {
   DEFAULT_SECTION_ANIMATION, ENTRANCE_PRESETS, getSectionAnimation, resolveSectionAnimation,
+  getAnimationStatus,
 } from '@/lib/section-animation';
 import { Sparkles, RotateCcw, Play, ChevronDown, ChevronUp, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -161,7 +162,9 @@ export default function SectionAnimationEditor({ sectionId }: Props) {
 
   const anim = getSectionAnimation(section);
   const resolved = resolveSectionAnimation(section, portfolio.theme);
+  const status = getAnimationStatus(section, portfolio.theme);
   const entrance = anim.custom ? (anim.entrance || 'slide-up') : 'inherit';
+  const previewEntrance = entrance === 'inherit' ? resolved.resolvedEntrance : entrance;
 
   const patch = (updates: Partial<SectionAnimation>) => {
     updateSectionStyle(sectionId, { animation: { ...anim, ...updates, custom: true } });
@@ -198,11 +201,42 @@ export default function SectionAnimationEditor({ sectionId }: Props) {
         </button>
       </div>
 
+      {/* Live status */}
+      <div className="rounded-xl border border-blue-500/25 bg-blue-600/8 p-3 space-y-2">
+        <p className="text-[11px] font-semibold text-blue-300">Currently active on this section</p>
+        {status.isDisabled ? (
+          <p className="text-xs text-gray-400">No entrance animation — section appears instantly.</p>
+        ) : (
+          <div className="space-y-1 text-[11px] text-gray-400">
+            <p>
+              <span className="text-white font-medium">Section:</span>{' '}
+              {status.entranceLabel}
+              <span className="text-gray-600"> · {status.source === 'theme' ? `from Theme (${status.themeAnimation})` : 'custom'}</span>
+            </p>
+            <p><span className="text-white font-medium">When:</span> {status.triggerLabel}</p>
+            <p><span className="text-white font-medium">Heading:</span> {status.headingAnimLabel}</p>
+            {hasCards && <p><span className="text-white font-medium">Cards/items:</span> {status.cardAnimLabel}</p>}
+            {hasImage && status.imageAnim !== 'none' && <p><span className="text-white font-medium">Photo:</span> {status.imageAnim.replace(/-/g, ' ')}</p>}
+          </div>
+        )}
+        <p className="text-[10px] text-amber-300/80 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5">
+          Scroll the preview (middle panel) to see animations play when each section enters view.
+        </p>
+      </div>
+
+      <MiniPreview
+        entrance={previewEntrance}
+        duration={resolved.duration ?? 0.55}
+        distance={resolved.distance ?? 40}
+        scaleFrom={resolved.scaleFrom ?? 0.92}
+        easing={resolved.easing || 'smooth'}
+      />
+
       {/* Tab switcher */}
       <div className="flex gap-1 p-1 rounded-xl bg-white/3 border border-white/8">
         {([
-          { id: 'section' as AnimTab, label: 'Section', icon: <Sparkles className="w-3 h-3" /> },
-          { id: 'elements' as AnimTab, label: 'Elements', icon: <Layers className="w-3 h-3" /> },
+          { id: 'section' as AnimTab, label: 'Whole section', icon: <Sparkles className="w-3 h-3" /> },
+          { id: 'elements' as AnimTab, label: 'Inside section', icon: <Layers className="w-3 h-3" /> },
         ]).map(t => (
           <button key={t.id} type="button" onClick={() => setAnimTab(t.id)}
             className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-medium rounded-lg transition ${
@@ -216,11 +250,15 @@ export default function SectionAnimationEditor({ sectionId }: Props) {
       {/* ── SECTION TAB ── */}
       {animTab === 'section' && (
         <div className="space-y-4">
+          <p className="text-[11px] text-gray-500 leading-relaxed px-0.5">
+            Controls how the <strong className="text-gray-300">entire section</strong> appears (fade, slide, zoom, etc.). By default it follows your Theme tab setting.
+          </p>
+
           {/* Custom toggle */}
           <div className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/10">
             <div>
-              <p className="text-sm text-white font-medium">Custom animation</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">Override global theme for this section</p>
+              <p className="text-sm text-white font-medium">Custom section entrance</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">Turn on to pick a different style for only this section</p>
             </div>
             <button type="button"
               onClick={() => patch({ custom: !useCustom, entrance: useCustom ? 'inherit' : 'slide-up' })}
@@ -231,8 +269,9 @@ export default function SectionAnimationEditor({ sectionId }: Props) {
 
           {!useCustom && (
             <p className="text-xs text-gray-500 px-1">
-              Theme default: <span className="text-blue-300 capitalize">{portfolio.theme.animation}</span>
-              {' → '}<span className="text-gray-400">{resolved.resolvedEntrance.replace(/-/g, ' ')}</span>
+              Using theme: <span className="text-blue-300 capitalize">{portfolio.theme.animation}</span>
+              {' → '}<span className="text-gray-300">{status.entranceLabel}</span>
+              <span className="text-gray-600"> ({status.triggerLabel.toLowerCase()})</span>
             </p>
           )}
 
@@ -241,16 +280,10 @@ export default function SectionAnimationEditor({ sectionId }: Props) {
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }} className="space-y-4 overflow-hidden">
 
-                <MiniPreview
-                  entrance={entrance === 'inherit' ? resolved.resolvedEntrance : entrance}
-                  duration={anim.duration ?? 0.55} distance={anim.distance ?? 40}
-                  scaleFrom={anim.scaleFrom ?? 0.92} easing={anim.easing || 'smooth'}
-                />
-
                 {/* Entrance presets */}
                 <div>
-                  <p className="text-[11px] text-gray-400 mb-2">Entrance style</p>
-                  <div className="grid grid-cols-3 gap-1.5 max-h-52 overflow-y-auto pr-0.5">
+                  <p className="text-[11px] text-gray-400 mb-2">Entrance style — what visitors see</p>
+                  <div className="grid grid-cols-2 gap-1.5 max-h-64 overflow-y-auto pr-0.5">
                     {ENTRANCE_PRESETS.filter(p => p.id !== 'inherit').map(p => (
                       <button key={p.id} type="button" onClick={() => patch({ entrance: p.id })}
                         className={`p-2 rounded-lg border text-left transition ${
@@ -258,6 +291,7 @@ export default function SectionAnimationEditor({ sectionId }: Props) {
                         }`}>
                         <span className="text-base leading-none">{p.icon}</span>
                         <p className="text-[10px] font-medium text-white mt-1">{p.label}</p>
+                        <p className="text-[9px] text-gray-500 mt-0.5 leading-tight">{p.desc}</p>
                       </button>
                     ))}
                   </div>
@@ -316,8 +350,8 @@ export default function SectionAnimationEditor({ sectionId }: Props) {
                 <div className="p-3 rounded-xl bg-white/2 border border-white/8 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[11px] text-white font-medium">Stagger children</p>
-                      <p className="text-[9px] text-gray-500">Animate cards/items one by one</p>
+                      <p className="text-[11px] text-white font-medium">Stagger children (advanced)</p>
+                      <p className="text-[9px] text-gray-500">For card-by-card motion, use the <strong>Inside section</strong> tab → Cards & Items</p>
                     </div>
                     <button type="button" onClick={() => patch({ staggerChildren: !anim.staggerChildren })}
                       className={`w-9 h-5 rounded-full transition relative ${anim.staggerChildren ? 'bg-blue-600' : 'bg-white/10'}`}>
@@ -358,7 +392,7 @@ export default function SectionAnimationEditor({ sectionId }: Props) {
       {animTab === 'elements' && (
         <div className="space-y-5">
           <p className="text-[11px] text-gray-500 leading-relaxed">
-            Animate individual elements inside this section — independently from the section entrance.
+            Animate <strong className="text-gray-300">parts inside</strong> this section — heading text, photos, and cards/items. These work together with the whole-section entrance above.
           </p>
 
           {/* Image / Photo */}
@@ -390,9 +424,10 @@ export default function SectionAnimationEditor({ sectionId }: Props) {
             </div>
           )}
 
-          {/* Heading */}
+          {/* Heading — all sections */}
           <div className="space-y-2.5">
-            <p className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider">✍️ Section Heading</p>
+            <p className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider">✍️ Section title (heading)</p>
+            <p className="text-[10px] text-gray-600 -mt-1">The big title at the top of this section. &quot;Default&quot; = gentle fade-in.</p>
             <div className="grid grid-cols-2 gap-1.5">
               {HEADING_ANIM_OPTIONS.map(opt => (
                 <button key={opt.id} type="button" onClick={() => patchElement({ headingAnim: opt.id })}
@@ -431,8 +466,9 @@ export default function SectionAnimationEditor({ sectionId }: Props) {
           )}
 
           {!hasImage && !hasCards && (
-            <p className="text-xs text-gray-600 text-center py-6">
-              No element-level options for this section type.
+            <p className="text-xs text-gray-500 text-center py-4 px-2 leading-relaxed">
+              This section type uses <strong className="text-gray-300">heading animation</strong> only.
+              Change the whole-section entrance in the <strong className="text-gray-300">Whole section</strong> tab, or turn on Custom section entrance.
             </p>
           )}
         </div>

@@ -1,4 +1,7 @@
-import { PortfolioSection, SectionAnimation, SectionEntranceType, SectionAnimEasing, ThemeConfig } from './types';
+import {
+  PortfolioSection, SectionAnimation, SectionEntranceType, SectionAnimEasing, ThemeConfig,
+  CardAnimStyle, HeadingAnimStyle, ImageAnimStyle,
+} from './types';
 
 export const DEFAULT_SECTION_ANIMATION: SectionAnimation = {
   custom: false,
@@ -213,7 +216,85 @@ export function getMotionViewport(section: PortfolioSection, theme: ThemeConfig)
   if (anim.trigger === 'load' || anim.resolvedEntrance === 'none') {
     return { once: true, amount: 0.1 as const };
   }
-  return { once: true, margin: '-40px' as const, amount: 0.15 as const };
+  return { once: true, margin: '-24px' as const, amount: 0.12 as const };
+}
+
+export function resolveTriggerLoad(section: PortfolioSection): boolean {
+  const anim = getSectionAnimation(section);
+  return Boolean(anim.custom && anim.trigger === 'load');
+}
+
+export function getSectionCardAnim(section: PortfolioSection): CardAnimStyle {
+  return (section.style?.animation?.cardAnim as CardAnimStyle) || 'stagger-up';
+}
+
+export function getSectionHeadingAnim(section: PortfolioSection): HeadingAnimStyle {
+  return (section.style?.animation?.headingAnim as HeadingAnimStyle) || 'none';
+}
+
+export function getSectionImageAnim(section: PortfolioSection): ImageAnimStyle {
+  return (section.style?.animation?.imageAnim as ImageAnimStyle) || 'none';
+}
+
+export function getCardVariants(style: CardAnimStyle, i: number) {
+  const delay = i * 0.07;
+  switch (style) {
+    case 'stagger-left':
+      return { initial: { opacity: 0, x: 32 }, animate: { opacity: 1, x: 0 }, transition: { delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] as const } };
+    case 'stagger-scale':
+      return { initial: { opacity: 0, scale: 0.78 }, animate: { opacity: 1, scale: 1 }, transition: { delay, duration: 0.4, type: 'spring' as const, stiffness: 280, damping: 20 } };
+    case 'flip-in':
+      return { initial: { opacity: 0, rotateY: 35 }, animate: { opacity: 1, rotateY: 0 }, transition: { delay, duration: 0.5, ease: [0.22, 1, 0.36, 1] as const } };
+    case 'rubber-band':
+      return { initial: { opacity: 0, scale: 0.6 }, animate: { opacity: 1, scale: 1 }, transition: { delay, type: 'spring' as const, stiffness: 400, damping: 14 } };
+    case 'none':
+      return { initial: { opacity: 1 }, animate: { opacity: 1 }, transition: {} };
+    default:
+      return { initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 }, transition: { delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] as const } };
+  }
+}
+
+const CARD_ANIM_LABELS: Record<CardAnimStyle, string> = {
+  none: 'None',
+  'stagger-up': 'Stagger Up',
+  'stagger-left': 'Stagger Left',
+  'stagger-scale': 'Stagger Scale',
+  'flip-in': 'Flip In',
+  'rubber-band': 'Rubber Band',
+};
+
+const HEADING_ANIM_LABELS: Record<HeadingAnimStyle, string> = {
+  none: 'Fade In (default)',
+  typewriter: 'Typewriter',
+  'gradient-slide': 'Gradient Slide',
+  'word-pop': 'Word Pop',
+  'blur-reveal': 'Blur Reveal',
+  'underline-draw': 'Underline Draw',
+};
+
+export function getAnimationStatus(section: PortfolioSection, theme: ThemeConfig) {
+  const anim = getSectionAnimation(section);
+  const resolved = resolveSectionAnimation(section, theme);
+  const entrancePreset = ENTRANCE_PRESETS.find(p => p.id === resolved.resolvedEntrance);
+  const cardAnim = getSectionCardAnim(section);
+  const headingAnim = getSectionHeadingAnim(section);
+  const imageAnim = getSectionImageAnim(section);
+  const triggerLoad = resolveTriggerLoad(section);
+
+  return {
+    source: anim.custom ? 'custom' as const : 'theme' as const,
+    entrance: resolved.resolvedEntrance,
+    entranceLabel: entrancePreset?.label ?? resolved.resolvedEntrance.replace(/-/g, ' '),
+    entranceDesc: entrancePreset?.desc ?? '',
+    triggerLabel: triggerLoad ? 'Plays when page loads' : 'Plays when you scroll to this section',
+    cardAnim,
+    cardAnimLabel: CARD_ANIM_LABELS[cardAnim],
+    headingAnim,
+    headingAnimLabel: HEADING_ANIM_LABELS[headingAnim],
+    imageAnim,
+    themeAnimation: theme.animation,
+    isDisabled: resolved.resolvedEntrance === 'none',
+  };
 }
 
 export function getSectionHoverProps(section: PortfolioSection) {

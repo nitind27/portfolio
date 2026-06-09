@@ -11,7 +11,8 @@ import {
   isHeroBlockVisible,
   HeroBlockId,
 } from '@/lib/hero-content';
-import { getElementMotionVariants, getMotionVariants, getMotionViewport, getSectionHoverProps } from '@/lib/section-animation';
+import { getElementMotionVariants, getMotionVariants, getSectionHoverProps } from '@/lib/section-animation';
+import { useSectionViewport } from './preview-motion';
 
 const SOCIAL_LABELS: Record<string, string> = {
   github: 'GH', linkedin: 'in', twitter: 'X', instagram: 'IG',
@@ -83,7 +84,6 @@ interface HeroSectionProps {
   isMobile: boolean;
   social: SocialLinks;
   sectionVariants: ReturnType<typeof getMotionVariants>;
-  sectionViewport: ReturnType<typeof getMotionViewport>;
   sectionHover: ReturnType<typeof getSectionHoverProps>;
   triggerLoad: boolean;
   fv: (id: string) => string;
@@ -99,7 +99,7 @@ function HeroAnimatedBlock({
   section: PortfolioSection;
   theme: ThemeConfig;
   triggerLoad: boolean;
-  viewport: HeroSectionProps['sectionViewport'];
+  viewport: ReturnType<typeof useSectionViewport>;
   children: React.ReactNode;
 }) {
   if (!isHeroBlockVisible(hero, blockId)) return null;
@@ -120,9 +120,10 @@ function HeroAnimatedBlock({
 
 export function HeroSection({
   section, theme, pad, radius, isMobile, social,
-  sectionVariants, sectionViewport, sectionHover, triggerLoad,
+  sectionVariants, sectionHover, triggerLoad,
   fv, fa,
 }: HeroSectionProps) {
+  const sectionViewport = useSectionViewport(section, theme);
   const hero = getHeroContent(section);
   const layout = fv('heroLayout') || 'image-right';
   const headline = fv('headline') || 'Hello World';

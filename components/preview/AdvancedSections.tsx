@@ -11,9 +11,47 @@ import { getPricingPlansFromSection } from '@/lib/pricing-utils';
 import { getFAQItemsFromSection } from '@/lib/faq-utils';
 import { BlogPostBlock, TestimonialBlock, TeamMemberBlock, PricingPlanBlock, FAQItemBlock } from '@/lib/types';
 import { getCustomFields, DynamicFieldsGrid } from './DynamicFields';
-import { getMotionVariants, getMotionViewport, getSectionHoverProps } from '@/lib/section-animation';
+import {
+  getCardVariants, getSectionCardAnim, getSectionHeadingAnim,
+} from '@/lib/section-animation';
+import { useInViewViewport } from './preview-motion';
+import { CustomSectionBlocks } from './CustomSectionBlocks';
+import { getContentMaxWidth, getCustomSection, visibleCustomBlocks } from '@/lib/custom-section';
+import type { CustomContainerId, CustomLayoutId } from '@/lib/types';
 
 const CUSTOM_KNOWN_IDS = new Set(['title', 'content', 'subtitle']);
+
+function getCustomContainerStyle(container: CustomContainerId, theme: ThemeConfig, radius: string): React.CSSProperties {
+  switch (container) {
+    case 'glass':
+      return {
+        background: 'rgba(255,255,255,0.04)',
+        backdropFilter: 'blur(12px)',
+        border: `1px solid ${theme.primaryColor}22`,
+        borderRadius: radius,
+      };
+    case 'solid':
+      return {
+        background: `${theme.primaryColor}10`,
+        border: `1px solid ${theme.primaryColor}18`,
+        borderRadius: radius,
+      };
+    case 'bordered':
+      return {
+        background: 'transparent',
+        border: `2px solid ${theme.primaryColor}30`,
+        borderRadius: radius,
+      };
+    case 'none':
+      return { background: 'transparent', border: 'none' };
+    default:
+      return {
+        background: `linear-gradient(135deg, ${theme.primaryColor}10, ${theme.secondaryColor}06)`,
+        border: `1px solid ${theme.primaryColor}22`,
+        borderRadius: radius,
+      };
+  }
+}
 
 const SERVICE_ICONS = ['🎨', '💻', '📱', '⚡', '🚀', '🛡️', '📊', '🎯'];
 const PROJECT_GRADIENTS = (p: string, s: string) => [
@@ -39,35 +77,6 @@ type BaseProps = {
   fv: (id: string) => string; fa: (id: string) => string[];
 };
 
-// ── Card animation helpers ────────────────────────────────────────────────────
-import { CardAnimStyle, HeadingAnimStyle } from '@/lib/types';
-
-function getCardVariants(style: CardAnimStyle, i: number) {
-  const delay = i * 0.07;
-  switch (style) {
-    case 'stagger-left':
-      return { initial: { opacity: 0, x: 32 }, animate: { opacity: 1, x: 0 }, transition: { delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] as const } };
-    case 'stagger-scale':
-      return { initial: { opacity: 0, scale: 0.78 }, animate: { opacity: 1, scale: 1 }, transition: { delay, duration: 0.4, type: 'spring' as const, stiffness: 280, damping: 20 } };
-    case 'flip-in':
-      return { initial: { opacity: 0, rotateY: 35 }, animate: { opacity: 1, rotateY: 0 }, transition: { delay, duration: 0.5, ease: [0.22, 1, 0.36, 1] as const } };
-    case 'rubber-band':
-      return { initial: { opacity: 0, scale: 0.6 }, animate: { opacity: 1, scale: 1 }, transition: { delay, type: 'spring' as const, stiffness: 400, damping: 14 } };
-    case 'none':
-      return { initial: { opacity: 1 }, animate: { opacity: 1 }, transition: {} };
-    default: // stagger-up
-      return { initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 }, transition: { delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] as const } };
-  }
-}
-
-function getSectionCardAnim(section: PortfolioSection): CardAnimStyle {
-  return (section.style?.animation?.cardAnim as CardAnimStyle) || 'stagger-up';
-}
-
-function getSectionHeadingAnim(section: PortfolioSection): HeadingAnimStyle {
-  return (section.style?.animation?.headingAnim as HeadingAnimStyle) || 'none';
-}
-
 // ── SKILLS ───────────────────────────────────────────────────────────────────
 const SKILL_ICONS = ['⚛️', '🔷', '🟢', '🐍', '☁️', '🐳', '🎨', '📱', '🔥', '💡', '🛠️', '🚀', '📊', '🔐', '🌐', '⚡'];
 
@@ -75,6 +84,7 @@ function SkillBar({ name, pct, i, barStyle, barHeight, showPct, theme, radius }:
   name: string; pct: number; i: number; barStyle: string; barHeight: number;
   showPct: boolean; theme: ThemeConfig; radius: string;
 }) {
+  const animVp = useInViewViewport();
   const trackH = Math.max(4, barHeight);
   const isSharp = barStyle === 'sharp';
   const br = isSharp ? 0 : 99;
@@ -99,7 +109,7 @@ function SkillBar({ name, pct, i, barStyle, barHeight, showPct, theme, radius }:
         <motion.div
           initial={{ width: 0 }}
           whileInView={{ width: `${pct}%` }}
-          viewport={{ once: true }}
+          viewport={animVp}
           transition={{ duration: 0.85, delay: i * 0.05, ease: 'easeOut' }}
           style={{ height: '100%', borderRadius: br, ...fillStyle }}
         />
@@ -109,12 +119,13 @@ function SkillBar({ name, pct, i, barStyle, barHeight, showPct, theme, radius }:
 }
 
 function SkillPill({ name, pct, i, theme, radius }: { name: string; pct: number; i: number; theme: ThemeConfig; radius: string }) {
+  const animVp = useInViewViewport();
   const opacity = 0.4 + (pct / 100) * 0.6;
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
       whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
+      viewport={animVp}
       transition={{ delay: i * 0.04, type: 'spring', stiffness: 300, damping: 18 }}
       whileHover={{ scale: 1.06, y: -2 }}
       style={{
@@ -132,13 +143,14 @@ function SkillPill({ name, pct, i, theme, radius }: { name: string; pct: number;
 }
 
 function SkillCardIcon({ name, pct, i, theme, radius }: { name: string; pct: number; i: number; theme: ThemeConfig; radius: string }) {
+  const animVp = useInViewViewport();
   const icon = SKILL_ICONS[i % SKILL_ICONS.length];
   return (
     <GlassCard theme={theme} radius={radius} hover style={{ textAlign: 'center', padding: '1.5rem 1rem' }}>
       <motion.div
         initial={{ scale: 0, rotate: -15 }}
         whileInView={{ scale: 1, rotate: 0 }}
-        viewport={{ once: true }}
+        viewport={animVp}
         transition={{ delay: i * 0.06, type: 'spring', stiffness: 280, damping: 18 }}
         style={{
           width: 52, height: 52, borderRadius: radius, margin: '0 auto 0.85rem',
@@ -147,7 +159,7 @@ function SkillCardIcon({ name, pct, i, theme, radius }: { name: string; pct: num
         }}>{icon}</motion.div>
       <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.5rem' }}>{name}</p>
       <div style={{ height: 4, borderRadius: 99, background: `${theme.primaryColor}20`, overflow: 'hidden' }}>
-        <motion.div initial={{ width: 0 }} whileInView={{ width: `${pct}%` }} viewport={{ once: true }}
+        <motion.div initial={{ width: 0 }} whileInView={{ width: `${pct}%` }} viewport={animVp}
           transition={{ duration: 0.7, delay: i * 0.06 + 0.2, ease: 'easeOut' }}
           style={{ height: '100%', borderRadius: 99, background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }} />
       </div>
@@ -157,6 +169,7 @@ function SkillCardIcon({ name, pct, i, theme, radius }: { name: string; pct: num
 }
 
 function SkillRadial({ name, pct, i, theme }: { name: string; pct: number; i: number; theme: ThemeConfig }) {
+  const animVp = useInViewViewport();
   const r = 28;
   const circ = 2 * Math.PI * r;
   const dash = (pct / 100) * circ;
@@ -164,7 +177,7 @@ function SkillRadial({ name, pct, i, theme }: { name: string; pct: number; i: nu
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      viewport={animVp}
       transition={{ delay: i * 0.06 }}
       style={{ textAlign: 'center', padding: '1rem 0.5rem' }}
     >
@@ -178,7 +191,7 @@ function SkillRadial({ name, pct, i, theme }: { name: string; pct: number; i: nu
             strokeDasharray={circ}
             initial={{ strokeDashoffset: circ }}
             whileInView={{ strokeDashoffset: circ - dash }}
-            viewport={{ once: true }}
+            viewport={animVp}
             transition={{ duration: 0.9, delay: i * 0.06, ease: 'easeOut' }}
           />
         </svg>
@@ -192,18 +205,19 @@ function SkillRadial({ name, pct, i, theme }: { name: string; pct: number; i: nu
 }
 
 function SkillMinimalList({ name, pct, i, theme }: { name: string; pct: number; i: number; theme: ThemeConfig }) {
+  const animVp = useInViewViewport();
   return (
     <motion.div
       initial={{ opacity: 0, x: -12 }}
       whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true }}
+      viewport={animVp}
       transition={{ delay: i * 0.04 }}
       style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.65rem 0', borderBottom: `1px solid ${theme.primaryColor}12` }}
     >
       <div style={{ width: 8, height: 8, borderRadius: '50%', background: theme.primaryColor, flexShrink: 0, opacity: 0.8 }} />
       <span style={{ flex: 1, fontWeight: 600, fontSize: '0.92rem' }}>{name}</span>
       <div style={{ width: 120, height: 4, borderRadius: 99, background: `${theme.primaryColor}15`, overflow: 'hidden', flexShrink: 0 }}>
-        <motion.div initial={{ width: 0 }} whileInView={{ width: `${pct}%` }} viewport={{ once: true }}
+        <motion.div initial={{ width: 0 }} whileInView={{ width: `${pct}%` }} viewport={animVp}
           transition={{ duration: 0.7, delay: i * 0.04 + 0.1, ease: 'easeOut' }}
           style={{ height: '100%', borderRadius: 99, background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }} />
       </div>
@@ -213,6 +227,7 @@ function SkillMinimalList({ name, pct, i, theme }: { name: string; pct: number; 
 }
 
 export function SkillsSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv, fa }: BaseProps) {
+  const animVp = useInViewViewport();
   const items = fa('skills') || fa('Skills');
   const subtitle = fv('subtitle');
   const cardAnim = getSectionCardAnim(section);
@@ -235,7 +250,7 @@ export function SkillsSection({ section, sectionTitle, theme, pad, altBg, varian
         return <SkillPill key={i} name={name} pct={pct} i={i} theme={theme} radius={radius} />;
       case 'cards-icon':
         return (
-          <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+          <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={animVp} transition={cv.transition}>
             <SkillCardIcon name={name} pct={pct} i={i} theme={theme} radius={radius} />
           </motion.div>
         );
@@ -247,7 +262,7 @@ export function SkillsSection({ section, sectionTitle, theme, pad, altBg, varian
         return (
           <motion.span key={i}
             initial={{ opacity: 0, scale: 0.85 }} whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }} transition={{ delay: i * 0.03, type: 'spring', stiffness: 260, damping: 18 }}
+            viewport={animVp} transition={{ delay: i * 0.03, type: 'spring', stiffness: 260, damping: 18 }}
             whileHover={{ scale: 1.08, y: -2 }}
             style={{
               display: 'inline-block', padding: '0.4rem 1rem', borderRadius: 999,
@@ -259,7 +274,7 @@ export function SkillsSection({ section, sectionTitle, theme, pad, altBg, varian
         );
       default: // bars
         return (
-          <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+          <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={animVp} transition={cv.transition}>
             <SkillBar name={name} pct={pct} i={i} barStyle={barStyle} barHeight={barHeight} showPct={showPct} theme={theme} radius={radius} />
           </motion.div>
         );
@@ -290,6 +305,7 @@ export function SkillsSection({ section, sectionTitle, theme, pad, altBg, varian
 
 // ── EXPERIENCE ───────────────────────────────────────────────────────────────
 export function ExperienceSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv, fa }: BaseProps) {
+  const animVp = useInViewViewport();
   const jobs = fa('jobs');
   const subtitle = fv('subtitle');
   const cardAnim = getSectionCardAnim(section);
@@ -305,7 +321,7 @@ export function ExperienceSection({ section, sectionTitle, theme, pad, altBg, va
             const [role, company, period] = roleMatch ? [roleMatch[1], roleMatch[2], roleMatch[3]] : [job, '', ''];
             const cv = getCardVariants(cardAnim, i);
             return (
-              <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}
+              <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={animVp} transition={cv.transition}
                 style={{ display: 'flex', gap: '1.25rem', paddingLeft: isMobile ? '2.5rem' : '3.5rem', position: 'relative' }}>
                 <div style={{
                   position: 'absolute', left: isMobile ? 8 : 16, top: 20, width: 16, height: 16, borderRadius: '50%',
@@ -328,6 +344,7 @@ export function ExperienceSection({ section, sectionTitle, theme, pad, altBg, va
 
 // ── PROJECTS ─────────────────────────────────────────────────────────────────
 export function ProjectsSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv, fa }: BaseProps) {
+  const animVp = useInViewViewport();
   const projects = fa('projects');
   const subtitle = fv('subtitle');
   const layout = fv('projectsLayout') || 'cards';
@@ -348,7 +365,7 @@ export function ProjectsSection({ section, sectionTitle, theme, pad, altBg, vari
           const isFeatured = layout === 'cards' && i === 0 && projects.length > 2 && !isMobile;
           const cv = getCardVariants(cardAnim, i);
           return (
-            <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}
+            <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={animVp} transition={cv.transition}
               style={{ gridColumn: isFeatured ? 'span 2' : undefined }}>
               <div style={{
                 borderRadius: radius, overflow: 'hidden', border: `1px solid ${theme.primaryColor}22`,
@@ -384,6 +401,7 @@ export function ProjectsSection({ section, sectionTitle, theme, pad, altBg, vari
 
 // ── SERVICES ─────────────────────────────────────────────────────────────────
 export function ServicesSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv, fa }: BaseProps) {
+  const animVp = useInViewViewport();
   const services = fa('services');
   const subtitle = fv('subtitle');
   const layout = fv('servicesLayout') || 'cards';
@@ -409,7 +427,7 @@ export function ServicesSection({ section, sectionTitle, theme, pad, altBg, vari
             }}>{SERVICE_ICONS[i % SERVICE_ICONS.length]}</div>
           );
           return (
-            <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+            <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={animVp} transition={cv.transition}>
               <GlassCard theme={theme} radius={radius} hover style={{
                 textAlign: layout === 'list' ? 'left' : 'center',
                 padding: layout === 'list' ? '1.25rem 1.5rem' : '2rem 1.5rem',
@@ -488,6 +506,7 @@ function BlogPostCard({ post, theme, radius, isMobile, onRead }: {
 }
 
 export function BlogSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv }: BaseProps) {
+  const animVp = useInViewViewport();
   const posts = getBlogPostsFromSection(section);
   const subtitle = fv('subtitle');
   const [activePost, setActivePost] = useState<BlogPostBlock | null>(null);
@@ -501,7 +520,7 @@ export function BlogSection({ section, sectionTitle, theme, pad, altBg, variants
         {posts.map((post, i) => {
           const cv = getCardVariants(cardAnim, i);
           return (
-            <motion.div key={post.id} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+            <motion.div key={post.id} initial={cv.initial} whileInView={cv.animate} viewport={animVp} transition={cv.transition}>
               <BlogPostCard post={post} theme={theme} radius={radius} isMobile={isMobile} onRead={() => setActivePost(post)} />
             </motion.div>
           );
@@ -514,6 +533,7 @@ export function BlogSection({ section, sectionTitle, theme, pad, altBg, variants
 
 // ── GALLERY ──────────────────────────────────────────────────────────────────
 export function GallerySection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv, fa }: BaseProps) {
+  const animVp = useInViewViewport();
   const images = fa('images');
   const subtitle = fv('subtitle');
   const layout = fv('galleryLayout') || 'masonry';
@@ -534,7 +554,7 @@ export function GallerySection({ section, sectionTitle, theme, pad, altBg, varia
         <SectionHeader title={sectionTitle} subtitle={subtitle || 'A curated collection of my best work'} compact={isMobile} theme={theme} centered badge="Gallery" />
         <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollSnapType: 'x mandatory' }}>
           {images.map((src, i) => (
-            <motion.div key={i} initial={{ opacity: 0, scale: 0.94 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
+            <motion.div key={i} initial={{ opacity: 0, scale: 0.94 }} whileInView={{ opacity: 1, scale: 1 }} viewport={animVp} transition={{ delay: i * 0.04 }}
               style={{ flex: '0 0 auto', width: isMobile ? '75vw' : 320, scrollSnapAlign: 'start', borderRadius: radius, overflow: 'hidden', aspectRatio: '4/3' }}>
               <img src={src} alt={`Gallery ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             </motion.div>
@@ -557,7 +577,7 @@ export function GallerySection({ section, sectionTitle, theme, pad, altBg, varia
         {images.map((src, i) => {
           const isHero = !isGrid && i === 0 && images.length >= 3;
           return (
-            <motion.div key={i} initial={{ opacity: 0, scale: 0.94 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
+            <motion.div key={i} initial={{ opacity: 0, scale: 0.94 }} whileInView={{ opacity: 1, scale: 1 }} viewport={animVp} transition={{ delay: i * 0.04 }}
               style={{
                 borderRadius: radius, overflow: 'hidden', position: 'relative', background: `${theme.primaryColor}12`,
                 gridColumn: isHero && !isMobile ? 'span 2' : undefined,
@@ -587,6 +607,7 @@ function videoEmbed(url: string) {
 }
 
 export function VideosSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv, fa }: BaseProps) {
+  const animVp = useInViewViewport();
   const items = fa('videos') || fa('Video');
   const subtitle = fv('subtitle');
   if (!items.length) {
@@ -605,7 +626,7 @@ export function VideosSection({ section, sectionTitle, theme, pad, altBg, varian
     <SectionShell id={section.id} pad={pad} altBg={altBg} section={section} theme={theme}>
       <SectionHeader title={sectionTitle} subtitle={subtitle || 'Watch my latest work and creative projects'} compact={isMobile} theme={theme} centered badge="Videos" />
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : rest.length ? '1.6fr 1fr' : '1fr', gap: '1.25rem' }}>
-        <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+        <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={animVp}
           style={{ borderRadius: radius, overflow: 'hidden', background: '#000', boxShadow: `0 16px 48px ${theme.primaryColor}22` }}>
           <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
             <iframe src={videoEmbed(featured)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }} allowFullScreen title="featured-video" />
@@ -614,7 +635,7 @@ export function VideosSection({ section, sectionTitle, theme, pad, altBg, varian
         {rest.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             {rest.map((url, i) => (
-              <motion.div key={i} initial={{ opacity: 0, x: 12 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06 }}
+              <motion.div key={i} initial={{ opacity: 0, x: 12 }} whileInView={{ opacity: 1, x: 0 }} viewport={animVp} transition={{ delay: i * 0.06 }}
                 style={{ borderRadius: radius, overflow: 'hidden', flex: 1, background: '#000', border: `1px solid ${theme.primaryColor}22` }}>
                 <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
                   <iframe src={videoEmbed(url)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }} allowFullScreen title={`video-${i}`} />
@@ -630,6 +651,7 @@ export function VideosSection({ section, sectionTitle, theme, pad, altBg, varian
 
 // ── SOCIAL ───────────────────────────────────────────────────────────────────
 export function SocialSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv }: BaseProps) {
+  const animVp = useInViewViewport();
   const subtitle = fv('subtitle');
   const links = section.fields
     .filter(f => f.type === 'url' && f.value)
@@ -642,7 +664,7 @@ export function SocialSection({ section, sectionTitle, theme, pad, altBg, varian
           const meta = SOCIAL_META[key] || { name: label, icon: '🔗', color: theme.primaryColor };
           return (
             <motion.a key={key} href={url} target="_blank" rel="noopener noreferrer"
-              initial={{ opacity: 0, scale: 0.92 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+              initial={{ opacity: 0, scale: 0.92 }} whileInView={{ opacity: 1, scale: 1 }} viewport={animVp} transition={{ delay: i * 0.05 }}
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.65rem',
                 padding: '1.5rem 1rem', borderRadius: radius, textDecoration: 'none', color: 'inherit',
@@ -708,6 +730,7 @@ function TestimonialCard({ item, theme, radius }: { item: TestimonialBlock; them
 }
 
 export function TestimonialsSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv }: BaseProps) {
+  const animVp = useInViewViewport();
   const items = getTestimonialsFromSection(section).filter(t => t.quote?.trim() || t.author?.trim());
   const subtitle = fv('subtitle');
   const cardAnim = getSectionCardAnim(section);
@@ -719,7 +742,7 @@ export function TestimonialsSection({ section, sectionTitle, theme, pad, altBg, 
         {items.map((item, i) => {
           const cv = getCardVariants(cardAnim, i);
           return (
-            <motion.div key={item.id} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+            <motion.div key={item.id} initial={cv.initial} whileInView={cv.animate} viewport={animVp} transition={cv.transition}>
               <TestimonialCard item={item} theme={theme} radius={radius} />
             </motion.div>
           );
@@ -731,31 +754,34 @@ export function TestimonialsSection({ section, sectionTitle, theme, pad, altBg, 
 
 // ── STATS ────────────────────────────────────────────────────────────────────
 export function StatsSection({ section, sectionTitle, theme, pad, fv, fa, isMobile }: BaseProps) {
+  const animVp = useInViewViewport();
   const items = fa('stats') || fa('Stats');
   const subtitle = fv('subtitle');
   const cols = Math.min(items.length, isMobile ? 2 : 4);
-  const variants = getMotionVariants(section, theme);
-  const viewport = getMotionViewport(section, theme);
-  const whileHover = getSectionHoverProps(section);
-  const triggerLoad = section.style?.animation?.custom && section.style.animation.trigger === 'load';
   const cardAnim = getSectionCardAnim(section);
   const headingAnim = getSectionHeadingAnim(section);
   return (
-    <motion.section id={section.id} initial="hidden" animate={triggerLoad ? 'visible' : undefined} whileInView={triggerLoad ? undefined : 'visible'} viewport={viewport} variants={variants} whileHover={whileHover}
+    <SectionShell
+      id={section.id}
+      pad={pad}
+      altBg="transparent"
+      section={section}
+      theme={theme}
       style={{
-        padding: `${pad} clamp(1rem, 5vw, 2.5rem)`,
         background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
-        position: 'relative', overflow: 'hidden',
-      }}>
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.08, backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-      <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative' }}>
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.08, backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }} />
+      <div style={{ position: 'relative' }}>
         <SectionHeader title={sectionTitle} subtitle={subtitle} compact={isMobile} theme={{ ...theme, primaryColor: '#fff', textColor: '#fff' }} centered badge="Impact" headingAnim={headingAnim} />
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '1.25rem' }}>
           {items.map((stat, i) => {
             const [num, ...rest] = stat.split(' ');
             const cv = getCardVariants(cardAnim, i);
             return (
-              <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}
+              <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={animVp} transition={cv.transition}
                 style={{
                   textAlign: 'center', padding: '1.75rem 1rem', borderRadius: 16,
                   background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
@@ -768,7 +794,7 @@ export function StatsSection({ section, sectionTitle, theme, pad, fv, fa, isMobi
           })}
         </div>
       </div>
-    </motion.section>
+    </SectionShell>
   );
 }
 
@@ -831,6 +857,7 @@ function TeamMemberCard({ member, theme, radius, isMobile }: { member: TeamMembe
 }
 
 export function TeamSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv }: BaseProps) {
+  const animVp = useInViewViewport();
   const members = getTeamMembersFromSection(section).filter(m => m.name?.trim());
   const subtitle = fv('subtitle');
   const cardAnim = getSectionCardAnim(section);
@@ -842,7 +869,7 @@ export function TeamSection({ section, sectionTitle, theme, pad, altBg, variants
         {members.map((member, i) => {
           const cv = getCardVariants(cardAnim, i);
           return (
-            <motion.div key={member.id} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+            <motion.div key={member.id} initial={cv.initial} whileInView={cv.animate} viewport={animVp} transition={cv.transition}>
               <TeamMemberCard member={member} theme={theme} radius={radius} isMobile={isMobile} />
             </motion.div>
           );
@@ -904,6 +931,7 @@ function PricingPlanCard({ plan, theme, radius, isMobile }: { plan: PricingPlanB
 }
 
 export function PricingSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv }: BaseProps) {
+  const animVp = useInViewViewport();
   const plans = getPricingPlansFromSection(section).filter(p => p.name?.trim() || p.price?.trim());
   const subtitle = fv('subtitle');
   const layout = fv('pricingLayout') || 'columns-3';
@@ -918,7 +946,7 @@ export function PricingSection({ section, sectionTitle, theme, pad, altBg, varia
         {plans.map((plan, i) => {
           const cv = getCardVariants(cardAnim, i);
           return (
-            <motion.div key={plan.id} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+            <motion.div key={plan.id} initial={cv.initial} whileInView={cv.animate} viewport={animVp} transition={cv.transition}>
               <PricingPlanCard plan={plan} theme={theme} radius={radius} isMobile={isMobile} />
             </motion.div>
           );
@@ -930,9 +958,10 @@ export function PricingSection({ section, sectionTitle, theme, pad, altBg, varia
 
 // ── FAQ ──────────────────────────────────────────────────────────────────────
 function FAQAccordion({ item, theme, radius, index, isMobile }: { item: FAQItemBlock; theme: ThemeConfig; radius: string; index: number; isMobile: boolean }) {
+  const animVp = useInViewViewport();
   const [open, setOpen] = useState(false);
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.05 }}
+    <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={animVp} transition={{ delay: index * 0.05 }}
       style={{ borderRadius: radius, overflow: 'hidden', border: `1px solid ${open ? theme.primaryColor : `${theme.primaryColor}22`}`, transition: 'border-color 0.2s', background: open ? `${theme.primaryColor}08` : `${theme.primaryColor}04` }}>
       <button type="button" onClick={() => setOpen(!open)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '1rem' : '1.15rem 1.35rem', background: 'transparent', border: 'none', cursor: 'pointer', color: 'inherit', textAlign: 'left' }}>
@@ -951,6 +980,7 @@ function FAQAccordion({ item, theme, radius, index, isMobile }: { item: FAQItemB
 }
 
 export function FAQSection({ section, sectionTitle, theme, pad, altBg, variants, radius, fv, isMobile }: BaseProps) {
+  const animVp = useInViewViewport();
   const items = getFAQItemsFromSection(section).filter(f => f.question?.trim());
   const subtitle = fv('subtitle');
   const headingAnim = getSectionHeadingAnim(section);
@@ -970,25 +1000,108 @@ export function FAQSection({ section, sectionTitle, theme, pad, altBg, variants,
 
 // ── CUSTOM ───────────────────────────────────────────────────────────────────
 export function CustomSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv }: BaseProps) {
+  const cs = getCustomSection(section);
   const content = fv('content');
   const subtitle = fv('subtitle');
   const customFields = getCustomFields(section, CUSTOM_KNOWN_IDS);
+  const blocks = visibleCustomBlocks(cs.blocks);
+  const layout: CustomLayoutId = cs.layout ?? 'default';
+  const align = cs.align || 'left';
+  const maxW = getContentMaxWidth(cs.contentWidth);
+  const centered = align === 'center' || layout === 'centered';
+  const headingAnim = getSectionHeadingAnim(section);
+  const containerStyle = getCustomContainerStyle(cs.container || 'gradient', theme, radius);
+  const isBanner = layout === 'banner';
+  const isMinimal = layout === 'minimal' || cs.container === 'none';
+  const badge = cs.showBadge !== false ? (cs.badgeText || 'Custom') : undefined;
+
+  const introBlock = content ? (
+    <p style={{
+      opacity: 0.82, lineHeight: 1.9, fontSize: isBanner ? '1.1rem' : '1.05rem',
+      whiteSpace: 'pre-wrap', textAlign: align, maxWidth: centered ? 720 : undefined, marginInline: centered ? 'auto' : undefined,
+    }}>{content}</p>
+  ) : null;
+
+  const blocksEl = blocks.length > 0 ? (
+    <CustomSectionBlocks blocks={blocks} theme={theme} radius={radius} isMobile={isMobile} layout={layout} align={align} />
+  ) : null;
+
+  const fieldsEl = customFields.length > 0 ? (
+    <DynamicFieldsGrid fields={customFields} theme={theme} radius={radius} isMobile={isMobile} variant={isMinimal ? 'plain' : 'cards'} />
+  ) : null;
+
+  const headerEl = !cs.hideTitle ? (
+    <SectionHeader
+      title={sectionTitle}
+      subtitle={cs.hideSubtitle ? undefined : subtitle}
+      compact={isMobile}
+      theme={theme}
+      centered={centered}
+      badge={badge}
+      headingAnim={headingAnim}
+    />
+  ) : (!cs.hideSubtitle && subtitle ? (
+    <p style={{ opacity: 0.65, textAlign: align, marginBottom: '1.5rem', fontSize: '0.95rem' }}>{subtitle}</p>
+  ) : null);
+
+  const inner = (() => {
+    if (layout === 'split' && !isMobile) {
+      return (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem', alignItems: 'start' }}>
+          <div style={{ textAlign: align }}>{headerEl}{introBlock}</div>
+          <div>{blocksEl}{fieldsEl}</div>
+        </div>
+      );
+    }
+    if (layout === 'magazine') {
+      return (
+        <>
+          {headerEl}
+          {introBlock && <div style={{ marginBottom: '2rem', textAlign: align }}>{introBlock}</div>}
+          {blocksEl}
+          {fieldsEl && <div style={{ marginTop: blocks.length ? '2rem' : 0 }}>{fieldsEl}</div>}
+        </>
+      );
+    }
+    if (isBanner) {
+      return (
+        <div style={{ textAlign: 'center', maxWidth: 720, margin: '0 auto' }}>
+          {headerEl}
+          {introBlock}
+          {blocksEl}
+          {fieldsEl && <div style={{ marginTop: '1.5rem' }}>{fieldsEl}</div>}
+        </div>
+      );
+    }
+    return (
+      <>
+        {headerEl}
+        {introBlock && <div style={{ marginBottom: blocks.length || customFields.length ? '2rem' : 0 }}>{introBlock}</div>}
+        {blocksEl}
+        {fieldsEl && <div style={{ marginTop: blocks.length ? '2rem' : 0 }}>{fieldsEl}</div>}
+      </>
+    );
+  })();
+
+  const shellPad = isBanner
+    ? (isMobile ? '2.5rem 1.5rem' : '3.5rem 3rem')
+    : (isMinimal ? 0 : (isMobile ? '2rem 1.5rem' : '3rem 2.5rem'));
+
   return (
     <SectionShell id={section.id} pad={pad} altBg={altBg} section={section} theme={theme}>
       <div style={{
-        padding: isMobile ? '2rem 1.5rem' : '3rem 2.5rem', borderRadius: radius,
-        background: `linear-gradient(135deg, ${theme.primaryColor}10, ${theme.secondaryColor}06)`,
-        border: `1px solid ${theme.primaryColor}22`,
+        maxWidth: cs.contentWidth === 'full' ? '100%' : maxW,
+        margin: '0 auto',
+        padding: shellPad,
+        textAlign: align,
+        ...(isMinimal ? {} : containerStyle),
+        ...(isBanner ? {
+          background: `linear-gradient(135deg, ${theme.primaryColor}18, ${theme.secondaryColor}10)`,
+          border: `1px solid ${theme.primaryColor}28`,
+          boxShadow: `0 20px 60px ${theme.primaryColor}12`,
+        } : {}),
       }}>
-        <SectionHeader title={sectionTitle} subtitle={subtitle} compact={isMobile} theme={theme} badge="Custom" />
-        {content && (
-          <p style={{ opacity: 0.82, lineHeight: 1.9, fontSize: '1.05rem', whiteSpace: 'pre-wrap', maxWidth: 760 }}>{content}</p>
-        )}
-        {customFields.length > 0 && (
-          <div style={{ marginTop: content ? '2rem' : 0 }}>
-            <DynamicFieldsGrid fields={customFields} theme={theme} radius={radius} isMobile={isMobile} />
-          </div>
-        )}
+        {inner}
       </div>
     </SectionShell>
   );

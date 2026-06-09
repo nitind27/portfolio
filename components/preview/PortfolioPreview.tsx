@@ -16,8 +16,10 @@ import {
 import { HeroSection } from './HeroSection';
 import { DynamicFieldsGrid } from './DynamicFields';
 import { getSectionPad, isNarrowDeviceView, isMobileDeviceView } from '@/lib/responsive';
-import { getMotionVariants, getMotionViewport, getSectionHoverProps } from '@/lib/section-animation';
+import { getMotionVariants, getSectionHoverProps, resolveTriggerLoad, getSectionHeadingAnim } from '@/lib/section-animation';
+import { PreviewScrollRootProvider, useInViewViewport } from './preview-motion';
 import { APP_NAME } from '@/lib/brand';
+import { getAboutLayoutPreview, normalizeAboutLayout } from '@/lib/about-layouts';
 
 interface Props {
   portfolio: Portfolio;
@@ -938,6 +940,7 @@ export default function PortfolioPreview({ portfolio, deviceView = 'desktop', ac
   };
 
   return (
+    <PreviewScrollRootProvider>
     <div id="portfolio-top" style={{ ...getThemeStyles(theme), overflowX: 'clip', width: '100%', maxWidth: '100%', position: 'relative' }} className="min-h-screen">
       <style>{`#portfolio-top section[id] { scroll-margin-top: ${NAVBAR_SCROLL_OFFSET}px; }`}</style>
       {theme.customCSS && <style dangerouslySetInnerHTML={{ __html: theme.customCSS }} />}
@@ -969,6 +972,7 @@ export default function PortfolioPreview({ portfolio, deviceView = 'desktop', ac
 
       <SiteFooter portfolio={portfolio} sections={visibleSections} theme={theme} social={social} isMobile={isNarrow} />
     </div>
+    </PreviewScrollRootProvider>
   );
 }
 
@@ -1105,6 +1109,7 @@ const DEFAULT_FOOTER = {
 function SiteFooter({ portfolio, sections, theme, social, isMobile }: {
   portfolio: Portfolio; sections: PortfolioSection[]; theme: ThemeConfig; social: SocialLinks; isMobile: boolean;
 }) {
+  const animVp = useInViewViewport();
   const footer = { ...DEFAULT_FOOTER, ...portfolio.footer };
   if (!footer.enabled) return null;
 
@@ -1158,7 +1163,7 @@ function SiteFooter({ portfolio, sections, theme, social, isMobile }: {
         {/* CTA strip */}
         {footer.showCta && (
           <motion.div
-            initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={animVp}
             style={{
               display: 'flex', flexDirection: isMobile ? 'column' : 'row',
               alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between',
@@ -1325,9 +1330,8 @@ function SectionRenderer({ section, theme, index, social, smtp, isMobile }: {
   section: PortfolioSection; theme: ThemeConfig; index: number; social: SocialLinks; smtp: SMTPConfig; isMobile: boolean;
 }) {
   const sectionVariants = getMotionVariants(section, theme);
-  const sectionViewport = getMotionViewport(section, theme);
   const sectionHover = getSectionHoverProps(section);
-  const triggerLoad = section.style?.animation?.custom && section.style.animation.trigger === 'load';
+  const triggerLoad = resolveTriggerLoad(section);
   const pad = getSectionPad(theme.spacing, isMobile);
   const radii: Record<string, string> = { none: '0', sm: '4px', md: '8px', lg: '16px', full: '9999px' };
   const radius = radii[theme.borderRadius] || '8px';
@@ -1359,7 +1363,6 @@ function SectionRenderer({ section, theme, index, social, smtp, isMobile }: {
         isMobile={isMobile}
         social={social}
         sectionVariants={sectionVariants}
-        sectionViewport={sectionViewport}
         sectionHover={sectionHover}
         triggerLoad={!!triggerLoad}
         fv={fv}
@@ -1509,6 +1512,7 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
   radius: string; isMobile: boolean;
   fv: (id: string) => string; fa: (id: string) => string[];
 }) {
+  const animVp = useInViewViewport();
   const subtitle = fv('subtitle');
   const role = fv('role');
   const bio = fv('bio');
@@ -1542,8 +1546,9 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
   ].filter(Boolean) as { icon: string; label: string; value: string; href?: string }[];
 
   const customFields = section.fields.filter(f => !ABOUT_KNOWN_IDS.has(f.id));
-  const aboutLayout = fv('aboutLayout') || 'split';
-  const isCentered = aboutLayout === 'centered';
+  const aboutLayout = normalizeAboutLayout(fv('aboutLayout'));
+  const layout = getAboutLayoutPreview(aboutLayout, isMobile);
+  const isCentered = layout.centered;
   const isWide = aboutLayout === 'wide';
 
   // ── Image style helpers ──
@@ -1556,10 +1561,10 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
 
   const bgDecorStyle: React.CSSProperties = {
     position: 'absolute',
-    inset: isMobile ? -8 : -12,
-    borderRadius: isCircle ? '50%' : isMorphBorder ? '60% 40% 30% 70% / 60% 30% 70% 40%' : `calc(${radius} + 8px)`,
+    inset: layout.minimal ? -4 : isMobile ? -8 : -12,
+    borderRadius: isCircle || layout.minimal ? '50%' : isMorphBorder ? '60% 40% 30% 70% / 60% 30% 70% 40%' : `calc(${radius} + 8px)`,
     background: `linear-gradient(135deg, ${theme.primaryColor}55, ${theme.secondaryColor}44)`,
-    transform: (isCentered || isCircle || isMorphBorder) ? 'none' : isRotate ? 'rotate(6deg)' : 'rotate(-3deg)',
+    transform: (isCentered || isCircle || isMorphBorder || layout.minimal) ? 'none' : isRotate ? 'rotate(6deg)' : 'rotate(-3deg)',
     zIndex: 0,
     ...(isMorphBorder ? { animation: 'morphBorder 8s ease-in-out infinite' } : {}),
   };
@@ -1568,8 +1573,10 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
     position: 'relative', zIndex: 1,
     borderRadius: isCircle ? '50%' : radius,
     overflow: 'hidden',
-    aspectRatio: isCircle ? '1' : isWide ? '16/10' : '4/5',
-    maxHeight: isCircle ? 320 : isWide ? 380 : 460,
+    aspectRatio: isCircle ? '1' : layout.imageAspect,
+    maxHeight: isCircle ? 320 : layout.imageMaxHeight,
+    width: layout.minimal ? 96 : layout.imageFullWidth ? '100%' : undefined,
+    height: layout.minimal ? 96 : undefined,
     boxShadow: isCircle
       ? `0 0 0 4px ${theme.primaryColor}33, 0 0 40px ${theme.primaryColor}44, 0 24px 64px ${theme.primaryColor}30`
       : effectiveIsPulseGlow
@@ -1610,14 +1617,14 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
     <motion.div
       initial={{ opacity: 0, x: isCentered ? 0 : -24, y: isCentered ? 20 : 0 }}
       whileInView={{ opacity: 1, x: 0, y: 0 }}
-      viewport={{ once: true }}
+      viewport={animVp}
       transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
       {...(isTilt3d ? { whileHover: { rotateY: 8, rotateX: -6, scale: 1.02 }, style: { perspective: 800 } } : {})}
       style={{
         position: 'relative',
-        maxWidth: isCentered ? 300 : undefined,
-        margin: isCentered ? '0 auto' : undefined,
-        width: isCentered ? '100%' : undefined,
+        maxWidth: layout.imageMaxWidth,
+        margin: isCentered || layout.imageFullWidth ? '0 auto' : undefined,
+        width: isCentered || layout.imageFullWidth ? '100%' : layout.minimal ? 96 : undefined,
         ...(isTilt3d ? { perspective: 800 } : {}),
       }}
     >
@@ -1641,11 +1648,11 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
       >
         {imgEl}
       </motion.div>
-      {role && (
+      {role && !layout.hideRoleBadge && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={animVp}
           transition={{ delay: 0.4 }}
           style={{
             position: 'absolute', bottom: isMobile ? -14 : -18, left: '50%', transform: 'translateX(-50%)',
@@ -1664,12 +1671,31 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
   const headingAnim = animCfg?.headingAnim || 'none';
 
   const contentBlock = (
-    <div style={{ paddingTop: isMobile ? 0 : '0.5rem', textAlign: isCentered ? 'center' : 'left' }}>
+    <div style={{
+      paddingTop: isMobile ? 0 : layout.overlap ? '3rem' : '0.5rem',
+      textAlign: isCentered ? 'center' : 'left',
+      ...(layout.overlap && !isMobile ? {
+        marginLeft: '-3rem',
+        position: 'relative',
+        zIndex: 2,
+        background: theme.backgroundColor,
+        padding: '1.5rem',
+        borderRadius: radius,
+        boxShadow: `0 16px 48px ${theme.primaryColor}18`,
+        border: `1px solid ${theme.primaryColor}14`,
+      } : {}),
+    }}>
+      {role && layout.hideRoleBadge && (
+        <p style={{
+          fontSize: '0.82rem', fontWeight: 700, color: theme.primaryColor,
+          marginBottom: '0.75rem', letterSpacing: '0.04em', textTransform: 'uppercase',
+        }}>{role}</p>
+      )}
       {bio && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={animVp}
           transition={{ duration: 0.55, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           style={{
             padding: '1.5rem', borderRadius: radius, background: `${theme.primaryColor}06`,
@@ -1701,7 +1727,7 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
               <motion.div key={i}
                 initial={cardInitial}
                 whileInView={cardAnimate}
-                viewport={{ once: true }}
+                viewport={animVp}
                 transition={{ delay: i * 0.08, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                 whileHover={{ y: -3, scale: 1.02, transition: { duration: 0.2 } }}
                 style={{
@@ -1730,7 +1756,7 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
           gap: '0.75rem', maxWidth: isCentered ? 480 : undefined, marginInline: isCentered ? 'auto' : undefined,
         }}>
           {infoItems.map((item, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
+            <motion.div key={i} initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={animVp} transition={{ delay: i * 0.05 }}>
               <AboutInfoCard icon={item.icon} label={item.label} value={item.value} href={item.href} theme={theme} radius={radius} />
             </motion.div>
           ))}
@@ -1739,22 +1765,35 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
     </div>
   );
 
-  const gridCols = isMobile ? '1fr'
-    : isCentered ? '1fr'
-    : isWide ? '1fr 1.35fr'
-    : 'minmax(240px, 340px) 1fr';
+  const mainContent = layout.contentFirst && !isMobile
+    ? <>{contentBlock}{imageBlock}</>
+    : <>{imageBlock}{contentBlock}</>;
 
   return (
     <SectionShell id={section.id} pad={pad} altBg={altBg} section={section} theme={theme}>
-      <SectionHeader title={sectionTitle} subtitle={subtitle} theme={theme} compact={isMobile} centered={isCentered} />
-      <div style={{
-        display: 'grid', gridTemplateColumns: gridCols,
-        gap: isMobile ? '2.5rem' : '4rem', alignItems: 'start',
-      }}>
-        {isCentered ? <>{imageBlock}{contentBlock}</>
-          : isWide && !isMobile ? <>{contentBlock}{imageBlock}</>
-          : <>{imageBlock}{contentBlock}</>}
-      </div>
+      <SectionHeader title={sectionTitle} subtitle={subtitle} theme={theme} compact={isMobile} centered={isCentered} headingAnim={headingAnim} />
+      {layout.card ? (
+        <div style={{
+          borderRadius: radius,
+          overflow: 'hidden',
+          border: `1px solid ${theme.primaryColor}18`,
+          background: `${theme.primaryColor}04`,
+          boxShadow: `0 20px 56px ${theme.primaryColor}12`,
+        }}>
+          {imageBlock}
+          <div style={{ padding: isMobile ? '1.25rem' : '1.75rem' }}>{contentBlock}</div>
+        </div>
+      ) : (
+        <div style={{
+          display: 'grid', gridTemplateColumns: layout.gridCols,
+          gap: isMobile ? '2.5rem' : layout.minimal ? '2rem' : '4rem',
+          alignItems: layout.minimal ? 'center' : 'start',
+          maxWidth: isCentered ? 720 : undefined,
+          marginInline: isCentered ? 'auto' : undefined,
+        }}>
+          {mainContent}
+        </div>
+      )}
 
       {/* Custom / user-added fields */}
       {customFields.length > 0 && (
@@ -1793,6 +1832,7 @@ function ContactSection({ section, sectionTitle, theme, pad, altBg, radius, isMo
   radius: string; isMobile: boolean; social: SocialLinks; smtp: SMTPConfig;
   fv: (id: string) => string;
 }) {
+  const headingAnim = getSectionHeadingAnim(section);
   const subtitle = fv('subtitle');
   const intro = fv('message');
   const email = fv('email');
@@ -1861,7 +1901,7 @@ function ContactSection({ section, sectionTitle, theme, pad, altBg, radius, isMo
   return (
     <SectionShell id={section.id} pad={pad} altBg={altBg} section={section} theme={theme}
       style={{ background: `linear-gradient(180deg, ${theme.primaryColor}0a 0%, ${altBg} 55%)` }}>
-      <SectionHeader title={sectionTitle} subtitle={subtitle} theme={theme} centered compact={isMobile} />
+      <SectionHeader title={sectionTitle} subtitle={subtitle} theme={theme} centered compact={isMobile} headingAnim={headingAnim} />
 
       {isMinimal && infoItems.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', marginBottom: '1.5rem' }}>

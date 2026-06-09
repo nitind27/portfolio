@@ -11,6 +11,7 @@ import {
   Layers, Palette, Search, Mail, LayoutTemplate, Megaphone, Share2, PanelTop, PanelBottom,
   Undo2, Redo2, ZoomIn, ZoomOut, Keyboard, Globe, BarChart2, Code2,
   ChevronDown, CheckCircle2, Circle, Copy, Check, ExternalLink, Crown, Lock, Rocket,
+  HelpCircle, PlayCircle,
 } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
 import { brand, STORAGE_POLICY_DAYS } from '@/lib/brand';
@@ -19,11 +20,13 @@ import PremiumModal from '../PremiumModal';
 import HostingerDeployModal from '../HostingerDeployModal';
 import { fetchPortfolioAccess, bindPortfolioSlot, accessToModalReason, type PremiumModalReason } from '@/lib/portfolio-access-client';
 import { openPreviewInNewTab } from '@/lib/preview-tab';
+import ScrollablePanelTabs from './ScrollablePanelTabs';
 
 interface Props {
   rightTab: RightTab;
   setRightTab: (t: RightTab) => void;
   onShowShortcuts: () => void;
+  onShowTour?: () => void;
 }
 
 // ── Click-outside hook ───────────────────────────────────────────────────────
@@ -78,7 +81,7 @@ function DropdownPortal({ anchor, open, children }: {
   );
 }
 
-export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts }: Props) {
+export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, onShowTour }: Props) {
   const {
     getActivePortfolio, deviceView, setDeviceView, previewMode, setPreviewMode,
     setActivePortfolio, updatePortfolioName, undo, redo, canUndo, canRedo,
@@ -96,6 +99,8 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts }
   const [showPremium, setShowPremium] = useState(false);
   const [premiumReason, setPremiumReason] = useState<PremiumModalReason>('general');
   const [showHostinger, setShowHostinger] = useState(false);
+  const [showHelpMenu, setShowHelpMenu] = useState(false);
+  const helpRef = useRef<HTMLDivElement>(null);
 
   const isPremium = Boolean(user?.isPremium);
   const isThisPortfolioUnlocked = Boolean(
@@ -147,6 +152,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts }
 
   const exportRef = useRef<HTMLDivElement>(null);
   const shareRef = useRef<HTMLDivElement>(null);
+  useClickOutside(helpRef, () => setShowHelpMenu(false));
 
   useClickOutside(exportRef, () => setShowExport(false));
   useClickOutside(shareRef, () => setShowShare(false));
@@ -277,23 +283,13 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts }
 
       <div className="w-px h-6 bg-white/10 shrink-0" />
 
-      {/* Panel tabs — scrollable, no overflow clip */}
-      <div data-tour="panel-tabs" className="flex items-center gap-0.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-        {tabs.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setRightTab(t.id)}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap shrink-0 ${
-              rightTab === t.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <t.icon className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline">{t.label}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="flex-1 min-w-0" />
+      {/* Panel tabs — scroll with fade + arrows when more tabs are hidden */}
+      <ScrollablePanelTabs
+        className="flex-1 min-w-0 max-w-[min(100%,28rem)] xl:max-w-md 2xl:max-w-lg"
+        tabs={tabs}
+        activeId={rightTab}
+        onSelect={setRightTab}
+      />
 
       {/* Zoom */}
       <div className="flex items-center gap-0.5 bg-white/5 rounded-lg px-1 py-0.5 shrink-0">
@@ -540,6 +536,60 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts }
       >
         <Keyboard className="w-4 h-4" />
       </button>
+
+      <div ref={helpRef} className="relative shrink-0">
+        <button
+          type="button"
+          onClick={() => setShowHelpMenu(v => !v)}
+          title="Help & guide"
+          className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition ${
+            showHelpMenu ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30' : 'text-gray-500 hover:text-white hover:bg-white/5'
+          }`}
+        >
+          <HelpCircle className="w-4 h-4" />
+          <span className="hidden sm:inline">Help</span>
+        </button>
+        {showHelpMenu && (
+          <div className="absolute right-0 top-full mt-2 w-56 bg-[#1a1a1a] border border-white/15 rounded-xl shadow-2xl overflow-hidden z-[9999]">
+            {onShowTour && (
+              <button
+                type="button"
+                onClick={() => { setShowHelpMenu(false); onShowTour(); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-white/5 transition border-b border-white/10"
+              >
+                <PlayCircle className="w-4 h-4 text-blue-400 shrink-0" />
+                <div>
+                  <p className="text-xs font-medium text-white">Guided tour</p>
+                  <p className="text-[10px] text-gray-500">Walk through the builder</p>
+                </div>
+              </button>
+            )}
+            <a
+              href="/docs"
+              className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/5 transition border-b border-white/10"
+            >
+              <Search className="w-4 h-4 text-gray-400 shrink-0" />
+              <div>
+                <p className="text-xs font-medium text-white">Documentation</p>
+                <p className="text-[10px] text-gray-500">Full builder guides</p>
+              </div>
+            </a>
+            <a
+              href="/ask"
+              className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/5 transition"
+            >
+              <HelpCircle className="w-4 h-4 text-blue-400 shrink-0" />
+              <div>
+                <p className="text-xs font-medium text-white">Ask AI</p>
+                <p className="text-[10px] text-gray-500">Full-screen assistant</p>
+              </div>
+            </a>
+            <p className="px-3 py-2 text-[10px] text-gray-600 border-t border-white/10">
+              Or tap the floating Help button for tips + AI chat
+            </p>
+          </div>
+        )}
+      </div>
 
       <PremiumModal open={showPremium} onClose={() => setShowPremium(false)} reason={premiumReason} />
       <HostingerDeployModal

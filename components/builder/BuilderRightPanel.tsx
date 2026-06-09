@@ -10,10 +10,11 @@ import { APP_NAME } from '@/lib/brand';
 import PopupCard from '../shared/PopupCard';
 import TemplatesGallery from '../shared/TemplatesGallery';
 import SectionEditor from './SectionEditor';
+import BuilderHelpPanel from './BuilderHelpPanel';
 
-interface Props { tab: RightTab; setTab: (t: RightTab) => void; }
+interface Props { tab: RightTab; setTab: (t: RightTab) => void; onShowTour?: () => void; }
 
-export default function BuilderRightPanel({ tab }: Props) {
+export default function BuilderRightPanel({ tab, setTab, onShowTour }: Props) {
   const {
     getActivePortfolio, updateTheme, switchTemplate, updateSEO, updateSMTP, updatePopup,
     updateNavbar, updateFooter, updateSocial, activeSection, previewMode,
@@ -42,32 +43,19 @@ export default function BuilderRightPanel({ tab }: Props) {
           {tab === 'social' && <SocialPanel social={portfolio.social} onUpdate={updateSocial} />}
           {tab === 'analytics' && <AnalyticsPanel portfolio={portfolio} />}
           {tab === 'css' && <CSSPanel theme={portfolio.theme} onUpdate={updateTheme} />}
-          {tab === 'sections' && <SectionsInfo />}
+          {tab === 'sections' && (
+            <BuilderHelpPanel
+              variant="inline"
+              rightTab={tab}
+              previewMode={previewMode}
+              sectionCount={portfolio.sections.length}
+              onShowTour={onShowTour}
+              onNavigateTab={setTab}
+            />
+          )}
         </div>
       )}
     </aside>
-  );
-}
-
-function SectionsInfo() {
-  return (
-    <div className="p-4">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Section Editor</p>
-      <p className="text-sm text-gray-400 leading-relaxed">
-        Click a section in the left list, preview header, or on the page — the editor stays on the right and switches to that section.
-      </p>
-      <div className="mt-4 space-y-2">
-        {[
-          { icon: '🔗', text: 'Header nav links open section editor' },
-          { icon: '👁️', text: 'Live preview while you edit' },
-          { icon: '⠿', text: 'Drag sections to reorder' },
-        ].map((tip, i) => (
-          <div key={i} className="flex items-center gap-2 text-xs text-gray-500">
-            <span>{tip.icon}</span><span>{tip.text}</span>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 

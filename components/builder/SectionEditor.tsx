@@ -14,6 +14,9 @@ import PricingEditor from './PricingEditor';
 import FAQEditor from './FAQEditor';
 import SectionAnimationEditor from './SectionAnimationEditor';
 import HeroContentEditor from './HeroContentEditor';
+import AboutLayoutEditor from './AboutLayoutEditor';
+import CustomSectionEditor from './CustomSectionEditor';
+import SectionHelpBanner from './SectionHelpBanner';
 import { resolveAssetUrl } from '@/lib/media-url';
 
 interface Props { sectionId: string; variant?: 'canvas' | 'sidebar'; }
@@ -322,7 +325,7 @@ export default function SectionEditor({ sectionId, variant = 'canvas' }: Props) 
     reorderFields(sectionId, arrayMove(section.fields, oldIdx, newIdx));
   };
 
-  const PROTECTED = ['headline', 'subheadline', 'description', 'avatar', 'bannerImages', 'ctaText', 'ctaLink', 'heroLayout', 'blogposts', 'testimonialitems', 'teamitems', 'pricingplans', 'faqitems'];
+  const PROTECTED = ['headline', 'subheadline', 'description', 'avatar', 'bannerImages', 'ctaText', 'ctaLink', 'heroLayout', 'aboutLayout', 'blogposts', 'testimonialitems', 'teamitems', 'pricingplans', 'faqitems'];
   const isBlog = section.type === 'blog';
   const isTestimonials = section.type === 'testimonials';
   const isTeam = section.type === 'team';
@@ -478,7 +481,8 @@ export default function SectionEditor({ sectionId, variant = 'canvas' }: Props) 
       </div>
 
       <div className={isSidebar ? 'flex-1 overflow-y-auto px-3 pb-4 min-h-0' : ''}>
-      <div className={`flex gap-1 mb-4 p-1 rounded-xl bg-white/3 border border-white/8 ${isSidebar ? 'mt-3' : ''}`}>
+      {isSidebar && <SectionHelpBanner sectionType={section.type} sectionTitle={section.title} />}
+      <div className={`flex gap-1 mb-4 p-1 rounded-xl bg-white/3 border border-white/8 ${isSidebar ? 'mt-0' : ''}`}>
         {([
           { id: 'content' as const, label: 'Content' },
           { id: 'animation' as const, label: 'Animation' },
@@ -494,6 +498,8 @@ export default function SectionEditor({ sectionId, variant = 'canvas' }: Props) 
 
       {tab === 'content' && <>
       {section.type === 'hero' && <HeroContentEditor sectionId={sectionId} />}
+      {section.type === 'about' && <AboutLayoutEditor sectionId={sectionId} />}
+      {section.type === 'custom' && <CustomSectionEditor sectionId={sectionId} />}
       {/* Fields with drag-and-drop */}
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={section.fields.filter(f => !structuredFieldId || f.id !== structuredFieldId).map(f => f.id)} strategy={verticalListSortingStrategy}>

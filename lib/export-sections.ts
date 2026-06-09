@@ -12,6 +12,16 @@ import { getTestimonialsFromSection } from './testimonial-utils';
 import { getTeamMembersFromSection } from './team-utils';
 import { getPricingPlansFromSection } from './pricing-utils';
 import { getFAQItemsFromSection } from './faq-utils';
+import { normalizeAboutLayout, aboutLayoutExportClass } from './about-layouts';
+import {
+  customContainerExportClass,
+  customLayoutExportClass,
+  getContentMaxWidth,
+  getCustomSection,
+  getVideoEmbedUrl,
+  visibleCustomBlocks,
+} from './custom-section';
+import type { CustomBlock, CustomLayoutId } from './types';
 
 const SOCIAL_LABELS: Record<string, string> = {
   github: 'GH', linkedin: 'in', twitter: 'X', instagram: 'IG',
@@ -240,25 +250,31 @@ function renderAbout(section: PortfolioSection, portfolio: Portfolio, alt: boole
       : `<div class="stat-pill"><p style="font-size:0.88rem;font-weight:600;opacity:0.85">${escapeHtml(item)}</p></div>`;
   }).join('');
 
-  const aboutLayout = fv(section, 'aboutLayout') || 'split';
-  const aboutClass = aboutLayout === 'centered' ? ' about-centered' : aboutLayout === 'wide' ? ' about-wide' : '';
-  const known = new Set(['aboutLayout', 'title', 'subtitle', 'role', 'bio', 'image', 'highlights', 'location', 'email', 'phone', 'website', 'availability']);
+  const aboutLayout = normalizeAboutLayout(fv(section, 'aboutLayout'));
+  const aboutClass = aboutLayoutExportClass(aboutLayout);
+  const known = new Set(['aboutLayout', 'imageStyle', 'title', 'subtitle', 'role', 'bio', 'image', 'highlights', 'location', 'email', 'phone', 'website', 'availability']);
   const custom = section.fields.filter(f => !known.has(f.id)).map(renderDynamicField).join('');
 
   const headerCentered = aboutLayout === 'centered';
-  return shell(section.id, `${sectionHeader(title, subtitle, headerCentered)}
-    <div class="about-grid${aboutClass}">
-      <div class="about-photo-wrap">
+  const hideRoleBadge = aboutLayout === 'minimal';
+  const photoBlock = `<div class="about-photo-wrap">
         <div class="about-photo-bg"></div>
         <div class="about-photo">${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(role || title)}">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.35;font-size:4rem">👤</div>`}</div>
-        ${role ? `<div class="about-role-badge">${escapeHtml(role)}</div>` : ''}
-      </div>
-      <div>
+        ${role && !hideRoleBadge ? `<div class="about-role-badge">${escapeHtml(role)}</div>` : ''}
+      </div>`;
+  const contentBlock = `<div class="about-content">
+        ${role && hideRoleBadge ? `<p style="font-size:0.82rem;font-weight:700;color:var(--primary);margin-bottom:0.75rem;letter-spacing:0.04em;text-transform:uppercase">${escapeHtml(role)}</p>` : ''}
         ${bio ? `<div class="about-bio"><p style="opacity:0.85;line-height:1.9;font-size:1.02rem;white-space:pre-wrap">${escapeHtml(bio)}</p></div>` : ''}
         ${highlights.length ? `<div class="grid-auto" style="margin-bottom:2rem">${highlightHtml}</div>` : ''}
         ${infoItems ? `<div class="grid-2">${infoItems}</div>` : ''}
-      </div>
-    </div>
+      </div>`;
+  const contentFirst = aboutLayout === 'image-right' || aboutLayout === 'wide';
+  const layoutBody = aboutLayout === 'card'
+    ? `<div class="about-card">${photoBlock}<div class="about-card-body">${contentBlock}</div></div>`
+    : `<div class="about-grid ${aboutClass}">${contentFirst ? `${contentBlock}${photoBlock}` : `${photoBlock}${contentBlock}`}</div>`;
+
+  return shell(section.id, `${sectionHeader(title, subtitle, headerCentered)}
+    ${layoutBody}
     ${custom ? `<div style="margin-top:3rem;padding:1.75rem;border-radius:var(--radius);background:color-mix(in srgb,var(--primary) 3%,transparent);border:1px solid color-mix(in srgb,var(--primary) 7%,transparent)" class="grid-auto">${custom}</div>` : ''}
   `, section, portfolio, alt);
 }
@@ -483,16 +499,79 @@ function renderFAQ(section: PortfolioSection, portfolio: Portfolio, title: strin
   return shell(section.id, `<div style="max-width:800px;margin:0 auto">${sectionHeader(title, subtitle, true, 'FAQ')}<div>${acc}</div></div>`, section, portfolio, alt);
 }
 
+function renderCustomBlockHtml(block: CustomBlock): string {
+  switch (block.type) {
+    case 'heading':
+      return `<h3 class="custom-block-heading" style="text-align:${block.align || 'left'}">${escapeHtml(block.heading || '')}</h3>`;
+    case 'text':
+      return `<p class="custom-block-text">${escapeHtml(block.text || '')}</p>`;
+    case 'quote':
+      return `<blockquote class="custom-block-quote"><p>&ldquo;${escapeHtml(block.quote || '')}&rdquo;</p>${block.author ? `<cite>— ${escapeHtml(block.author)}</cite>` : ''}</blockquote>`;
+    case 'image':
+      return `<figure class="custom-block-image">${block.image ? `<img src="${escapeHtml(block.image)}" alt="${escapeHtml(block.heading || '')}">` : ''}${block.heading ? `<figcaption>${escapeHtml(block.heading)}</figcaption>` : ''}</figure>`;
+    case 'button':
+      return `<a class="btn-primary custom-block-btn" href="${escapeHtml(block.url || '#')}" target="_blank" rel="noopener noreferrer">${escapeHtml(block.buttonLabel || 'Learn more')} →</a>`;
+    case 'stat':
+      return `<div class="custom-block-stat"><p class="custom-stat-value">${escapeHtml(block.statValue || '')}</p><p class="custom-stat-label">${escapeHtml(block.statLabel || '')}</p></div>`;
+    case 'icon-card':
+      return `<div class="custom-block-icon-card"><span class="custom-block-icon">${escapeHtml(block.icon || '✨')}</span><p class="custom-icon-title">${escapeHtml(block.heading || '')}</p><p class="custom-icon-text">${escapeHtml(block.subtext || '')}</p></div>`;
+    case 'list': {
+      const items = (block.items || []).filter(Boolean).map(i => `<li>${escapeHtml(i)}</li>`).join('');
+      return items ? `<ul class="custom-block-list">${items}</ul>` : '';
+    }
+    case 'video': {
+      const embed = getVideoEmbedUrl(block.videoUrl || '');
+      return embed ? `<div class="custom-block-video"><iframe src="${escapeHtml(embed)}" title="Video" allowfullscreen loading="lazy"></iframe></div>` : '';
+    }
+    case 'highlight':
+      return `<div class="custom-block-highlight">${block.heading ? `<p class="custom-highlight-title">${escapeHtml(block.heading)}</p>` : ''}<p>${escapeHtml(block.text || '')}</p></div>`;
+    case 'divider':
+      return '<hr class="custom-block-divider">';
+    default:
+      return '';
+  }
+}
+
+function customBlocksGridClass(layout: CustomLayoutId): string {
+  if (layout === 'columns-2' || layout === 'split') return 'custom-blocks-grid-2';
+  if (layout === 'columns-3') return 'custom-blocks-grid-3';
+  if (layout === 'bento') return 'custom-blocks-bento';
+  if (layout === 'strip') return 'custom-blocks-strip';
+  if (layout === 'magazine') return 'custom-blocks-grid-2';
+  return 'custom-blocks-stack';
+}
+
+function renderCustomBlocks(blocks: CustomBlock[], layout: CustomLayoutId): string {
+  const visible = visibleCustomBlocks(blocks);
+  if (!visible.length) return '';
+  const gridClass = customBlocksGridClass(layout);
+  const items = visible.map(b => {
+    const span = layout === 'bento' && b.span === 2 ? ' custom-block-span-2' : '';
+    return `<div class="custom-block-item${span}">${renderCustomBlockHtml(b)}</div>`;
+  }).join('');
+  return `<div class="${gridClass}">${items}</div>`;
+}
+
 function renderCustom(section: PortfolioSection, portfolio: Portfolio, title: string, alt: boolean): string {
+  const cs = getCustomSection(section);
   const content = fv(section, 'content');
   const subtitle = fv(section, 'subtitle');
   const known = new Set(['title', 'content', 'subtitle']);
   const custom = section.fields.filter(f => !known.has(f.id)).map(renderDynamicField).join('');
-  return shell(section.id, `<div style="padding:3rem 2.5rem;border-radius:var(--radius);background:linear-gradient(135deg,color-mix(in srgb,var(--primary) 6%,transparent),color-mix(in srgb,var(--secondary) 4%,transparent));border:1px solid color-mix(in srgb,var(--primary) 13%,transparent)">
-    ${sectionHeader(title, subtitle, false, 'Custom')}
-    ${content ? `<p style="opacity:0.82;line-height:1.9;font-size:1.05rem;white-space:pre-wrap;max-width:760px">${escapeHtml(content)}</p>` : ''}
-    ${custom ? `<div class="grid-auto" style="margin-top:2rem">${custom}</div>` : ''}
-  </div>`, section, portfolio, alt);
+  const layout = cs.layout || 'default';
+  const align = cs.align || 'left';
+  const centered = align === 'center' || layout === 'centered';
+  const badge = cs.showBadge !== false ? (cs.badgeText || 'Custom') : '';
+  const maxW = getContentMaxWidth(cs.contentWidth);
+  const blocksHtml = renderCustomBlocks(cs.blocks || [], layout);
+  const header = !cs.hideTitle ? sectionHeader(title, cs.hideSubtitle ? '' : subtitle, centered, badge || undefined) : (cs.hideSubtitle ? '' : `<p class="section-subtitle" style="text-align:${align}">${escapeHtml(subtitle)}</p>`);
+  const intro = content ? `<p class="custom-intro" style="text-align:${align}">${escapeHtml(content)}</p>` : '';
+  const fieldsHtml = custom ? `<div class="grid-auto custom-extra-fields">${custom}</div>` : '';
+  const containerClass = `custom-section-wrap ${customLayoutExportClass(layout)} ${customContainerExportClass(cs.container || 'gradient')}`;
+  const inner = layout === 'split'
+    ? `<div class="custom-split"><div class="custom-split-main">${header}${intro}</div><div class="custom-split-side">${blocksHtml}${fieldsHtml}</div></div>`
+    : `${header}${intro}${blocksHtml}${fieldsHtml}`;
+  return shell(section.id, `<div class="${containerClass}" style="max-width:${maxW}px;text-align:${align}">${inner}</div>`, section, portfolio, alt);
 }
 
 function renderContact(section: PortfolioSection, portfolio: Portfolio, title: string, alt: boolean, social: SocialLinks): string {

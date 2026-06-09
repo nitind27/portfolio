@@ -118,6 +118,67 @@ export interface HeroContentSettings {
   blocks?: Partial<Record<HeroBlockId, HeroBlockSettings>>;
 }
 
+export type CustomLayoutId =
+  | 'default'
+  | 'centered'
+  | 'split'
+  | 'columns-2'
+  | 'columns-3'
+  | 'bento'
+  | 'strip'
+  | 'banner'
+  | 'minimal'
+  | 'magazine';
+
+export type CustomContainerId = 'gradient' | 'glass' | 'solid' | 'bordered' | 'none';
+export type CustomContentWidth = 'narrow' | 'normal' | 'wide' | 'full';
+
+export type CustomBlockType =
+  | 'heading'
+  | 'text'
+  | 'quote'
+  | 'image'
+  | 'button'
+  | 'stat'
+  | 'icon-card'
+  | 'divider'
+  | 'list'
+  | 'video'
+  | 'highlight';
+
+export interface CustomBlock {
+  id: string;
+  type: CustomBlockType;
+  visible?: boolean;
+  text?: string;
+  heading?: string;
+  subtext?: string;
+  image?: string;
+  url?: string;
+  buttonLabel?: string;
+  icon?: string;
+  quote?: string;
+  author?: string;
+  statValue?: string;
+  statLabel?: string;
+  items?: string[];
+  videoUrl?: string;
+  span?: 1 | 2;
+  align?: 'left' | 'center' | 'right';
+}
+
+export interface CustomSectionSettings {
+  layout?: CustomLayoutId;
+  container?: CustomContainerId;
+  align?: 'left' | 'center' | 'right';
+  contentWidth?: CustomContentWidth;
+  showBadge?: boolean;
+  badgeText?: string;
+  hideTitle?: boolean;
+  hideSubtitle?: boolean;
+  blocks?: CustomBlock[];
+}
+
 export type SectionAnimTrigger = 'scroll' | 'load';
 export type SectionAnimEasing = 'smooth' | 'snappy' | 'bounce' | 'spring' | 'linear';
 
@@ -180,6 +241,7 @@ export interface SectionStyle {
   maxWidth?: number;
   animation?: SectionAnimation;
   heroContent?: HeroContentSettings;
+  customSection?: CustomSectionSettings;
 }
 
 export interface PortfolioSection {

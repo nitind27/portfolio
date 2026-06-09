@@ -54,7 +54,7 @@ export const BUILDER_TOUR_STEPS: TourStep[] = [
     placement: 'bottom',
     mobilePanel: 'preview',
     title: 'Customize Everything',
-    description: 'Use these tabs to change theme colors, pick templates, set SEO, configure email, and more.',
+    description: 'Sections, Theme, Navbar, Footer — and more! Scroll this row (or tap the → arrow) for Templates, Popup, SEO, Social, SMTP, Analytics & CSS.',
   },
   {
     target: 'settings-panel',
@@ -62,6 +62,13 @@ export const BUILDER_TOUR_STEPS: TourStep[] = [
     mobilePanel: 'settings',
     title: 'Settings Panel',
     description: 'The active tab opens here. Adjust colors, fonts, spacing, and all portfolio settings in real time.',
+  },
+  {
+    target: 'builder-help',
+    placement: 'left',
+    mobilePanel: 'preview',
+    title: 'Need Help?',
+    description: 'Tap the Help button anytime for step-by-step tips, feature map, and AI assistant — it knows every builder feature.',
   },
   {
     target: 'export-share',

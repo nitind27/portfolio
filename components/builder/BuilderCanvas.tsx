@@ -50,11 +50,14 @@ export default function BuilderCanvas({ rightTab, onSectionSelect }: { rightTab:
   return (
     <main data-tour="canvas-preview" className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#060606]">
       {editorOpen && (
-        <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-blue-600/10 border-b border-blue-500/20 shrink-0">
-          <Eye className="w-3.5 h-3.5 text-blue-400" />
-          <span className="text-xs text-blue-300">
-            Click header links or any section — editor on the right switches instantly
-          </span>
+        <div className="hidden lg:flex items-center justify-between gap-2 px-4 py-2 bg-blue-600/10 border-b border-blue-500/20 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <Eye className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+            <span className="text-xs text-blue-300 truncate">
+              Edit mode — click sections or use the right panel. Changes appear instantly.
+            </span>
+          </div>
+          <span className="text-[10px] text-blue-400/70 shrink-0">Need help? Tap Help ↘</span>
         </div>
       )}
 
