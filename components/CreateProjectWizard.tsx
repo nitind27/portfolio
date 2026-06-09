@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useBuilderStore } from '@/lib/store';
 import { TEMPLATES, getTemplatesForPurpose } from '@/lib/templates';
 import { WebsitePurpose, SectionType, CreatePortfolioOptions } from '@/lib/types';
+import { getPurposeConfig, getSectionLabel } from '@/lib/website-purposes';
 import {
-  WEBSITE_PURPOSES, getPurposeConfig, getSectionLabel, PURPOSE_SECTION_HINTS,
-} from '@/lib/website-purposes';
+  WIZARD_PURPOSE_CATEGORIES, getPurposeDetailsConfig, getWizardSectionGroups, getSectionHint,
+} from '@/lib/purpose-wizard';
 import {
   getLayoutPresetsForPurpose, getDefaultLayoutPresetId, LayoutPresetId, LAYOUT_PRESETS,
 } from '@/lib/purpose-layouts';
@@ -31,6 +32,8 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
   const [businessName, setBusinessName] = useState('');
   const [industry, setIndustry] = useState('');
   const [tagline, setTagline] = useState('');
+  const [location, setLocation] = useState('');
+  const [activeCategory, setActiveCategory] = useState(WIZARD_PURPOSE_CATEGORIES[0].id);
   const [sections, setSections] = useState<SectionType[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [projectName, setProjectName] = useState('');
@@ -58,15 +61,35 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
     if (open) fetchPlansConfig(true).then(setPlanConfig);
   }, [open]);
 
-  const filteredPurposes = useMemo(() => {
+  const detailsConfig = purpose ? getPurposeDetailsConfig(purpose) : null;
+  const sectionGroups = useMemo(
+    () => (purpose ? getWizardSectionGroups(purpose) : null),
+    [purpose],
+  );
+
+  const filteredCategories = useMemo(() => {
     const q = purposeSearch.toLowerCase().trim();
-    if (!q) return WEBSITE_PURPOSES;
-    return WEBSITE_PURPOSES.filter(p =>
-      p.title.toLowerCase().includes(q) ||
-      p.subtitle.toLowerCase().includes(q) ||
-      p.examples.toLowerCase().includes(q),
-    );
+    if (!q) return WIZARD_PURPOSE_CATEGORIES;
+    return WIZARD_PURPOSE_CATEGORIES.map(cat => ({
+      ...cat,
+      purposes: cat.purposes.filter(id => {
+        const p = getPurposeConfig(id);
+        return (
+          p.title.toLowerCase().includes(q) ||
+          p.subtitle.toLowerCase().includes(q) ||
+          p.examples.toLowerCase().includes(q) ||
+          cat.label.toLowerCase().includes(q)
+        );
+      }),
+    })).filter(cat => cat.purposes.length > 0);
   }, [purposeSearch]);
+
+  useEffect(() => {
+    if (filteredCategories.length === 0) return;
+    if (!filteredCategories.some(c => c.id === activeCategory)) {
+      setActiveCategory(filteredCategories[0].id);
+    }
+  }, [filteredCategories, activeCategory]);
 
   const templates = useMemo(() => {
     if (!purpose) return TEMPLATES;
@@ -80,6 +103,8 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
     setBusinessName('');
     setIndustry('');
     setTagline('');
+    setLocation('');
+    setActiveCategory(WIZARD_PURPOSE_CATEGORIES[0].id);
     setSections([]);
     setSelectedTemplate('');
     setProjectName('');
@@ -124,7 +149,8 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
       layoutPreset: layoutPreset || undefined,
       meta: {
         purpose, businessName: businessName.trim(), industry: industry || undefined,
-        tagline: tagline.trim() || undefined, layoutPreset: layoutPreset || undefined,
+        tagline: tagline.trim() || undefined, location: location.trim() || undefined,
+        layoutPreset: layoutPreset || undefined,
       },
     };
     const id = createPortfolio(selectedTemplate, projectName.trim(), options);
@@ -171,126 +197,141 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
             {step === 0 && (
               <motion.div key="s0" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}>
                 <h3 className="text-lg font-semibold mb-1">What kind of website do you need?</h3>
-                <p className="text-sm text-gray-500 mb-4">Choose the purpose that best matches your goal. Templates and sections will adapt automatically.</p>
+                <p className="text-sm text-gray-500 mb-4">Pick a category, then choose the type that fits your goal. Sections and content adapt to your selection.</p>
                 <input value={purposeSearch} onChange={e => setPurposeSearch(e.target.value)}
                   placeholder="Search: shop, restaurant, portfolio, SaaS…"
                   className="w-full mb-4 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[50vh] overflow-y-auto pr-1">
-                  {filteredPurposes.map(p => (
-                    <button key={p.id} type="button" onClick={() => setPurpose(p.id)}
-                      className={`text-left p-3.5 rounded-xl border transition ${
-                        purpose === p.id ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/10' : 'border-white/10 hover:border-white/20 hover:bg-white/5'
-                      }`}>
-                      <div className="flex items-start gap-3">
-                        <span className="text-2xl">{p.icon}</span>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-sm text-white">{p.title}</p>
-                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{p.subtitle}</p>
-                          <p className="text-[10px] text-gray-600 mt-1">e.g. {p.examples}</p>
+                {filteredCategories.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-8">No matches — try a different search term.</p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {filteredCategories.map(cat => (
+                        <button key={cat.id} type="button" onClick={() => setActiveCategory(cat.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                            activeCategory === cat.id
+                              ? 'border-blue-500 bg-blue-500/15 text-blue-200'
+                              : 'border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200'
+                          }`}>
+                          <span>{cat.icon}</span> {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                    {filteredCategories.filter(c => c.id === activeCategory).map(cat => (
+                      <div key={cat.id}>
+                        <p className="text-xs text-gray-500 mb-3">{cat.description}</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[42vh] overflow-y-auto pr-1">
+                          {cat.purposes.map(id => {
+                            const p = getPurposeConfig(id);
+                            return (
+                              <button key={p.id} type="button" onClick={() => setPurpose(p.id)}
+                                className={`text-left p-3.5 rounded-xl border transition ${
+                                  purpose === p.id ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/10' : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+                                }`}>
+                                <div className="flex items-start gap-3">
+                                  <span className="text-2xl">{p.icon}</span>
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-sm text-white">{p.title}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{p.subtitle}</p>
+                                    <p className="text-[10px] text-gray-600 mt-1">e.g. {p.examples}</p>
+                                  </div>
+                                  {purpose === p.id && <Check className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />}
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
-                        {purpose === p.id && <Check className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />}
                       </div>
-                    </button>
-                  ))}
-                </div>
+                    ))}
+                  </>
+                )}
               </motion.div>
             )}
 
-            {step === 1 && purposeConfig && (
+            {step === 1 && purposeConfig && detailsConfig && (
               <motion.div key="s1" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-semibold mb-1">Tell us about your {purposeConfig.title.toLowerCase()}</h3>
-                  <p className="text-sm text-gray-500">This pre-fills your hero, about, and SEO content. You can edit everything later.</p>
+                  <h3 className="text-lg font-semibold mb-1">Tell us about you</h3>
+                  <p className="text-sm text-gray-500">
+                    Fields tailored for <span className="text-white font-medium">{purposeConfig.title}</span> — we&apos;ll pre-fill relevant content, not generic developer text.
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1.5">Business / Brand Name <span className="text-red-400">*</span></label>
-                  <input value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder="e.g. Acme Studio, John Smith, Bloom Café"
+                  <label className="block text-sm text-gray-400 mb-1.5">{detailsConfig.brandLabel} <span className="text-red-400">*</span></label>
+                  <input value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder={detailsConfig.brandPlaceholder}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500" autoFocus />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1.5">Industry / Niche</label>
+                  <label className="block text-sm text-gray-400 mb-1.5">{detailsConfig.industryLabel}</label>
                   <select value={industry} onChange={e => setIndustry(e.target.value)}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500">
-                    <option value="" className="bg-[#1a1a1a]">Select industry (optional)</option>
+                    <option value="" className="bg-[#1a1a1a]">Select (optional)</option>
                     {purposeConfig.industries.map(ind => (
                       <option key={ind} value={ind} className="bg-[#1a1a1a]">{ind}</option>
                     ))}
                   </select>
                 </div>
+                {detailsConfig.showLocation && (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1.5">{detailsConfig.locationLabel}</label>
+                    <input value={location} onChange={e => setLocation(e.target.value)} placeholder={detailsConfig.locationPlaceholder}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500" />
+                  </div>
+                )}
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1.5">Tagline / One-line description</label>
-                  <input value={tagline} onChange={e => setTagline(e.target.value)} placeholder="e.g. Premium web design for growing brands"
+                  <label className="block text-sm text-gray-400 mb-1.5">{detailsConfig.taglineLabel}</label>
+                  <input value={tagline} onChange={e => setTagline(e.target.value)} placeholder={detailsConfig.taglinePlaceholder}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500" />
                 </div>
               </motion.div>
             )}
 
-            {step === 2 && purposeConfig && (
+            {step === 2 && purposeConfig && sectionGroups && (
               <motion.div key="s2" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}>
                 <h3 className="text-lg font-semibold mb-1">Which sections should your site include?</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Pre-selected the right sections for <span className="text-white font-medium">{purposeConfig.title}</span>. Toggle any you don&apos;t need, or add extras below.
+                  Core sections for <span className="text-white font-medium">{purposeConfig.title}</span> are pre-selected. Add advanced sections for a richer site.
                 </p>
 
-                {/* Recommended sections */}
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Recommended for {purposeConfig.title}</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-5">
-                  {purposeConfig.recommendedSections.map(secType => {
-                    const on = sections.includes(secType);
-                    const locked = isSectionLocked(secType);
-                    const label = getSectionLabel(secType, purpose);
-                    const hint = PURPOSE_SECTION_HINTS[purpose!]?.[secType];
-                    return (
-                      <button key={secType} type="button"
-                        onClick={() => !locked && toggleSection(secType)}
-                        disabled={locked}
-                        className={`p-3 rounded-xl border text-left text-sm transition ${
-                          locked ? 'border-amber-500/20 bg-amber-500/5 text-gray-500 cursor-not-allowed opacity-70'
-                          : on ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-white/10 text-gray-400 hover:bg-white/5'
-                        }`}>
-                        <span className="flex items-center justify-between gap-2">
-                          <span className="font-medium text-xs">{label}</span>
-                          {locked ? <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                            : on ? <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" /> : null}
-                        </span>
-                        {hint && <span className="text-[10px] text-gray-600 mt-0.5 block leading-tight">{hint}</span>}
-                        {locked && <span className="text-[9px] text-amber-400/80 mt-1 block">Premium plan</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Optional add-on sections */}
-                {purposeConfig.optionalSections.length > 0 && (
-                  <>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Optional Add-ons</p>
+                {([
+                  { key: 'recommended', title: `Essential — ${purposeConfig.title}`, items: sectionGroups.recommended, accent: true },
+                  { key: 'advanced', title: 'Advanced sections', items: sectionGroups.advanced, accent: false },
+                  { key: 'optional', title: 'More add-ons', items: sectionGroups.optional, accent: false },
+                ] as const).map(group => group.items.length > 0 && (
+                  <div key={group.key} className="mb-5">
+                    <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${
+                      group.key === 'recommended' ? 'text-blue-300/80' : group.key === 'advanced' ? 'text-purple-300/70' : 'text-gray-500'
+                    }`}>{group.title}</p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {purposeConfig.optionalSections.map(secType => {
+                      {group.items.map(secType => {
                         const on = sections.includes(secType);
                         const locked = isSectionLocked(secType);
                         const label = getSectionLabel(secType, purpose);
-                        const hint = PURPOSE_SECTION_HINTS[purpose!]?.[secType];
+                        const hint = getSectionHint(purpose!, secType);
+                        const isRecommended = group.key === 'recommended';
                         return (
                           <button key={secType} type="button"
                             onClick={() => !locked && toggleSection(secType)}
                             disabled={locked}
                             className={`p-3 rounded-xl border text-left text-sm transition ${
                               locked ? 'border-amber-500/20 bg-amber-500/5 text-gray-500 cursor-not-allowed opacity-70'
-                              : on ? 'border-blue-500/60 bg-blue-500/8 text-white' : 'border-white/8 text-gray-500 hover:bg-white/5 hover:text-gray-300'
+                              : on && isRecommended ? 'border-blue-500 bg-blue-500/10 text-white'
+                              : on ? 'border-purple-500/50 bg-purple-500/8 text-white'
+                              : 'border-white/10 text-gray-400 hover:bg-white/5'
                             }`}>
-                          <span className="flex items-center justify-between gap-2">
-                            <span className="font-medium text-xs">{label}</span>
-                            {locked ? <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                              : on ? <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" /> : null}
-                          </span>
-                          {hint && <span className="text-[10px] text-gray-600 mt-0.5 block leading-tight">{hint}</span>}
-                          {locked && <span className="text-[9px] text-amber-400/80 mt-1 block">Premium plan</span>}
-                        </button>
+                            <span className="flex items-center justify-between gap-2">
+                              <span className="font-medium text-xs">{label}</span>
+                              {locked ? <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                : on ? <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" /> : null}
+                            </span>
+                            {hint && <span className="text-[10px] text-gray-600 mt-0.5 block leading-tight">{hint}</span>}
+                            {locked && <span className="text-[9px] text-amber-400/80 mt-1 block">Premium plan</span>}
+                          </button>
                         );
                       })}
                     </div>
-                  </>
-                )}
+                  </div>
+                ))}
 
                 <p className="text-xs text-gray-600 mt-3">{sections.length} section{sections.length !== 1 ? 's' : ''} selected</p>
               </motion.div>

@@ -24,6 +24,11 @@ export function applyPortfolioMeta(portfolio: Portfolio, meta: PortfolioMeta): P
   setField(p, 'about', 'role', meta.industry || purpose.title);
   setField(p, 'contact', 'title', 'Get In Touch');
   setField(p, 'contact', 'subtitle', `Reach out to ${name} — we'd love to hear from you.`);
+  if (meta.location?.trim()) {
+    setField(p, 'about', 'location', meta.location.trim());
+    setField(p, 'contact', 'location', meta.location.trim());
+    setField(p, 'contact', 'address', meta.location.trim());
+  }
 
   if (meta.purpose === 'online-store') {
     setField(p, 'hero', 'ctaText', 'Shop Now');

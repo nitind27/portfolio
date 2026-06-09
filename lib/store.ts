@@ -15,6 +15,7 @@ import {
 } from './types';
 import { TEMPLATES, SECTION_DEFAULTS, findTemplate, resolveTemplateId } from './templates';
 import { applyPortfolioMeta } from './apply-portfolio-meta';
+import { applyPurposeSectionContent } from './purpose-section-content';
 import { applyLayoutPreset, getDefaultLayoutPresetId, LayoutPresetId } from './purpose-layouts';
 import { purgeExpiredPortfolios } from './project-expiry';
 
@@ -117,7 +118,10 @@ function createDefaultPortfolio(templateId: string, options?: CreatePortfolioOpt
     slug: slugify(name),
     meta: options?.meta,
   };
-  if (options?.meta) portfolio = applyPortfolioMeta(portfolio, options.meta);
+  if (options?.meta) {
+    portfolio = applyPortfolioMeta(portfolio, options.meta);
+    portfolio = applyPurposeSectionContent(portfolio);
+  }
   const layoutId = (
     options?.layoutPreset ||
     template.defaultLayoutPreset ||

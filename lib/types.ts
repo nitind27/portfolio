@@ -435,6 +435,7 @@ export interface PortfolioMeta {
   businessName?: string;
   industry?: string;
   tagline?: string;
+  location?: string;
   layoutPreset?: string;
 }
 
