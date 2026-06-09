@@ -1,0 +1,4 @@
+-- Website settings (maintenance mode, etc.) stored in system_settings key `site_settings`
+-- Table is created automatically by lib/site-settings.ts if missing.
+-- Example value:
+-- {"maintenanceMode":false,"maintenanceTitle":"We'll be back soon","maintenanceMessage":"...","maintenanceEta":"...","allowAdminBypass":true}
