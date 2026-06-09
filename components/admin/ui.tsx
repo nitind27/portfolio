@@ -1,6 +1,7 @@
 'use client';
 
-import { LucideIcon } from 'lucide-react';
+import { useState } from 'react';
+import { LucideIcon, Eye, EyeOff } from 'lucide-react';
 import { brand } from '@/lib/brand';
 
 export function StatCard({
@@ -85,6 +86,48 @@ export function SectionHeader({ title, desc, action }: { title: string; desc?: s
 }
 
 export const adminInput = 'w-full bg-[#0f2438] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/50 focus:bg-white/[0.06] transition shadow-inner shadow-black/10';
+
+export function AdminPasswordInput({
+  value,
+  onChange,
+  placeholder,
+  autoComplete = 'current-password',
+  required = true,
+  minLength,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  autoComplete?: string;
+  required?: boolean;
+  minLength?: number;
+}) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div className="relative">
+      <input
+        type={visible ? 'text' : 'password'}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        autoComplete={autoComplete}
+        minLength={minLength}
+        className={`${adminInput} pr-10`}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible(v => !v)}
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-white transition rounded-md"
+        aria-label={visible ? 'Hide password' : 'Show password'}
+        tabIndex={-1}
+      >
+        {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+}
 export const adminSelect = adminInput + ' cursor-pointer appearance-none';
 export const adminCard = 'rounded-2xl border overflow-hidden';
 export const adminCardStyle = { background: brand.surface, borderColor: brand.border };
