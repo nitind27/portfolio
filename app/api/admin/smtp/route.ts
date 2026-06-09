@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth-server';
-import { getSystemSmtp, saveSystemSmtp, sendTestEmail, type SystemSmtpConfig } from '@/lib/system-email';
+import { getSystemSmtp, saveSystemSmtp, sendTestEmail, isSmtpConfigured, type SystemSmtpConfig } from '@/lib/system-email';
 
 async function requireAdmin(req: NextRequest) {
   const user = await getCurrentUser(req);
@@ -15,12 +15,13 @@ export async function GET(req: NextRequest) {
   if (err) return err;
 
   const cfg = await getSystemSmtp();
+  const configured = await isSmtpConfigured();
   // Never return the password in the GET response
   if (cfg) {
     const { password: _pw, ...safe } = cfg;
-    return NextResponse.json({ smtp: { ...safe, hasPassword: Boolean(_pw) } });
+    return NextResponse.json({ smtp: { ...safe, hasPassword: Boolean(_pw) }, configured });
   }
-  return NextResponse.json({ smtp: null });
+  return NextResponse.json({ smtp: null, configured });
 }
 
 // POST — save system SMTP config

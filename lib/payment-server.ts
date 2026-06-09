@@ -3,9 +3,11 @@ import { getPool } from './db';
 import { fetchCashfreeOrder } from './cashfree';
 import { refreshAuthCookie, fetchUserById, type AuthUser } from './auth-server';
 import { activatePlanPurchase, getPlanBySlug, getPlanById } from './plans-server';
+import { sendPaymentConfirmationIfNeeded } from './system-email';
 
 export async function markUserPremium(userId: number, orderId: string, planId: number) {
   await activatePlanPurchase(userId, planId, orderId);
+  await sendPaymentConfirmationIfNeeded(orderId);
 }
 
 export async function activatePremiumFromOrder(orderId: string): Promise<AuthUser | null> {
@@ -18,6 +20,7 @@ export async function activatePremiumFromOrder(orderId: string): Promise<AuthUse
   if (!payment) return null;
 
   if (payment.status === 'paid') {
+    await sendPaymentConfirmationIfNeeded(orderId);
     return fetchUserById(payment.user_id);
   }
 
@@ -32,23 +35,8 @@ export async function activatePremiumFromOrder(orderId: string): Promise<AuthUse
   if (!planId) return null;
 
   await activatePlanPurchase(payment.user_id, planId, orderId);
-  const user = await fetchUserById(payment.user_id);
-
-  // Send payment confirmation email (fire-and-forget)
-  if (user) {
-    const plan = await getPlanById(planId).catch(() => null);
-    import('./system-email').then(({ sendPaymentSuccessEmail }) => {
-      sendPaymentSuccessEmail({
-        to: user.email,
-        name: user.name,
-        planName: plan?.name || 'Premium',
-        amount: payment.amount,
-        orderId,
-      }).catch(() => {});
-    }).catch(() => {});
-  }
-
-  return user;
+  await sendPaymentConfirmationIfNeeded(orderId);
+  return fetchUserById(payment.user_id);
 }
 
 export async function requireAuthUser() {

@@ -57,11 +57,15 @@ export default function EmailTab() {
   const [preview, setPreview] = useState<PreviewType>('welcome');
   const [previewHtml, setPreviewHtml] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [smtpConfigured, setSmtpConfigured] = useState(false);
+  const [retrying, setRetrying] = useState<'payment' | 'welcome' | 'all' | null>(null);
+  const [retryResult, setRetryResult] = useState<string | null>(null);
 
   // ── Load config ──
   useEffect(() => {
     fetch('/api/admin/smtp').then(r => r.json()).then(d => {
       if (d.smtp) setCfg({ ...defaultCfg, ...d.smtp });
+      setSmtpConfigured(Boolean(d.configured));
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -91,6 +95,25 @@ export default function EmailTab() {
       });
       if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 3000); }
     } finally { setSaving(false); }
+  };
+
+  const retryPending = async (type: 'payment' | 'welcome' | 'all') => {
+    setRetrying(type);
+    setRetryResult(null);
+    try {
+      const res = await fetch('/api/admin/email/retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Retry failed');
+      setRetryResult(`Sent ${d.sent} · Failed ${d.failed} · Skipped ${d.skipped}`);
+    } catch (e) {
+      setRetryResult(e instanceof Error ? e.message : 'Retry failed');
+    } finally {
+      setRetrying(null);
+    }
   };
 
   const sendTest = async () => {
@@ -140,6 +163,12 @@ export default function EmailTab() {
           </button>
         </div>
       </div>
+
+      {!smtpConfigured && (
+        <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-sm">
+          SMTP is not fully configured. Welcome and payment emails will <strong>not</strong> be delivered until you save host, username, password, and enable emails above.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
@@ -275,6 +304,24 @@ export default function EmailTab() {
                 {testResult.ok ? <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" /> : <XCircle className="w-4 h-4 shrink-0 mt-0.5" />}
                 {testResult.msg}
               </div>
+            )}
+          </div>
+
+          <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.02] space-y-3">
+            <p className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Resend missed emails</p>
+            <p className="text-xs text-gray-500">
+              If users did not receive welcome or payment emails, resend pending ones after SMTP is configured.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(['payment', 'welcome', 'all'] as const).map(t => (
+                <button key={t} type="button" onClick={() => retryPending(t)} disabled={!!retrying}
+                  className="px-3 py-2 rounded-xl text-xs font-medium border border-white/10 hover:bg-white/5 disabled:opacity-50 capitalize">
+                  {retrying === t ? 'Sending…' : t === 'all' ? 'Resend all pending' : `Resend ${t}`}
+                </button>
+              ))}
+            </div>
+            {retryResult && (
+              <p className="text-xs text-gray-400">{retryResult}</p>
             )}
           </div>
         </div>

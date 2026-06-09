@@ -7,6 +7,7 @@
  * Used for: welcome emails, payment confirmations, etc.
  */
 import nodemailer from 'nodemailer';
+import type { RowDataPacket } from 'mysql2';
 import { getPool } from './db';
 import { APP_NAME } from './brand';
 import {
@@ -32,6 +33,24 @@ export interface SystemSmtpConfig {
 }
 
 // ── DB helpers ────────────────────────────────────────────────────────────────
+let emailSchemaReady = false;
+
+export async function ensureEmailTrackingSchema() {
+  if (emailSchemaReady) return;
+  const pool = getPool();
+  const exec = (sql: string) => pool.execute(sql).catch((err: { code?: string }) => {
+    if (err?.code !== 'ER_DUP_FIELDNAME') throw err;
+  });
+  await exec(`ALTER TABLE users ADD COLUMN welcome_email_sent_at DATETIME NULL AFTER created_at`);
+  await exec(`ALTER TABLE payments ADD COLUMN confirmation_email_sent_at DATETIME NULL AFTER paid_at`);
+  emailSchemaReady = true;
+}
+
+export async function isSmtpConfigured(): Promise<boolean> {
+  const cfg = await getSystemSmtp();
+  return Boolean(cfg?.enabled && cfg.host && cfg.user && cfg.password);
+}
+
 async function ensureSettingsTable() {
   const pool = getPool();
   await pool.execute(`
@@ -110,7 +129,6 @@ async function sendEmail(opts: {
       return { ok: false, error: 'System SMTP not configured' };
     }
     const transporter = buildTransporter(cfg);
-    await transporter.verify();
     await transporter.sendMail({
       from: `"${cfg.fromName || APP_NAME}" <${cfg.fromEmail || cfg.user}>`,
       to: opts.to,
@@ -201,10 +219,92 @@ export async function sendPaymentFailedEmail(opts: {
 export async function sendTestEmail(opts: {
   to: string;
 }): Promise<{ ok: boolean; error?: string }> {
-  const data: EmailTemplateData = { appName: APP_NAME };
-  return sendEmail({
-    to: opts.to,
-    subject: `[Test] SMTP configured correctly — ${APP_NAME}`,
-    html: testEmailHtml(data),
+  try {
+    const cfg = await getSystemSmtp();
+    if (!cfg || !cfg.enabled || !cfg.host || !cfg.user || !cfg.password) {
+      return { ok: false, error: 'System SMTP not configured' };
+    }
+    const transporter = buildTransporter(cfg);
+    await transporter.verify();
+    const data: EmailTemplateData = { appName: APP_NAME };
+    await transporter.sendMail({
+      from: `"${cfg.fromName || APP_NAME}" <${cfg.fromEmail || cfg.user}>`,
+      to: opts.to,
+      subject: `[Test] SMTP configured correctly — ${APP_NAME}`,
+      html: testEmailHtml(data),
+    });
+    return { ok: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Test email failed';
+    console.error('[SystemEmail] test error:', message);
+    return { ok: false, error: message };
+  }
+}
+
+/** Send welcome email once per user (register / Google sign-up). */
+export async function sendWelcomeEmailIfNeeded(userId: number): Promise<{ ok: boolean; error?: string; skipped?: string }> {
+  await ensureEmailTrackingSchema();
+  const pool = getPool();
+  const [rows] = await pool.execute<RowDataPacket[]>(
+    'SELECT id, name, email, welcome_email_sent_at FROM users WHERE id = ? LIMIT 1',
+    [userId],
+  );
+  const row = rows[0] as { name: string; email: string; welcome_email_sent_at: Date | null } | undefined;
+  if (!row?.email) return { ok: false, error: 'User not found' };
+  if (row.welcome_email_sent_at) return { ok: true, skipped: 'already_sent' };
+
+  const result = await sendWelcomeEmail({ to: row.email, name: row.name });
+  if (result.ok) {
+    await pool.execute('UPDATE users SET welcome_email_sent_at = NOW() WHERE id = ?', [userId]);
+    console.info('[SystemEmail] welcome sent to', row.email);
+  } else {
+    console.error('[SystemEmail] welcome failed for user', userId, result.error);
+  }
+  return result;
+}
+
+/** Send payment confirmation once per order (retries if previously failed). */
+export async function sendPaymentConfirmationIfNeeded(orderId: string): Promise<{ ok: boolean; error?: string; skipped?: string }> {
+  await ensureEmailTrackingSchema();
+  const pool = getPool();
+  const [rows] = await pool.execute<RowDataPacket[]>(
+    `SELECT p.order_id, p.amount, p.status, p.confirmation_email_sent_at,
+            u.email, u.name, sp.name AS plan_name
+     FROM payments p
+     JOIN users u ON u.id = p.user_id
+     LEFT JOIN subscription_plans sp ON sp.id = p.plan_id
+     WHERE p.order_id = ? LIMIT 1`,
+    [orderId],
+  );
+  const row = rows[0] as {
+    amount: number;
+    status: string;
+    confirmation_email_sent_at: Date | null;
+    email: string;
+    name: string;
+    plan_name: string | null;
+  } | undefined;
+
+  if (!row) return { ok: false, error: 'Order not found' };
+  if (row.status !== 'paid') return { ok: false, skipped: 'not_paid' };
+  if (row.confirmation_email_sent_at) return { ok: true, skipped: 'already_sent' };
+
+  const result = await sendPaymentSuccessEmail({
+    to: row.email,
+    name: row.name,
+    planName: row.plan_name || 'Premium',
+    amount: Number(row.amount),
+    orderId,
   });
+
+  if (result.ok) {
+    await pool.execute(
+      'UPDATE payments SET confirmation_email_sent_at = NOW() WHERE order_id = ?',
+      [orderId],
+    );
+    console.info('[SystemEmail] payment confirmation sent for', orderId, '→', row.email);
+  } else {
+    console.error('[SystemEmail] payment confirmation failed for', orderId, result.error);
+  }
+  return result;
 }

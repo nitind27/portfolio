@@ -69,6 +69,7 @@ export async function handleGoogleOAuthCallback(req: NextRequest) {
     );
 
     let row = byGoogle[0] as RowDataPacket | undefined;
+    let isNewUser = false;
 
     if (!row) {
       const [byEmail] = await pool.execute<RowDataPacket[]>(
@@ -114,6 +115,7 @@ export async function handleGoogleOAuthCallback(req: NextRequest) {
             : [profile.name, profile.email, profile.id, profile.picture || null],
         );
 
+        isNewUser = true;
         row = {
           id: result.insertId,
           name: profile.name,
@@ -143,6 +145,12 @@ export async function handleGoogleOAuthCallback(req: NextRequest) {
     const user = toAuthUser(row as Parameters<typeof toAuthUser>[0]);
     const token = await createToken(user, TOKEN_TTL_REGISTER);
     await setAuthCookie(token, COOKIE_MAX_AGE_REGISTER);
+
+    if (isNewUser) {
+      import('@/lib/system-email').then(({ sendWelcomeEmailIfNeeded }) => {
+        sendWelcomeEmailIfNeeded(user.id).catch(() => {});
+      }).catch(() => {});
+    }
 
     const origin = resolveRequestOrigin(req);
     const dest = user.role === 'admin' ? `${origin}/admin` : origin;
