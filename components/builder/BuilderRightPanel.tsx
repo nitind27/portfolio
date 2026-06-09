@@ -35,7 +35,14 @@ export default function BuilderRightPanel({ tab, setTab, onShowTour }: Props) {
         <div className="flex-1 overflow-y-auto">
           {tab === 'theme' && <ThemePanel theme={portfolio.theme} onUpdate={updateTheme} />}
           {tab === 'navbar' && portfolio.navbar && <NavbarPanel navbar={portfolio.navbar} onUpdate={updateNavbar} portfolioName={portfolio.name} sections={portfolio.sections} />}
-          {tab === 'footer' && portfolio.footer && <FooterPanel footer={portfolio.footer} onUpdate={updateFooter} />}
+          {tab === 'footer' && portfolio.footer && (
+            <FooterPanel
+              footer={portfolio.footer}
+              onUpdate={updateFooter}
+              sections={portfolio.sections}
+              navbar={portfolio.navbar}
+            />
+          )}
           {tab === 'templates' && <TemplatesPanel current={portfolio.templateId} onSwitch={switchTemplate} />}
           {tab === 'seo' && <SEOPanel seo={portfolio.seo} onUpdate={updateSEO} />}
           {tab === 'smtp' && <SMTPPanel smtp={portfolio.smtp} onUpdate={updateSMTP} />}
@@ -503,16 +510,38 @@ function NavbarPanel({ navbar, onUpdate, portfolioName, sections }: {
 }
 
 // ── Footer Panel ───────────────────────────────────────────────────────────────
-function FooterPanel({ footer, onUpdate }: { footer: FooterConfig; onUpdate: (u: Partial<FooterConfig>) => void }) {
+function FooterPanel({
+  footer, onUpdate, sections, navbar,
+}: {
+  footer: FooterConfig;
+  onUpdate: (u: Partial<FooterConfig>) => void;
+  sections: PortfolioSection[];
+  navbar?: NavbarConfig;
+}) {
+  const [activeTab, setActiveTab] = useState<'layout' | 'content' | 'navigation' | 'colors'>('layout');
   const inputCls = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500';
 
-  const Toggle = ({ label, val, fieldKey, hint }: { label: string; val: boolean; fieldKey: keyof FooterConfig; hint?: string }) => (
+  const hiddenNav = footer.hiddenNavSections ?? [];
+  const customNavLabels = footer.customNavLabels ?? {};
+  const visibleSections = useMemo(
+    () => sections.filter(s => s.visible).sort((a, b) => a.order - b.order),
+    [sections],
+  );
+
+  const SECTION_ICONS: Record<string, string> = {
+    hero: '🏠', about: '👤', skills: '⚡', experience: '💼', projects: '🚀',
+    gallery: '🖼️', testimonials: '💬', contact: '📧', videos: '🎬',
+    services: '🛠️', team: '👥', stats: '📊', social: '🔗',
+    pricing: '💰', faq: '❓', blog: '📝', custom: '✏️',
+  };
+
+  const Toggle = ({ label, val, onClick, hint }: { label: string; val: boolean; onClick: () => void; hint?: string }) => (
     <label className="flex items-center justify-between cursor-pointer p-2 bg-white/5 rounded-lg gap-2">
       <div>
         <span className="text-xs text-gray-300">{label}</span>
         {hint && <p className="text-[10px] text-gray-600 mt-0.5">{hint}</p>}
       </div>
-      <div onClick={() => onUpdate({ [fieldKey]: !val } as Partial<FooterConfig>)}
+      <div onClick={onClick}
         className={`w-9 h-5 rounded-full transition relative shrink-0 ${val ? 'bg-blue-600' : 'bg-white/10'}`}>
         <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${val ? 'left-4' : 'left-0.5'}`} />
       </div>
@@ -526,95 +555,306 @@ function FooterPanel({ footer, onUpdate }: { footer: FooterConfig; onUpdate: (u:
     </div>
   );
 
-  return (
-    <div className="p-3 space-y-3">
+  const ColorRow = ({ label, value, onChange, hint }: { label: string; value: string; onChange: (v: string) => void; hint?: string }) => {
+    const [open, setOpen] = useState(false);
+    return (
       <div>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[11px] text-gray-400">{label}</span>
+          {value && <button type="button" onClick={() => onChange('')} className="text-[10px] text-gray-600 hover:text-gray-300">reset</button>}
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setOpen(o => !o)}
+            className="w-8 h-7 rounded-lg border border-white/20 shrink-0 flex items-center justify-center"
+            style={{ background: value || 'transparent' }}>
+            {!value && <span className="text-gray-600 text-[10px]">auto</span>}
+          </button>
+          <input value={value} onChange={e => onChange(e.target.value)} placeholder="auto (uses theme)"
+            className={`${inputCls} flex-1`} />
+        </div>
+        {hint && <p className="text-[10px] text-gray-600 mt-0.5">{hint}</p>}
+        {open && (
+          <div className="mt-2">
+            <HexColorPicker color={value || '#ffffff'} onChange={onChange} style={{ width: '100%' }} />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const toggleNavSection = (id: string) => {
+    const next = hiddenNav.includes(id) ? hiddenNav.filter(s => s !== id) : [...hiddenNav, id];
+    onUpdate({ hiddenNavSections: next });
+  };
+
+  const setNavLabel = (id: string, label: string) => {
+    const next = { ...customNavLabels };
+    if (label.trim()) next[id] = label.trim();
+    else delete next[id];
+    onUpdate({ customNavLabels: next });
+  };
+
+  const navMax = footer.navMaxItems ?? 0;
+  const shownCount = navMax > 0 ? Math.min(navMax, visibleSections.length) : visibleSections.length;
+
+  const tabs = [
+    { id: 'layout' as const, label: 'Layout' },
+    { id: 'content' as const, label: 'Content' },
+    { id: 'navigation' as const, label: 'Navigation' },
+    { id: 'colors' as const, label: 'Colors' },
+  ];
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-3 pt-3 pb-2 border-b border-white/10 shrink-0">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Footer</p>
-        <p className="text-xs text-gray-600 mt-1">Choose what appears in your site footer.</p>
+        <p className="text-[11px] text-gray-600 mt-0.5">Layout, columns, navigation links & colors</p>
       </div>
 
-      <Toggle label="Enable Footer" val={footer.enabled} fieldKey="enabled" />
+      <div className="flex gap-1 px-3 pt-2 shrink-0">
+        {tabs.map(t => (
+          <button key={t.id} type="button" onClick={() => setActiveTab(t.id)}
+            className={`flex-1 py-1.5 text-[10px] font-medium rounded-lg transition ${
+              activeTab === t.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-500 hover:bg-white/10'
+            }`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-      {footer.enabled && (
-        <>
-          <Section title="CTA Strip">
-            <Toggle label="Show CTA Banner" val={footer.showCta} fieldKey="showCta" />
-            {footer.showCta && (
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        <Toggle label="Enable Footer" val={footer.enabled} onClick={() => onUpdate({ enabled: !footer.enabled })} />
+
+        {footer.enabled && activeTab === 'layout' && (
+          <>
+            <Section title="Footer Layout">
+              <div>
+                <p className="text-xs text-gray-400 mb-1.5">Column arrangement</p>
+                <div className="grid grid-cols-3 gap-1">
+                  {(['standard', 'centered', 'minimal'] as const).map(l => (
+                    <button key={l} type="button" onClick={() => onUpdate({ layout: l })}
+                      className={`py-1.5 text-[10px] rounded capitalize transition ${(footer.layout ?? 'standard') === l ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-600 mt-1">Standard = multi-column grid · Centered = aligned center · Minimal = compact single block</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 mb-1.5">Background style</p>
+                <div className="grid grid-cols-2 gap-1">
+                  {(['gradient', 'solid', 'minimal', 'accent'] as const).map(s => (
+                    <button key={s} type="button" onClick={() => onUpdate({ style: s })}
+                      className={`py-1.5 text-[10px] rounded capitalize transition ${(footer.style ?? 'gradient') === s ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Toggle label="Top accent gradient bar" val={footer.showAccentBar !== false} onClick={() => onUpdate({ showAccentBar: footer.showAccentBar === false })} />
+              <div>
+                <p className="text-xs text-gray-400 mb-1.5">Column spacing</p>
+                <div className="grid grid-cols-3 gap-1">
+                  {(['compact', 'normal', 'wide'] as const).map(g => (
+                    <button key={g} type="button" onClick={() => onUpdate({ columnGap: g })}
+                      className={`py-1.5 text-[10px] rounded capitalize transition ${(footer.columnGap ?? 'normal') === g ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Section>
+          </>
+        )}
+
+        {footer.enabled && activeTab === 'content' && (
+          <>
+            <Section title="CTA Strip">
+              <Toggle label="Show CTA Banner" val={footer.showCta} onClick={() => onUpdate({ showCta: !footer.showCta })} />
+              {footer.showCta && (
+                <>
+                  <div>
+                    <label className="text-xs text-gray-400 block mb-1">Title</label>
+                    <input value={footer.ctaTitle} onChange={e => onUpdate({ ctaTitle: e.target.value })} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 block mb-1">Subtitle</label>
+                    <input value={footer.ctaSubtitle} onChange={e => onUpdate({ ctaSubtitle: e.target.value })} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 block mb-1">Button Text</label>
+                    <input value={footer.ctaButtonText} onChange={e => onUpdate({ ctaButtonText: e.target.value })} className={inputCls} />
+                  </div>
+                </>
+              )}
+            </Section>
+
+            <Section title="Brand Column">
+              <Toggle label="Show Brand / Logo" val={footer.showBrand} onClick={() => onUpdate({ showBrand: !footer.showBrand })} />
+              <Toggle label="Show Description" val={footer.showDescription} onClick={() => onUpdate({ showDescription: !footer.showDescription })} hint="Uses SEO description if custom text is empty" />
+              {footer.showDescription && (
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Custom Description</label>
+                  <textarea value={footer.customDescription} onChange={e => onUpdate({ customDescription: e.target.value })} rows={3}
+                    placeholder="Leave empty to use SEO description"
+                    className={`${inputCls} resize-none`} />
+                </div>
+              )}
+              <Toggle label="Show Live Badge" val={footer.showLiveBadge} onClick={() => onUpdate({ showLiveBadge: !footer.showLiveBadge })} hint="Only when portfolio is published" />
+            </Section>
+
+            <Section title="Contact Column">
+              <Toggle label="Show Contact Info" val={footer.showContact} onClick={() => onUpdate({ showContact: !footer.showContact })} hint="From Contact section fields" />
+              {footer.showContact && (
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Column Heading</label>
+                  <input value={footer.contactHeading} onChange={e => onUpdate({ contactHeading: e.target.value })} className={inputCls} />
+                </div>
+              )}
+            </Section>
+
+            <Section title="Social Column">
+              <Toggle label="Show Social Links" val={footer.showSocial} onClick={() => onUpdate({ showSocial: !footer.showSocial })} hint="From Social panel" />
+              {footer.showSocial && (
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Column Heading</label>
+                  <input value={footer.socialHeading} onChange={e => onUpdate({ socialHeading: e.target.value })} className={inputCls} />
+                </div>
+              )}
+            </Section>
+
+            <Section title="Bottom Bar">
+              <Toggle label="Show Copyright" val={footer.showCopyright} onClick={() => onUpdate({ showCopyright: !footer.showCopyright })} />
+              {footer.showCopyright && (
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Custom Copyright Text</label>
+                  <input value={footer.copyrightText} onChange={e => onUpdate({ copyrightText: e.target.value })} placeholder="Leave empty for default"
+                    className={inputCls} />
+                </div>
+              )}
+              <Toggle label="Show Back to Top" val={footer.showBackToTop} onClick={() => onUpdate({ showBackToTop: !footer.showBackToTop })} />
+              <Toggle label="Show Built With Credit" val={footer.showBuiltWith} onClick={() => onUpdate({ showBuiltWith: !footer.showBuiltWith })} />
+            </Section>
+          </>
+        )}
+
+        {footer.enabled && activeTab === 'navigation' && (
+          <>
+            <Toggle label="Show Navigation Column" val={footer.showNavigation} onClick={() => onUpdate({ showNavigation: !footer.showNavigation })} />
+
+            {footer.showNavigation && (
               <>
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1">Title</label>
-                  <input value={footer.ctaTitle} onChange={e => onUpdate({ ctaTitle: e.target.value })} className={inputCls} />
+                  <label className="text-xs text-gray-400 block mb-1">Column Heading</label>
+                  <input value={footer.navHeading} onChange={e => onUpdate({ navHeading: e.target.value })} className={inputCls} />
                 </div>
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">Subtitle</label>
-                  <input value={footer.ctaSubtitle} onChange={e => onUpdate({ ctaSubtitle: e.target.value })} className={inputCls} />
+
+                <Toggle
+                  label="Sync with navbar visibility"
+                  val={footer.syncNavWithNavbar !== false}
+                  onClick={() => onUpdate({ syncNavWithNavbar: footer.syncNavWithNavbar === false })}
+                  hint="Hide links in footer when hidden in Navbar → Links tab"
+                />
+
+                <div className="p-2.5 bg-white/[0.03] border border-white/10 rounded-xl space-y-2">
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs font-medium text-gray-300">Max links to show</p>
+                    <span className="text-[11px] text-blue-300 font-mono">{navMax === 0 ? 'All' : navMax}</span>
+                  </div>
+                  <input type="range" min={0} max={12} step={1} value={navMax}
+                    onChange={e => onUpdate({ navMaxItems: Number(e.target.value) })}
+                    className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-blue-500 cursor-pointer" />
+                  <p className="text-[10px] text-gray-600">
+                    {navMax === 0
+                      ? `Showing all ${visibleSections.length} visible sections`
+                      : `Showing first ${shownCount} of ${visibleSections.length} sections`}
+                  </p>
+                  <div className="flex gap-1">
+                    {[0, 4, 6, 8].map(n => (
+                      <button key={n} type="button" onClick={() => onUpdate({ navMaxItems: n })}
+                        className={`flex-1 py-1 text-[10px] rounded transition ${navMax === n ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-500 hover:bg-white/10'}`}>
+                        {n === 0 ? 'All' : n}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
                 <div>
-                  <label className="text-xs text-gray-400 block mb-1">Button Text</label>
-                  <input value={footer.ctaButtonText} onChange={e => onUpdate({ ctaButtonText: e.target.value })} className={inputCls} />
+                  <p className="text-xs text-gray-400 mb-1.5">Link display style</p>
+                  <div className="grid grid-cols-3 gap-1">
+                    {([
+                      { id: 'list' as const, label: 'List' },
+                      { id: 'inline' as const, label: 'Inline' },
+                      { id: 'columns' as const, label: '2 Columns' },
+                    ]).map(o => (
+                      <button key={o.id} type="button" onClick={() => onUpdate({ navLayout: o.id })}
+                        className={`py-1.5 text-[10px] rounded transition ${(footer.navLayout ?? 'list') === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-gray-300 mb-0.5">Footer nav links</p>
+                  <p className="text-[10px] text-gray-500 mb-3">Toggle which sections appear in footer navigation. Rename labels independently from navbar.</p>
+                  <div className="space-y-1.5">
+                    {visibleSections.map(s => {
+                      const navbarHidden = navbar?.hiddenSections?.includes(s.id);
+                      const footerHidden = hiddenNav.includes(s.id);
+                      const isHidden = footerHidden || (footer.syncNavWithNavbar !== false && navbarHidden);
+                      const icon = SECTION_ICONS[s.type] || '📄';
+                      return (
+                        <div key={s.id} className={`rounded-xl border transition ${isHidden ? 'border-white/5 bg-white/2 opacity-50' : 'border-white/10 bg-white/3'}`}>
+                          <div className="flex items-center gap-2 px-3 py-2">
+                            <span className="text-sm shrink-0">{icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-medium text-gray-300 truncate block">{s.title}</span>
+                              {footer.syncNavWithNavbar !== false && navbarHidden && !footerHidden && (
+                                <span className="text-[9px] text-amber-500/80">Hidden via navbar</span>
+                              )}
+                            </div>
+                            <button type="button" onClick={() => toggleNavSection(s.id)}
+                              className={`w-8 h-4 rounded-full transition relative shrink-0 ${!footerHidden ? 'bg-blue-600' : 'bg-white/10'}`}>
+                              <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${!footerHidden ? 'left-4' : 'left-0.5'}`} />
+                            </button>
+                          </div>
+                          {!footerHidden && (
+                            <div className="px-3 pb-2">
+                              <input
+                                value={customNavLabels[s.id] ?? ''}
+                                onChange={e => setNavLabel(s.id, e.target.value)}
+                                placeholder={`Footer label (default: "${s.title}")`}
+                                className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-blue-500"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </>
             )}
-          </Section>
+          </>
+        )}
 
-          <Section title="Brand Column">
-            <Toggle label="Show Brand / Logo" val={footer.showBrand} fieldKey="showBrand" />
-            <Toggle label="Show Description" val={footer.showDescription} fieldKey="showDescription" hint="Uses SEO description if custom text is empty" />
-            {footer.showDescription && (
-              <div>
-                <label className="text-xs text-gray-400 block mb-1">Custom Description</label>
-                <textarea value={footer.customDescription} onChange={e => onUpdate({ customDescription: e.target.value })} rows={3}
-                  placeholder="Leave empty to use SEO description"
-                  className={`${inputCls} resize-none`} />
-              </div>
-            )}
-            <Toggle label="Show Live Badge" val={footer.showLiveBadge} fieldKey="showLiveBadge" hint="Only when portfolio is published" />
-          </Section>
-
-          <Section title="Navigation Column">
-            <Toggle label="Show Section Links" val={footer.showNavigation} fieldKey="showNavigation" />
-            {footer.showNavigation && (
-              <div>
-                <label className="text-xs text-gray-400 block mb-1">Column Heading</label>
-                <input value={footer.navHeading} onChange={e => onUpdate({ navHeading: e.target.value })} className={inputCls} />
-              </div>
-            )}
-          </Section>
-
-          <Section title="Contact Column">
-            <Toggle label="Show Contact Info" val={footer.showContact} fieldKey="showContact" hint="From Contact section fields" />
-            {footer.showContact && (
-              <div>
-                <label className="text-xs text-gray-400 block mb-1">Column Heading</label>
-                <input value={footer.contactHeading} onChange={e => onUpdate({ contactHeading: e.target.value })} className={inputCls} />
-              </div>
-            )}
-          </Section>
-
-          <Section title="Social Column">
-            <Toggle label="Show Social Links" val={footer.showSocial} fieldKey="showSocial" hint="From Social panel" />
-            {footer.showSocial && (
-              <div>
-                <label className="text-xs text-gray-400 block mb-1">Column Heading</label>
-                <input value={footer.socialHeading} onChange={e => onUpdate({ socialHeading: e.target.value })} className={inputCls} />
-              </div>
-            )}
-          </Section>
-
-          <Section title="Bottom Bar">
-            <Toggle label="Show Copyright" val={footer.showCopyright} fieldKey="showCopyright" />
-            {footer.showCopyright && (
-              <div>
-                <label className="text-xs text-gray-400 block mb-1">Custom Copyright Text</label>
-                <input value={footer.copyrightText} onChange={e => onUpdate({ copyrightText: e.target.value })} placeholder="Leave empty for default"
-                  className={inputCls} />
-              </div>
-            )}
-            <Toggle label="Show Back to Top" val={footer.showBackToTop} fieldKey="showBackToTop" />
-            <Toggle label="Show Built With Credit" val={footer.showBuiltWith} fieldKey="showBuiltWith" />
-          </Section>
-        </>
-      )}
+        {footer.enabled && activeTab === 'colors' && (
+          <div className="space-y-4">
+            <p className="text-[11px] text-gray-500 leading-relaxed">
+              Override footer colors independently from your theme. Leave blank to use theme defaults.
+            </p>
+            <ColorRow label="Background color" value={footer.bgColor ?? ''} onChange={v => onUpdate({ bgColor: v })} />
+            <ColorRow label="Text color" value={footer.textColor ?? ''} onChange={v => onUpdate({ textColor: v })} />
+            <ColorRow label="Border color" value={footer.borderColor ?? ''} onChange={v => onUpdate({ borderColor: v })} />
+            <button type="button"
+              onClick={() => onUpdate({ bgColor: '', textColor: '', borderColor: '' })}
+              className="w-full py-2 text-xs text-gray-500 hover:text-gray-300 bg-white/5 rounded-lg transition">
+              Reset all color overrides
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

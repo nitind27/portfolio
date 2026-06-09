@@ -20,6 +20,8 @@ import { getMotionVariants, getSectionHoverProps, resolveTriggerLoad, getSection
 import { PreviewScrollRootProvider, useInViewViewport } from './preview-motion';
 import { APP_NAME } from '@/lib/brand';
 import { getAboutLayoutPreview, normalizeAboutLayout } from '@/lib/about-layouts';
+import { getFooterNavItems } from '@/lib/footer-nav';
+import type { FooterConfig, FooterNavLayout } from '@/lib/types';
 
 interface Props {
   portfolio: Portfolio;
@@ -970,7 +972,7 @@ export default function PortfolioPreview({ portfolio, deviceView = 'desktop', ac
         </div>
       ))}
 
-      <SiteFooter portfolio={portfolio} sections={visibleSections} theme={theme} social={social} isMobile={isNarrow} />
+      <SiteFooter portfolio={portfolio} sections={visibleSections} theme={theme} social={social} isMobile={isNarrow} navbar={portfolio.navbar} />
     </div>
     </PreviewScrollRootProvider>
   );
@@ -1001,9 +1003,12 @@ function sectionField(sections: PortfolioSection[], type: string, fieldId: strin
   return typeof f?.value === 'string' ? f.value : '';
 }
 
-function FooterHeading({ children }: { children: React.ReactNode }) {
+function FooterHeading({ children, centered }: { children: React.ReactNode; centered?: boolean }) {
   return (
-    <p style={{ fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.4, marginBottom: '1.1rem' }}>
+    <p style={{
+      fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+      opacity: 0.4, marginBottom: '1.1rem', textAlign: centered ? 'center' : 'left',
+    }}>
       {children}
     </p>
   );
@@ -1097,17 +1102,88 @@ function FooterContactRow({ icon, label, value, href, theme }: { icon: string; l
   return inner;
 }
 
-const DEFAULT_FOOTER = {
-  enabled: true, showCta: true, ctaTitle: 'Ready to work together?',
+const DEFAULT_FOOTER: FooterConfig = {
+  enabled: true, layout: 'standard', style: 'gradient', showAccentBar: true, columnGap: 'normal',
+  showCta: true, ctaTitle: 'Ready to work together?',
   ctaSubtitle: "Let's create something great. Reach out anytime.", ctaButtonText: 'Get In Touch',
   showBrand: true, showDescription: true, customDescription: '', showLiveBadge: true,
-  showNavigation: true, navHeading: 'Navigation', showContact: true, contactHeading: 'Contact',
+  showNavigation: true, navHeading: 'Navigation', navLayout: 'list', navMaxItems: 0,
+  syncNavWithNavbar: true, hiddenNavSections: [], customNavLabels: {},
+  showContact: true, contactHeading: 'Contact',
   showSocial: true, socialHeading: 'Follow Me', showCopyright: true, copyrightText: '',
   showBackToTop: true, showBuiltWith: true,
 };
 
-function SiteFooter({ portfolio, sections, theme, social, isMobile }: {
+function footerBackground(footer: FooterConfig, theme: ThemeConfig): string {
+  if (footer.bgColor) return footer.bgColor;
+  const style = footer.style ?? 'gradient';
+  if (style === 'solid') return theme.backgroundColor;
+  if (style === 'minimal') return 'transparent';
+  if (style === 'accent') return `${theme.primaryColor}14`;
+  return `linear-gradient(180deg, ${theme.primaryColor}06 0%, ${theme.backgroundColor} 40%)`;
+}
+
+function FooterNavLinks({ items, theme, layout, textColor }: {
+  items: { id: string; title: string; href: string }[];
+  theme: ThemeConfig;
+  layout: FooterNavLayout;
+  textColor: string;
+}) {
+  const linkBase: React.CSSProperties = {
+    color: textColor, textDecoration: 'none', fontSize: '0.88rem', transition: 'all 0.2s',
+  };
+
+  if (layout === 'inline') {
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+        {items.map(s => (
+          <a key={s.id} href={s.href}
+            style={{
+              ...linkBase, opacity: 0.75, padding: '0.35rem 0.75rem', borderRadius: 999,
+              border: `1px solid ${theme.primaryColor}28`, background: `${theme.primaryColor}08`,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.borderColor = theme.primaryColor; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = '0.75'; e.currentTarget.style.borderColor = `${theme.primaryColor}28`; }}>
+            {s.title}
+          </a>
+        ))}
+      </div>
+    );
+  }
+
+  if (layout === 'columns') {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.45rem 1rem' }}>
+        {items.map(s => (
+          <a key={s.id} href={s.href}
+            style={{ ...linkBase, opacity: 0.65, display: 'block' }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = theme.primaryColor; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = '0.65'; e.currentTarget.style.color = textColor; }}>
+            {s.title}
+          </a>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+      {items.map(s => (
+        <a key={s.id} href={s.href}
+          style={{ ...linkBase, display: 'inline-flex', alignItems: 'center', gap: '0.5rem', opacity: 0.65, width: 'fit-content' }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = theme.primaryColor; e.currentTarget.style.paddingLeft = '4px'; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = '0.65'; e.currentTarget.style.color = textColor; e.currentTarget.style.paddingLeft = '0'; }}>
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: theme.primaryColor, opacity: 0.5, flexShrink: 0 }} />
+          {s.title}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function SiteFooter({ portfolio, sections, theme, social, isMobile, navbar }: {
   portfolio: Portfolio; sections: PortfolioSection[]; theme: ThemeConfig; social: SocialLinks; isMobile: boolean;
+  navbar?: NavbarConfig;
 }) {
   const animVp = useInViewViewport();
   const footer = { ...DEFAULT_FOOTER, ...portfolio.footer };
@@ -1115,6 +1191,13 @@ function SiteFooter({ portfolio, sections, theme, social, isMobile }: {
 
   const radii: Record<string, string> = { none: '0', sm: '4px', md: '8px', lg: '16px', full: '9999px' };
   const radius = radii[theme.borderRadius] || '8px';
+  const layout = footer.layout ?? 'standard';
+  const textColor = footer.textColor || theme.textColor;
+  const borderColor = footer.borderColor || `${theme.primaryColor}20`;
+  const gapMap = { compact: '1.5rem', normal: '2.5rem', wide: '3.5rem' };
+  const columnGap = gapMap[footer.columnGap ?? 'normal'];
+  const isMinimal = layout === 'minimal';
+  const isCentered = layout === 'centered';
 
   const email = sectionField(sections, 'contact', 'email');
   const phone = sectionField(sections, 'contact', 'phone');
@@ -1127,29 +1210,33 @@ function SiteFooter({ portfolio, sections, theme, social, isMobile }: {
   const hasSocial = footer.showSocial && socialLinks.length > 0;
   const manySocial = hasSocial && socialLinks.length >= 5;
   const showSocialInGrid = hasSocial && !manySocial;
+  const navItems = getFooterNavItems(sections, footer, navbar);
+  const showNav = footer.showNavigation && navItems.length > 0;
   const description = footer.customDescription || portfolio.seo?.description || 'A professional portfolio showcasing creative work, skills, and expertise.';
   const hasContactInfo = Boolean(email || phone || location);
   const showBottomBar = footer.showCopyright || footer.showBackToTop || footer.showBuiltWith;
 
   const gridCols = (() => {
-    const count = [footer.showBrand, footer.showNavigation, footer.showContact, showSocialInGrid].filter(Boolean).length;
-    if (isMobile || count <= 1) return '1fr';
-    if (count === 2) return '1.5fr 1fr';
-    if (count === 3) return '1.5fr 1fr 1fr';
-    return '1.5fr 1fr 1fr 1.15fr';
+    const count = [footer.showBrand, showNav, footer.showContact, showSocialInGrid].filter(Boolean).length;
+    if (isMobile || isMinimal || count <= 1) return '1fr';
+    if (count === 2) return isCentered ? '1fr 1fr' : '1.5fr 1fr';
+    if (count === 3) return isCentered ? '1fr 1fr 1fr' : '1.5fr 1fr 1fr';
+    return isCentered ? '1fr 1fr 1fr 1fr' : '1.5fr 1fr 1fr 1.15fr';
   })();
 
   return (
     <footer style={{
-      position: 'relative', marginTop: '2rem', overflow: 'hidden',
-      background: `linear-gradient(180deg, ${theme.primaryColor}06 0%, ${theme.backgroundColor} 40%)`,
-      borderTop: `1px solid ${theme.primaryColor}20`,
+      position: 'relative', marginTop: isMinimal ? '1rem' : '2rem', overflow: 'hidden',
+      background: footerBackground(footer, theme),
+      borderTop: isMinimal ? `1px solid ${borderColor}` : `1px solid ${borderColor}`,
+      color: textColor,
     }}>
-      {/* Top accent gradient */}
+      {footer.showAccentBar !== false && !isMinimal && (
       <div style={{
         height: 3, background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor}, ${theme.accentColor}, ${theme.primaryColor})`,
         backgroundSize: '200% 100%',
       }} />
+      )}
 
       {/* Subtle glow */}
       <div style={{
@@ -1159,9 +1246,15 @@ function SiteFooter({ portfolio, sections, theme, social, isMobile }: {
         pointerEvents: 'none',
       }} />
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '2.5rem 1rem 0' : '4rem clamp(1rem, 5vw, 2.5rem) 0', position: 'relative' }}>
+      <div style={{
+        maxWidth: 1200, margin: '0 auto', position: 'relative',
+        padding: isMobile
+          ? (isMinimal ? '1.5rem 1rem 0' : '2.5rem 1rem 0')
+          : (isMinimal ? '2rem clamp(1rem, 5vw, 2rem) 0' : '4rem clamp(1rem, 5vw, 2.5rem) 0'),
+        textAlign: isCentered ? 'center' : 'left',
+      }}>
         {/* CTA strip */}
-        {footer.showCta && (
+        {footer.showCta && !isMinimal && (
           <motion.div
             initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={animVp}
             style={{
@@ -1193,16 +1286,17 @@ function SiteFooter({ portfolio, sections, theme, social, isMobile }: {
         )}
 
         {/* Main grid */}
-        {(footer.showBrand || footer.showNavigation || footer.showContact || showSocialInGrid) && (
+        {(footer.showBrand || showNav || footer.showContact || showSocialInGrid) && (
           <div style={{
             display: 'grid',
             gridTemplateColumns: gridCols,
-            gap: isMobile ? '2.5rem' : '2.5rem',
-            marginBottom: manySocial ? '2rem' : '3rem',
+            gap: isMobile ? columnGap : columnGap,
+            marginBottom: manySocial ? '2rem' : (isMinimal ? '1.5rem' : '3rem'),
+            justifyItems: isCentered ? 'center' : 'stretch',
           }}>
           {footer.showBrand && (
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '1rem' }}>
+          <div style={{ maxWidth: isCentered ? 420 : undefined }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '1rem', justifyContent: isCentered ? 'center' : 'flex-start' }}>
               <div style={{
                 width: 46, height: 46, borderRadius: radius, flexShrink: 0,
                 background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
@@ -1231,30 +1325,16 @@ function SiteFooter({ portfolio, sections, theme, social, isMobile }: {
           </div>
           )}
 
-          {footer.showNavigation && (
-          <div>
-            <FooterHeading>{footer.navHeading}</FooterHeading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {sections.map(s => (
-                <a key={s.id} href={`#${s.id}`}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                    color: theme.textColor, textDecoration: 'none', opacity: 0.65,
-                    fontSize: '0.88rem', transition: 'all 0.2s', width: 'fit-content',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = theme.primaryColor; e.currentTarget.style.paddingLeft = '4px'; }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.65'; e.currentTarget.style.color = theme.textColor; e.currentTarget.style.paddingLeft = '0'; }}>
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: theme.primaryColor, opacity: 0.5, flexShrink: 0 }} />
-                  {s.title}
-                </a>
-              ))}
-            </div>
+          {showNav && (
+          <div style={{ width: isCentered ? '100%' : undefined, maxWidth: isCentered ? 320 : undefined }}>
+            <FooterHeading centered={isCentered}>{footer.navHeading}</FooterHeading>
+            <FooterNavLinks items={navItems} theme={theme} layout={footer.navLayout ?? 'list'} textColor={textColor} />
           </div>
           )}
 
           {footer.showContact && (
-          <div>
-            <FooterHeading>{footer.contactHeading}</FooterHeading>
+          <div style={{ maxWidth: isCentered ? 320 : undefined }}>
+            <FooterHeading centered={isCentered}>{footer.contactHeading}</FooterHeading>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {email && <FooterContactRow icon="📧" label="Email" value={email} href={`mailto:${email}`} theme={theme} />}
               {phone && <FooterContactRow icon="📞" label="Phone" value={phone} href={`tel:${phone.replace(/\s/g, '')}`} theme={theme} />}
@@ -1267,8 +1347,8 @@ function SiteFooter({ portfolio, sections, theme, social, isMobile }: {
           )}
 
           {showSocialInGrid && (
-            <div style={{ minWidth: 0 }}>
-              <FooterHeading>{footer.socialHeading}</FooterHeading>
+            <div style={{ minWidth: 0, maxWidth: isCentered ? 320 : undefined }}>
+              <FooterHeading centered={isCentered}>{footer.socialHeading}</FooterHeading>
               <FooterSocial social={social} theme={theme} radius={radius} isMobile={isMobile} />
             </div>
           )}

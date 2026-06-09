@@ -191,12 +191,13 @@ const TAB_HELP: Record<RightTab, { title: string; summary: string; tips: HelpTip
   },
   footer: {
     title: 'Site footer',
-    summary: 'Copyright, columns, contact info, and social links at the bottom.',
+    summary: 'Layout, columns, navigation links, contact info, and social links at the bottom.',
     tips: [
-      { icon: '📋', title: 'Toggle columns', description: 'Enable/disable brand, navigation, contact, and social columns.' },
-      { icon: '📢', title: 'CTA strip', description: 'Add a banner above the footer with title and button.' },
+      { icon: '📐', title: 'Layout tab', description: 'Choose standard, centered, or minimal footer layout and background style.' },
+      { icon: '🧭', title: 'Navigation tab', description: 'Pick which section links show, set max count, inline/list style, and custom labels.' },
+      { icon: '📢', title: 'CTA strip', description: 'Add a banner above the footer with title and button in the Content tab.' },
     ],
-    questions: ['How to customize the footer?'],
+    questions: ['How to customize the footer?', 'How to control footer navigation links?'],
   },
   templates: {
     title: 'Switch design',

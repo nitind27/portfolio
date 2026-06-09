@@ -369,8 +369,16 @@ export interface NavbarConfig {
   customLabels?: Record<string, string>;
 }
 
+export type FooterLayout = 'standard' | 'centered' | 'minimal';
+export type FooterStyle = 'gradient' | 'solid' | 'minimal' | 'accent';
+export type FooterNavLayout = 'list' | 'inline' | 'columns';
+
 export interface FooterConfig {
   enabled: boolean;
+  layout?: FooterLayout;
+  style?: FooterStyle;
+  showAccentBar?: boolean;
+  columnGap?: 'compact' | 'normal' | 'wide';
   showCta: boolean;
   ctaTitle: string;
   ctaSubtitle: string;
@@ -381,6 +389,12 @@ export interface FooterConfig {
   showLiveBadge: boolean;
   showNavigation: boolean;
   navHeading: string;
+  navLayout?: FooterNavLayout;
+  /** 0 = show all visible links */
+  navMaxItems?: number;
+  syncNavWithNavbar?: boolean;
+  hiddenNavSections?: string[];
+  customNavLabels?: Record<string, string>;
   showContact: boolean;
   contactHeading: string;
   showSocial: boolean;
@@ -389,6 +403,9 @@ export interface FooterConfig {
   copyrightText: string;
   showBackToTop: boolean;
   showBuiltWith: boolean;
+  bgColor?: string;
+  textColor?: string;
+  borderColor?: string;
 }
 
 export interface SocialLinks {

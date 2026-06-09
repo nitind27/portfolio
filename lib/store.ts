@@ -41,6 +41,10 @@ const defaultSocial: SocialLinks = {};
 
 const defaultFooter: FooterConfig = {
   enabled: true,
+  layout: 'standard',
+  style: 'gradient',
+  showAccentBar: true,
+  columnGap: 'normal',
   showCta: true,
   ctaTitle: 'Ready to work together?',
   ctaSubtitle: "Let's create something great. Reach out anytime.",
@@ -51,6 +55,11 @@ const defaultFooter: FooterConfig = {
   showLiveBadge: true,
   showNavigation: true,
   navHeading: 'Navigation',
+  navLayout: 'list',
+  navMaxItems: 0,
+  syncNavWithNavbar: true,
+  hiddenNavSections: [],
+  customNavLabels: {},
   showContact: true,
   contactHeading: 'Contact',
   showSocial: true,

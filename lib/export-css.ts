@@ -449,6 +449,21 @@ section[id] { scroll-margin-top: var(--nav-offset); }
 .footer-bottom { border-top: 1px solid color-mix(in srgb, var(--primary) 10%, transparent); padding: 1.5rem 0 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .footer-bottom p { opacity: 0.38; font-size: 0.82rem; }
 .back-to-top { color: var(--primary); background: none; border: none; cursor: pointer; font-size: 0.78rem; font-weight: 600; opacity: 0.7; font-family: inherit; }
+.site-footer { color: var(--footer-text, var(--text)); border-top-color: var(--footer-border, color-mix(in srgb, var(--primary) 13%, transparent)); background: var(--footer-bg, linear-gradient(180deg, color-mix(in srgb, var(--primary) 2%, transparent) 0%, var(--bg) 40%)); }
+.footer-style-solid { background: var(--footer-bg, var(--bg)); }
+.footer-style-minimal { background: var(--footer-bg, transparent); margin-top: 1rem; }
+.footer-style-minimal .footer-inner { padding-top: 2rem; }
+.footer-style-accent { background: var(--footer-bg, color-mix(in srgb, var(--primary) 8%, var(--bg))); }
+.footer-layout-centered .footer-inner { text-align: center; }
+.footer-layout-centered .footer-grid { justify-items: center; }
+.footer-layout-minimal .footer-inner { padding-top: 1.5rem; }
+.footer-layout-minimal .footer-cta { display: none; }
+.footer-nav-link { display: block; opacity: 0.65; text-decoration: none; font-size: 0.88rem; margin-bottom: 0.5rem; color: inherit; transition: opacity 0.2s, color 0.2s; }
+.footer-nav-link:hover { opacity: 1; color: var(--primary); }
+.footer-nav-inline { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.footer-nav-pill { display: inline-block; padding: 0.35rem 0.75rem; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--primary) 16%, transparent); background: color-mix(in srgb, var(--primary) 5%, transparent); text-decoration: none; font-size: 0.82rem; color: inherit; opacity: 0.8; }
+.footer-nav-pill:hover { opacity: 1; border-color: var(--primary); }
+.footer-nav-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem 1rem; }
 
 /* Popup & modal */
 .popup-overlay {

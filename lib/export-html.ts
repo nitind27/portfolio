@@ -1,5 +1,6 @@
 import { APP_NAME, DESKTOP_VIEWPORT_CONTENT } from './brand';
 import { Portfolio, PortfolioSection, SocialLinks, NavbarConfig, FooterConfig } from './types';
+import { getFooterNavItems } from './footer-nav';
 import { escapeHtml } from './export-assets';
 import { renderSection } from './export-sections';
 
@@ -12,10 +13,13 @@ const DEFAULT_NAVBAR: NavbarConfig = {
 };
 
 const DEFAULT_FOOTER: FooterConfig = {
-  enabled: true, showCta: true, ctaTitle: 'Ready to work together?',
+  enabled: true, layout: 'standard', style: 'gradient', showAccentBar: true, columnGap: 'normal',
+  showCta: true, ctaTitle: 'Ready to work together?',
   ctaSubtitle: "Let's create something great. Reach out anytime.", ctaButtonText: 'Get In Touch',
   showBrand: true, showDescription: true, customDescription: '', showLiveBadge: true,
-  showNavigation: true, navHeading: 'Navigation', showContact: true, contactHeading: 'Contact',
+  showNavigation: true, navHeading: 'Navigation', navLayout: 'list', navMaxItems: 0,
+  syncNavWithNavbar: true, hiddenNavSections: [], customNavLabels: {},
+  showContact: true, contactHeading: 'Contact',
   showSocial: true, socialHeading: 'Follow Me', showCopyright: true, copyrightText: '',
   showBackToTop: true, showBuiltWith: true,
 };
@@ -91,11 +95,30 @@ function renderMobileMenu(portfolio: Portfolio, sections: PortfolioSection[]): s
   </div>`;
 }
 
+function renderFooterNavLinks(footer: FooterConfig, items: ReturnType<typeof getFooterNavItems>): string {
+  if (!items.length) return '';
+  const layout = footer.navLayout ?? 'list';
+  if (layout === 'inline') {
+    return `<div class="footer-nav-inline">${items.map(s =>
+      `<a href="${escapeHtml(s.href)}" class="footer-nav-pill">${escapeHtml(s.title)}</a>`
+    ).join('')}</div>`;
+  }
+  if (layout === 'columns') {
+    return `<div class="footer-nav-columns">${items.map(s =>
+      `<a href="${escapeHtml(s.href)}" class="footer-nav-link">${escapeHtml(s.title)}</a>`
+    ).join('')}</div>`;
+  }
+  return items.map(s =>
+    `<a href="${escapeHtml(s.href)}" class="footer-nav-link">${escapeHtml(s.title)}</a>`
+  ).join('');
+}
+
 function renderFooter(portfolio: Portfolio, sections: PortfolioSection[], social: SocialLinks): string {
   const footer = { ...DEFAULT_FOOTER, ...portfolio.footer };
   if (!footer.enabled) return '';
 
   const theme = portfolio.theme;
+  const navbar = portfolio.navbar;
   const email = sectionField(sections, 'contact', 'email');
   const phone = sectionField(sections, 'contact', 'phone');
   const location = sectionField(sections, 'contact', 'location');
@@ -104,10 +127,11 @@ function renderFooter(portfolio: Portfolio, sections: PortfolioSection[], social
   const description = footer.customDescription || portfolio.seo?.description || 'A professional portfolio showcasing creative work, skills, and expertise.';
   const socialLinks = Object.entries(social).filter(([, v]) => v);
   const initial = portfolio.name.charAt(0).toUpperCase();
-
-  const navLinks = footer.showNavigation ? sections.map(s =>
-    `<a href="#${escapeHtml(s.id)}" style="display:block;opacity:0.65;text-decoration:none;font-size:0.88rem;margin-bottom:0.5rem;transition:opacity 0.2s">${escapeHtml(s.title)}</a>`
-  ).join('') : '';
+  const navItems = getFooterNavItems(sections, footer, navbar);
+  const navLinks = footer.showNavigation ? renderFooterNavLinks(footer, navItems) : '';
+  const footerLayout = footer.layout ?? 'standard';
+  const footerStyle = footer.style ?? 'gradient';
+  const footerClass = `site-footer footer-layout-${footerLayout} footer-style-${footerStyle}${footer.showAccentBar === false ? ' footer-no-accent' : ''}`;
 
   const socialGrid = footer.showSocial && socialLinks.length ? socialLinks.map(([key, url]) =>
     `<a href="${escapeHtml(url as string)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(key)}" style="display:flex;flex-direction:column;align-items:center;gap:0.3rem;padding:0.55rem 0.5rem;border-radius:var(--radius);border:1px solid color-mix(in srgb,var(--primary) 20%,transparent);background:color-mix(in srgb,var(--primary) 6%,transparent);text-decoration:none;font-size:0.72rem;font-weight:600">
@@ -115,8 +139,14 @@ function renderFooter(portfolio: Portfolio, sections: PortfolioSection[], social
       <span style="font-size:0.62rem;opacity:0.75">${escapeHtml(key)}</span></a>`
   ).join('') : '';
 
-  return `<footer class="site-footer">
-    <div class="footer-accent"></div>
+  const footerStyleAttr = [
+    footer.bgColor ? `--footer-bg:${footer.bgColor}` : '',
+    footer.textColor ? `--footer-text:${footer.textColor}` : '',
+    footer.borderColor ? `--footer-border:${footer.borderColor}` : '',
+  ].filter(Boolean).join(';');
+
+  return `<footer class="${footerClass}"${footerStyleAttr ? ` style="${footerStyleAttr}"` : ''}>
+    ${footer.showAccentBar !== false ? '<div class="footer-accent"></div>' : ''}
     <div class="footer-inner">
       ${footer.showCta ? `<div class="footer-cta">
         <div><p style="font-weight:700;font-size:1.05rem;margin-bottom:0.3rem">${escapeHtml(footer.ctaTitle)}</p>
