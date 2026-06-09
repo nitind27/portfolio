@@ -69,35 +69,220 @@ function getSectionHeadingAnim(section: PortfolioSection): HeadingAnimStyle {
 }
 
 // ── SKILLS ───────────────────────────────────────────────────────────────────
+const SKILL_ICONS = ['⚛️', '🔷', '🟢', '🐍', '☁️', '🐳', '🎨', '📱', '🔥', '💡', '🛠️', '🚀', '📊', '🔐', '🌐', '⚡'];
+
+function SkillBar({ name, pct, i, barStyle, barHeight, showPct, theme, radius }: {
+  name: string; pct: number; i: number; barStyle: string; barHeight: number;
+  showPct: boolean; theme: ThemeConfig; radius: string;
+}) {
+  const trackH = Math.max(4, barHeight);
+  const isSharp = barStyle === 'sharp';
+  const br = isSharp ? 0 : 99;
+
+  const fillStyle: React.CSSProperties = barStyle === 'gradient'
+    ? { background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }
+    : barStyle === 'glow'
+    ? { background: theme.primaryColor, boxShadow: `0 0 10px 2px ${theme.primaryColor}88` }
+    : barStyle === 'striped'
+    ? {
+        background: `repeating-linear-gradient(45deg, ${theme.primaryColor}, ${theme.primaryColor} 6px, ${theme.secondaryColor} 6px, ${theme.secondaryColor} 12px)`,
+      }
+    : { background: theme.primaryColor };
+
+  return (
+    <GlassCard theme={theme} radius={radius} hover>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+        <span style={{ fontWeight: 700, fontSize: '0.92rem' }}>{name}</span>
+        {showPct && <span style={{ fontSize: '0.72rem', fontWeight: 700, color: theme.primaryColor, opacity: 0.9 }}>{pct}%</span>}
+      </div>
+      <div style={{ height: trackH, borderRadius: br, background: `${theme.primaryColor}18`, overflow: 'hidden', position: 'relative' }}>
+        <motion.div
+          initial={{ width: 0 }}
+          whileInView={{ width: `${pct}%` }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.85, delay: i * 0.05, ease: 'easeOut' }}
+          style={{ height: '100%', borderRadius: br, ...fillStyle }}
+        />
+      </div>
+    </GlassCard>
+  );
+}
+
+function SkillPill({ name, pct, i, theme, radius }: { name: string; pct: number; i: number; theme: ThemeConfig; radius: string }) {
+  const opacity = 0.4 + (pct / 100) * 0.6;
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: i * 0.04, type: 'spring', stiffness: 300, damping: 18 }}
+      whileHover={{ scale: 1.06, y: -2 }}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: '0.45rem',
+        padding: '0.45rem 1rem', borderRadius: 999,
+        background: `${theme.primaryColor}${Math.round(opacity * 22).toString(16).padStart(2, '0')}`,
+        border: `1.5px solid ${theme.primaryColor}${Math.round(opacity * 55).toString(16).padStart(2, '0')}`,
+        fontSize: '0.85rem', fontWeight: 600, cursor: 'default',
+      }}
+    >
+      {name}
+      <span style={{ fontSize: '0.68rem', color: theme.primaryColor, fontWeight: 700, opacity: 0.8 }}>{pct}%</span>
+    </motion.div>
+  );
+}
+
+function SkillCardIcon({ name, pct, i, theme, radius }: { name: string; pct: number; i: number; theme: ThemeConfig; radius: string }) {
+  const icon = SKILL_ICONS[i % SKILL_ICONS.length];
+  return (
+    <GlassCard theme={theme} radius={radius} hover style={{ textAlign: 'center', padding: '1.5rem 1rem' }}>
+      <motion.div
+        initial={{ scale: 0, rotate: -15 }}
+        whileInView={{ scale: 1, rotate: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: i * 0.06, type: 'spring', stiffness: 280, damping: 18 }}
+        style={{
+          width: 52, height: 52, borderRadius: radius, margin: '0 auto 0.85rem',
+          background: `linear-gradient(135deg, ${theme.primaryColor}28, ${theme.secondaryColor}18)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem',
+        }}>{icon}</motion.div>
+      <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.5rem' }}>{name}</p>
+      <div style={{ height: 4, borderRadius: 99, background: `${theme.primaryColor}20`, overflow: 'hidden' }}>
+        <motion.div initial={{ width: 0 }} whileInView={{ width: `${pct}%` }} viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: i * 0.06 + 0.2, ease: 'easeOut' }}
+          style={{ height: '100%', borderRadius: 99, background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }} />
+      </div>
+      <p style={{ fontSize: '0.7rem', color: theme.primaryColor, fontWeight: 700, marginTop: '0.35rem', opacity: 0.8 }}>{pct}%</p>
+    </GlassCard>
+  );
+}
+
+function SkillRadial({ name, pct, i, theme }: { name: string; pct: number; i: number; theme: ThemeConfig }) {
+  const r = 28;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: i * 0.06 }}
+      style={{ textAlign: 'center', padding: '1rem 0.5rem' }}
+    >
+      <div style={{ position: 'relative', width: 72, height: 72, margin: '0 auto 0.6rem' }}>
+        <svg width="72" height="72" viewBox="0 0 72 72" style={{ transform: 'rotate(-90deg)' }}>
+          <circle cx="36" cy="36" r={r} fill="none" stroke={`${theme.primaryColor}18`} strokeWidth="6" />
+          <motion.circle
+            cx="36" cy="36" r={r} fill="none"
+            stroke={theme.primaryColor} strokeWidth="6"
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            initial={{ strokeDashoffset: circ }}
+            whileInView={{ strokeDashoffset: circ - dash }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.9, delay: i * 0.06, ease: 'easeOut' }}
+          />
+        </svg>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: theme.primaryColor }}>{pct}%</span>
+        </div>
+      </div>
+      <p style={{ fontWeight: 600, fontSize: '0.8rem', opacity: 0.9 }}>{name}</p>
+    </motion.div>
+  );
+}
+
+function SkillMinimalList({ name, pct, i, theme }: { name: string; pct: number; i: number; theme: ThemeConfig }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -12 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: i * 0.04 }}
+      style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.65rem 0', borderBottom: `1px solid ${theme.primaryColor}12` }}
+    >
+      <div style={{ width: 8, height: 8, borderRadius: '50%', background: theme.primaryColor, flexShrink: 0, opacity: 0.8 }} />
+      <span style={{ flex: 1, fontWeight: 600, fontSize: '0.92rem' }}>{name}</span>
+      <div style={{ width: 120, height: 4, borderRadius: 99, background: `${theme.primaryColor}15`, overflow: 'hidden', flexShrink: 0 }}>
+        <motion.div initial={{ width: 0 }} whileInView={{ width: `${pct}%` }} viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: i * 0.04 + 0.1, ease: 'easeOut' }}
+          style={{ height: '100%', borderRadius: 99, background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }} />
+      </div>
+      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: theme.primaryColor, width: 32, textAlign: 'right', flexShrink: 0 }}>{pct}%</span>
+    </motion.div>
+  );
+}
+
 export function SkillsSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv, fa }: BaseProps) {
   const items = fa('skills') || fa('Skills');
   const subtitle = fv('subtitle');
   const cardAnim = getSectionCardAnim(section);
   const headingAnim = getSectionHeadingAnim(section);
+  const layout = fv('skillsLayout') || 'bars';
+  const barStyle = fv('skillsBarStyle') || 'gradient';
+  const barHeight = parseInt(fv('skillsBarHeight') || '6') || 6;
+  const showPct = (fv('skillsShowPercent') || 'yes') !== 'no';
+
+  const parsed = items.map((skill, i) => {
+    const [name, levelStr] = parseSplit(skill, ':');
+    const pct = levelStr ? Math.min(100, parseInt(levelStr) || 85) : 78 + (i % 5) * 4;
+    return { name, pct };
+  });
+
+  const renderSkill = (name: string, pct: number, i: number) => {
+    const cv = getCardVariants(cardAnim, i);
+    switch (layout) {
+      case 'pills':
+        return <SkillPill key={i} name={name} pct={pct} i={i} theme={theme} radius={radius} />;
+      case 'cards-icon':
+        return (
+          <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+            <SkillCardIcon name={name} pct={pct} i={i} theme={theme} radius={radius} />
+          </motion.div>
+        );
+      case 'radial':
+        return <SkillRadial key={i} name={name} pct={pct} i={i} theme={theme} />;
+      case 'minimal-list':
+        return <SkillMinimalList key={i} name={name} pct={pct} i={i} theme={theme} />;
+      case 'tags':
+        return (
+          <motion.span key={i}
+            initial={{ opacity: 0, scale: 0.85 }} whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }} transition={{ delay: i * 0.03, type: 'spring', stiffness: 260, damping: 18 }}
+            whileHover={{ scale: 1.08, y: -2 }}
+            style={{
+              display: 'inline-block', padding: '0.4rem 1rem', borderRadius: 999,
+              background: `${theme.primaryColor}12`, border: `1px solid ${theme.primaryColor}28`,
+              fontSize: '0.85rem', fontWeight: 600, cursor: 'default',
+            }}>
+            {name}
+          </motion.span>
+        );
+      default: // bars
+        return (
+          <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+            <SkillBar name={name} pct={pct} i={i} barStyle={barStyle} barHeight={barHeight} showPct={showPct} theme={theme} radius={radius} />
+          </motion.div>
+        );
+    }
+  };
+
+  const isPills = layout === 'pills' || layout === 'tags';
+  const isRadial = layout === 'radial';
+  const isMinimalList = layout === 'minimal-list';
+
+  const containerStyle: React.CSSProperties = isPills
+    ? { display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }
+    : isRadial
+    ? { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(auto-fill, minmax(96px, 1fr))', gap: '0.5rem' }
+    : isMinimalList
+    ? { display: 'flex', flexDirection: 'column', maxWidth: 640, margin: '0 auto' }
+    : { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' };
+
   return (
     <SectionShell id={section.id} pad={pad} altBg={`${theme.primaryColor}08`} section={section} theme={theme}>
       <SectionHeader title={sectionTitle} subtitle={subtitle || 'Technologies and tools I work with daily'} compact={isMobile} theme={theme} badge="Expertise" headingAnim={headingAnim} />
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
-        {items.map((skill, i) => {
-          const [name, levelStr] = parseSplit(skill, ':');
-          const pct = levelStr ? Math.min(100, parseInt(levelStr) || 85) : 78 + (i % 5) * 4;
-          const cv = getCardVariants(cardAnim, i);
-          return (
-            <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
-              <GlassCard theme={theme} radius={radius} hover>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{name}</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: theme.primaryColor, opacity: 0.85 }}>{pct}%</span>
-                </div>
-                <div style={{ height: 6, borderRadius: 99, background: `${theme.primaryColor}18`, overflow: 'hidden' }}>
-                  <motion.div initial={{ width: 0 }} whileInView={{ width: `${pct}%` }} viewport={{ once: true }}
-                    transition={{ duration: 0.9, delay: i * 0.06, ease: 'easeOut' }}
-                    style={{ height: '100%', borderRadius: 99, background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }} />
-                </div>
-              </GlassCard>
-            </motion.div>
-          );
-        })}
+      <div style={containerStyle}>
+        {parsed.map(({ name, pct }, i) => renderSkill(name, pct, i))}
       </div>
     </SectionShell>
   );

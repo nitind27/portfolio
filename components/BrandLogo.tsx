@@ -29,7 +29,7 @@ export default function BrandLogo({ size = 'md', className = '', pad = true }: P
   return (
     <div
       className={`inline-flex items-center justify-center shrink-0 ${className}`}
- 
+
     >
       <Image
         src={LOGO_SRC}

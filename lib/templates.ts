@@ -219,8 +219,13 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
   skills: {
     title: 'Skills',
     fields: [
+      { id: 'skillsLayout', label: 'Display Style', type: 'select', value: 'bars', options: ['bars', 'pills', 'cards-icon', 'radial', 'minimal-list', 'tags'] },
+      { id: 'skillsBarStyle', label: 'Bar Style', type: 'select', value: 'gradient', options: ['gradient', 'solid', 'striped', 'glow', 'sharp'] },
+      { id: 'skillsBarHeight', label: 'Bar Height (px)', type: 'number', value: '6' },
+      { id: 'skillsShowPercent', label: 'Show Percentage', type: 'select', value: 'yes', options: ['yes', 'no'] },
       { id: 'title', label: 'Section Title', type: 'text', value: 'Skills & Expertise' },
-      { id: 'skills', label: 'Skills (one per line)', type: 'list', value: ['React', 'TypeScript', 'Node.js', 'Python', 'AWS', 'Docker'] },
+      { id: 'subtitle', label: 'Subtitle', type: 'text', value: '' },
+      { id: 'skills', label: 'Skills (Name or Name:Level)', type: 'list', value: ['React:90', 'TypeScript:85', 'Node.js:80', 'Python:75', 'AWS:70', 'Docker:72'] },
     ],
   },
   experience: {

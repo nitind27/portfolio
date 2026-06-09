@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   LayoutDashboard, CreditCard, LayoutTemplate, Users, ArrowLeft,
-  Loader2, Shield, RefreshCw, Grid3x3, Receipt, Bell, ExternalLink, LogOut,
+  Loader2, Shield, RefreshCw, Grid3x3, Receipt, Bell, ExternalLink, LogOut, Mail,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import BrandLogo from '../BrandLogo';
@@ -17,8 +17,9 @@ import FeaturesMatrixTab from './tabs/FeaturesMatrixTab';
 import TemplatesTab from './tabs/TemplatesTab';
 import UsersTab from './tabs/UsersTab';
 import PaymentsTab from './tabs/PaymentsTab';
+import EmailTab from './tabs/EmailTab';
 
-type Tab = 'overview' | 'plans' | 'features' | 'templates' | 'users' | 'payments';
+type Tab = 'overview' | 'plans' | 'features' | 'templates' | 'users' | 'payments' | 'email';
 
 const NAV: { id: Tab; label: string; desc: string; icon: typeof LayoutDashboard; group: string }[] = [
   { id: 'overview', label: 'Dashboard', desc: 'Analytics & activity', icon: LayoutDashboard, group: 'Main' },
@@ -27,6 +28,7 @@ const NAV: { id: Tab; label: string; desc: string; icon: typeof LayoutDashboard;
   { id: 'payments', label: 'Payments', desc: 'Orders & revenue', icon: Receipt, group: 'Billing' },
   { id: 'templates', label: 'Templates', desc: 'Access control', icon: LayoutTemplate, group: 'Content' },
   { id: 'users', label: 'Users', desc: 'Accounts & roles', icon: Users, group: 'Content' },
+  { id: 'email', label: 'Email & SMTP', desc: 'Transactional emails', icon: Mail, group: 'Settings' },
 ];
 
 interface AdminTemplate {
@@ -261,6 +263,7 @@ export default function AdminPanel() {
               {tab === 'templates' && <TemplatesTab templates={templates} plans={plans} onRefresh={loadAll} />}
               {tab === 'users' && <UsersTab users={users} plans={plans} onRefresh={loadAll} />}
               {tab === 'payments' && <PaymentsTab payments={payments} />}
+              {tab === 'email' && <EmailTab />}
             </>
           )}
         </div>

@@ -76,6 +76,11 @@ export async function POST(req: NextRequest) {
     const token = await createToken(user, TOKEN_TTL_REGISTER);
     await setAuthCookie(token, COOKIE_MAX_AGE_REGISTER);
 
+    // Send welcome email (fire-and-forget — don't block registration)
+    import('@/lib/system-email').then(({ sendWelcomeEmail }) => {
+      sendWelcomeEmail({ to: email, name }).catch(() => {});
+    }).catch(() => {});
+
     return NextResponse.json({ user });
   } catch (err) {
     console.error('Register error:', err);

@@ -18,11 +18,18 @@ export async function POST(req: NextRequest) {
     } else if (status === 'FAILED') {
       const pool = getPool();
       const [rows] = await pool.execute<RowDataPacket[]>(
-        'SELECT user_id FROM payments WHERE order_id = ? LIMIT 1',
+        `SELECT p.user_id, u.email, u.name FROM payments p
+         JOIN users u ON u.id = p.user_id
+         WHERE p.order_id = ? LIMIT 1`,
         [orderId],
       );
       if (rows[0]) {
         await pool.execute(`UPDATE payments SET status = 'failed' WHERE order_id = ?`, [orderId]);
+        // Send failure email (fire-and-forget)
+        const row = rows[0] as { user_id: number; email: string; name: string };
+        import('@/lib/system-email').then(({ sendPaymentFailedEmail }) => {
+          sendPaymentFailedEmail({ to: row.email, name: row.name, orderId }).catch(() => {});
+        }).catch(() => {});
       }
     }
 
