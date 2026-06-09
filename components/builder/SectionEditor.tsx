@@ -13,6 +13,7 @@ import TeamEditor from './TeamEditor';
 import PricingEditor from './PricingEditor';
 import FAQEditor from './FAQEditor';
 import SectionAnimationEditor from './SectionAnimationEditor';
+import HeroContentEditor from './HeroContentEditor';
 import { resolveAssetUrl } from '@/lib/media-url';
 
 interface Props { sectionId: string; variant?: 'canvas' | 'sidebar'; }
@@ -492,6 +493,7 @@ export default function SectionEditor({ sectionId, variant = 'canvas' }: Props) 
       {tab === 'animation' && <SectionAnimationEditor sectionId={sectionId} />}
 
       {tab === 'content' && <>
+      {section.type === 'hero' && <HeroContentEditor sectionId={sectionId} />}
       {/* Fields with drag-and-drop */}
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={section.fields.filter(f => !structuredFieldId || f.id !== structuredFieldId).map(f => f.id)} strategy={verticalListSortingStrategy}>

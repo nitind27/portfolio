@@ -89,7 +89,34 @@ export type SectionEntranceType =
   | 'zoom-out'
   | 'flip'
   | 'blur'
-  | 'rotate';
+  | 'rotate'
+  | 'bounce-in'
+  | 'elastic'
+  | 'pop'
+  | 'swing'
+  | 'reveal';
+
+export type HeroBlockId = 'badge' | 'headline' | 'subheadline' | 'description' | 'cta' | 'social';
+export type HeroAlignH = 'left' | 'center' | 'right';
+export type HeroAlignV = 'top' | 'center' | 'bottom';
+
+export interface HeroBlockSettings {
+  visible?: boolean;
+  entrance?: SectionEntranceType;
+  delay?: number;
+  duration?: number;
+}
+
+export interface HeroContentSettings {
+  alignH?: HeroAlignH;
+  alignV?: HeroAlignV;
+  maxWidth?: number;
+  badgeText?: string;
+  showBadge?: boolean;
+  staggerBlocks?: boolean;
+  blockOrder?: HeroBlockId[];
+  blocks?: Partial<Record<HeroBlockId, HeroBlockSettings>>;
+}
 
 export type SectionAnimTrigger = 'scroll' | 'load';
 export type SectionAnimEasing = 'smooth' | 'snappy' | 'bounce' | 'spring' | 'linear';
@@ -120,6 +147,7 @@ export interface SectionStyle {
   textAlign?: 'left' | 'center' | 'right';
   maxWidth?: number;
   animation?: SectionAnimation;
+  heroContent?: HeroContentSettings;
 }
 
 export interface PortfolioSection {

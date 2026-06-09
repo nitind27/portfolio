@@ -31,9 +31,20 @@ export const ENTRANCE_PRESETS: { id: SectionEntranceType; label: string; icon: s
   { id: 'flip', label: 'Flip', icon: '🔄', desc: '3D flip reveal' },
   { id: 'blur', label: 'Blur In', icon: '💫', desc: 'Focus from blur' },
   { id: 'rotate', label: 'Rotate', icon: '🌀', desc: 'Spin into view' },
+  { id: 'bounce-in', label: 'Bounce In', icon: '🏀', desc: 'Playful bounce up' },
+  { id: 'elastic', label: 'Elastic', icon: '🎯', desc: 'Springy overshoot' },
+  { id: 'pop', label: 'Pop', icon: '💥', desc: 'Quick scale pop' },
+  { id: 'swing', label: 'Swing', icon: '🎪', desc: 'Tilt and settle' },
+  { id: 'reveal', label: 'Reveal', icon: '📜', desc: 'Rise with fade' },
 ];
 
-function getEasingTransition(easing: SectionAnimEasing, duration: number) {
+function getEasingTransition(easing: SectionAnimEasing, duration: number, entrance?: SectionEntranceType) {
+  if (entrance === 'elastic') {
+    return { type: 'spring' as const, stiffness: 320, damping: 18, delay: 0 };
+  }
+  if (entrance === 'bounce-in') {
+    return { duration: duration * 1.15, ease: [0.34, 1.56, 0.64, 1] as const };
+  }
   switch (easing) {
     case 'snappy': return { duration, ease: 'easeOut' as const };
     case 'bounce': return { duration: duration * 1.1, ease: [0.34, 1.56, 0.64, 1] as const };
@@ -106,6 +117,11 @@ function buildHiddenState(entrance: SectionEntranceType, anim: SectionAnimation)
     case 'flip': return { opacity, rotateX: 18, y: dist * 0.4 };
     case 'blur': return { opacity, filter: 'blur(12px)' };
     case 'rotate': return { opacity, rotate: -6, scale: scale };
+    case 'bounce-in': return { opacity, y: dist, scale: scale < 1 ? scale : 0.88 };
+    case 'elastic': return { opacity, y: dist * 0.8, scale: scale < 1 ? scale : 0.9 };
+    case 'pop': return { opacity, scale: 0.35 };
+    case 'swing': return { opacity, rotate: 14, y: dist * 0.25 };
+    case 'reveal': return { opacity, y: dist * 0.85 };
     default: return { opacity, y: dist * 0.6 };
   }
 }
@@ -122,7 +138,7 @@ export function getMotionVariants(section: PortfolioSection, theme: ThemeConfig)
   if (entrance === 'none') return { hidden: {}, visible: {} };
 
   const transition = {
-    ...getEasingTransition(anim.easing || 'smooth', anim.duration || 0.55),
+    ...getEasingTransition(anim.easing || 'smooth', anim.duration || 0.55, entrance),
     delay: anim.delay || 0,
   };
 
@@ -152,9 +168,42 @@ export function getChildMotionVariants(section: PortfolioSection, theme: ThemeCo
   const entrance = anim.resolvedEntrance;
   if (!anim.staggerChildren || entrance === 'none') return null;
 
-  const transition = getEasingTransition(anim.easing || 'smooth', (anim.duration || 0.55) * 0.85);
+  const transition = getEasingTransition(anim.easing || 'smooth', (anim.duration || 0.55) * 0.85, entrance);
   return {
     hidden: buildHiddenState(entrance, { ...anim, distance: (anim.distance || 40) * 0.6 }),
+    visible: { ...buildVisibleState(entrance), transition },
+  };
+}
+
+export function getElementMotionVariants(
+  entrance: SectionEntranceType,
+  opts: {
+    duration?: number;
+    delay?: number;
+    distance?: number;
+    scaleFrom?: number;
+    opacityFrom?: number;
+    easing?: SectionAnimEasing;
+  } = {},
+) {
+  if (entrance === 'none' || entrance === 'inherit') return { hidden: {}, visible: {} };
+  const anim: SectionAnimation = {
+    ...DEFAULT_SECTION_ANIMATION,
+    custom: true,
+    entrance,
+    duration: opts.duration ?? 0.55,
+    delay: opts.delay ?? 0,
+    distance: opts.distance ?? 40,
+    scaleFrom: opts.scaleFrom ?? 0.92,
+    opacityFrom: opts.opacityFrom ?? 0,
+    easing: opts.easing ?? 'smooth',
+  };
+  const transition = {
+    ...getEasingTransition(anim.easing || 'smooth', anim.duration || 0.55, entrance),
+    delay: anim.delay || 0,
+  };
+  return {
+    hidden: buildHiddenState(entrance, anim),
     visible: { ...buildVisibleState(entrance), transition },
   };
 }

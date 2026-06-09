@@ -1,6 +1,12 @@
-import { Portfolio, PortfolioSection, SectionField, SocialLinks } from './types';
+import { Portfolio, PortfolioSection, SectionField, SocialLinks, HeroBlockId } from './types';
 import { escapeHtml } from './export-assets';
 import { sectionAnimClassName, sectionAnimDataAttrs } from './section-animation';
+import {
+  getHeroContent,
+  getHeroBlockMotionConfig,
+  heroContentClass,
+  isHeroBlockVisible,
+} from './hero-content';
 import { getBlogPostsFromSection } from './blog-utils';
 import { getTestimonialsFromSection } from './testimonial-utils';
 import { getTeamMembersFromSection } from './team-utils';
@@ -102,8 +108,15 @@ function heroSectionAttrs(section: PortfolioSection, portfolio: Portfolio): stri
   return `class="${triggerLoad ? 'anim-on-load' : 'fade-in'}${animClass ? ` ${animClass}` : ''}"${attrStr}`;
 }
 
-function renderHero(section: PortfolioSection, portfolio: Portfolio, social: SocialLinks): string {
-  const layout = fv(section, 'heroLayout') || 'image-right';
+function heroBlockAnimAttrs(section: PortfolioSection, portfolio: Portfolio, blockId: HeroBlockId, blockIndex: number): string {
+  const hero = getHeroContent(section);
+  const cfg = getHeroBlockMotionConfig(blockId, hero, section, portfolio.theme, blockIndex);
+  if (cfg.entrance === 'none') return ' data-anim="none"';
+  return ` class="hero-block sec-anim sec-anim-${cfg.entrance}" data-anim="${cfg.entrance}" data-anim-duration="${cfg.duration}" data-anim-delay="${cfg.delay}" data-anim-distance="${cfg.distance}" data-anim-scale="${cfg.scaleFrom}" data-anim-opacity="${cfg.opacityFrom}" data-anim-easing="${cfg.easing}"`;
+}
+
+function renderHeroContent(section: PortfolioSection, portfolio: Portfolio, social: SocialLinks, lightText = false): string {
+  const hero = getHeroContent(section);
   const headline = fv(section, 'headline') || 'Hello World';
   const sub = fv(section, 'subheadline');
   const desc = fv(section, 'description');
@@ -111,35 +124,54 @@ function renderHero(section: PortfolioSection, portfolio: Portfolio, social: Soc
   const ctaLink = fv(section, 'ctaLink') || '#';
   const ctaSecText = fv(section, 'ctaSecondaryText');
   const ctaSecLink = fv(section, 'ctaSecondaryLink') || '#';
+  const alignH = hero.alignH || 'left';
+  const btnClass = alignH === 'center' ? ' hero-btns-center' : alignH === 'right' ? ' hero-btns-right' : '';
+  const order = hero.blockOrder || ['badge', 'headline', 'subheadline', 'description', 'cta', 'social'];
+  let blockIndex = 0;
+  const parts: string[] = [];
+
+  for (const id of order) {
+    if (!isHeroBlockVisible(hero, id)) continue;
+    const anim = heroBlockAnimAttrs(section, portfolio, id, blockIndex++);
+    if (id === 'badge') {
+      parts.push(`<div${anim}><p class="hero-welcome">${escapeHtml(hero.badgeText || 'Welcome')}</p></div>`);
+    } else if (id === 'headline') {
+      const style = lightText ? ' style="color:#fff"' : '';
+      parts.push(`<div${anim}><h1 class="hero-headline"${style}>${escapeHtml(headline)}</h1></div>`);
+    } else if (id === 'subheadline' && sub) {
+      const style = lightText ? ' style="color:rgba(255,255,255,0.85)"' : '';
+      parts.push(`<div${anim}><p class="hero-sub"${style}>${escapeHtml(sub)}</p></div>`);
+    } else if (id === 'description' && desc) {
+      const style = lightText ? ' style="color:rgba(255,255,255,0.7)"' : '';
+      parts.push(`<div${anim}><p class="hero-desc"${style}>${escapeHtml(desc)}</p></div>`);
+    } else if (id === 'cta') {
+      const btns = `<div class="hero-btns${btnClass}">
+        <a class="btn-primary" href="${escapeHtml(ctaLink)}">${escapeHtml(ctaText)}</a>
+        ${ctaSecText ? `<a class="btn-outline${lightText ? ' btn-outline-light' : ''}" href="${escapeHtml(ctaSecLink)}">${escapeHtml(ctaSecText)}</a>` : ''}
+      </div>`;
+      parts.push(`<div${anim}>${btns}</div>`);
+    } else if (id === 'social') {
+      const bar = socialBar(social);
+      if (bar) parts.push(`<div${anim}>${bar}</div>`);
+    }
+  }
+
+  return `<div class="hero-content ${heroContentClass(hero)}" style="max-width:${hero.maxWidth ?? 640}px">${parts.join('')}</div>`;
+}
+
+function renderHero(section: PortfolioSection, portfolio: Portfolio, social: SocialLinks): string {
+  const layout = fv(section, 'heroLayout') || 'image-right';
   const avatar = fv(section, 'avatar');
   const bannerImgs = fa(section, 'bannerImages');
   const id = escapeHtml(section.id);
-
-  const btns = `<div class="hero-btns">
-    <a class="btn-primary" href="${escapeHtml(ctaLink)}">${escapeHtml(ctaText)}</a>
-    ${ctaSecText ? `<a class="btn-outline" href="${escapeHtml(ctaSecLink)}">${escapeHtml(ctaSecText)}</a>` : ''}
-  </div>`;
-
-  const textBlock = `<div style="flex:1;min-width:0">
-    <p class="hero-welcome">Welcome</p>
-    <h1 class="hero-headline">${escapeHtml(headline)}</h1>
-    ${sub ? `<p class="hero-sub">${escapeHtml(sub)}</p>` : ''}
-    ${desc ? `<p class="hero-desc">${escapeHtml(desc)}</p>` : ''}
-    ${btns}${socialBar(social)}
-  </div>`;
+  const textBlock = renderHeroContent(section, portfolio, social);
 
   if (layout === 'banner') {
     const bg = bannerImgs[0] || avatar;
     return `<section id="${id}" ${heroSectionAttrs(section, portfolio).replace('class="', 'class="hero-banner ')}>
       ${bg ? `<img src="${escapeHtml(bg)}" alt="">` : ''}
       <div class="hero-banner-overlay"></div>
-      <div class="hero-banner-content container">
-        <p class="hero-welcome">Welcome</p>
-        <h1 class="hero-headline" style="color:#fff">${escapeHtml(headline)}</h1>
-        ${sub ? `<p class="hero-sub" style="color:rgba(255,255,255,0.85)">${escapeHtml(sub)}</p>` : ''}
-        ${desc ? `<p class="hero-desc" style="color:rgba(255,255,255,0.7)">${escapeHtml(desc)}</p>` : ''}
-        ${btns}
-      </div>
+      <div class="hero-banner-content container">${renderHeroContent(section, portfolio, social, true)}</div>
     </section>`;
   }
 
@@ -155,11 +187,7 @@ function renderHero(section: PortfolioSection, portfolio: Portfolio, social: Soc
       <div class="slideshow" data-slideshow>
         ${slides}<div class="slide-overlay"></div>
         ${imgs.length > 1 ? `<button class="slide-nav slide-prev" data-slide-prev aria-label="Previous">‹</button><button class="slide-nav slide-next" data-slide-next aria-label="Next">›</button><div class="slide-dots">${dots}</div>` : ''}
-        <div class="slide-content"><div class="container">
-          <h1 class="hero-headline" style="color:#fff;text-shadow:0 2px 24px rgba(0,0,0,0.6)">${escapeHtml(headline)}</h1>
-          ${sub ? `<p style="font-size:1.2rem;color:rgba(255,255,255,0.85);margin-bottom:1.5rem">${escapeHtml(sub)}</p>` : ''}
-          <a class="btn-primary" href="${escapeHtml(ctaLink)}">${escapeHtml(ctaText)}</a>
-        </div></div>
+        <div class="slide-content"><div class="container">${renderHeroContent(section, portfolio, social, true)}</div></div>
       </div>
     </section>`;
   }

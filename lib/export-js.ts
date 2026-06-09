@@ -56,6 +56,11 @@ export function generateExportJS(portfolio: Portfolio): string {
       else if (type === 'flip') el.style.transform = 'perspective(800px) rotateX(18deg) translateY(' + (dist * 0.4) + 'px)';
       else if (type === 'blur') { el.style.filter = 'blur(12px)'; el.style.transform = 'none'; }
       else if (type === 'rotate') el.style.transform = 'rotate(-6deg) scale(' + scale + ')';
+      else if (type === 'bounce-in') el.style.transform = 'translateY(' + dist + 'px) scale(' + scale + ')';
+      else if (type === 'elastic') el.style.transform = 'translateY(' + (dist * 0.8) + 'px) scale(' + scale + ')';
+      else if (type === 'pop') el.style.transform = 'scale(0.35)';
+      else if (type === 'swing') el.style.transform = 'rotate(14deg) translateY(' + (dist * 0.25) + 'px)';
+      else if (type === 'reveal') el.style.transform = 'translateY(' + (dist * 0.85) + 'px)';
       else el.style.transform = 'translateY(' + (dist * 0.6) + 'px)';
     }
   }
@@ -83,7 +88,7 @@ export function generateExportJS(portfolio: Portfolio): string {
       if (entry.isIntersecting) applyAnimState(entry.target, true);
     });
   }, { threshold: 0.1, rootMargin: '-40px' });
-  document.querySelectorAll('.fade-in, .sec-anim, .anim-on-load').forEach(initSectionAnim);
+  document.querySelectorAll('.fade-in, .sec-anim, .anim-on-load, .hero-block').forEach(initSectionAnim);
 
   // Navbar scroll state
   var navInner = document.querySelector('.navbar-inner');

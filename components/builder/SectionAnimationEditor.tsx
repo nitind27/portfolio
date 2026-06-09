@@ -48,6 +48,11 @@ function MiniPreview({ entrance, duration, distance, scaleFrom, easing }: {
   else if (entrance === 'flip') { hidden.rotateX = 20; hidden.opacity = 0; }
   else if (entrance === 'blur') { hidden.filter = 'blur(8px)'; hidden.opacity = 0; }
   else if (entrance === 'rotate') { hidden.rotate = -8; hidden.scale = scaleFrom; hidden.opacity = 0; }
+  else if (entrance === 'bounce-in') { hidden.y = distance * 0.5; hidden.scale = scaleFrom; hidden.opacity = 0; }
+  else if (entrance === 'elastic') { hidden.y = distance * 0.45; hidden.scale = scaleFrom; hidden.opacity = 0; }
+  else if (entrance === 'pop') { hidden.scale = 0.4; hidden.opacity = 0; }
+  else if (entrance === 'swing') { hidden.rotate = 12; hidden.y = distance * 0.2; hidden.opacity = 0; }
+  else if (entrance === 'reveal') { hidden.y = distance * 0.5; hidden.opacity = 0; }
   else if (entrance === 'none' || entrance === 'inherit') hidden.opacity = 1;
 
   return (

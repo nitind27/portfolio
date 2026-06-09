@@ -169,6 +169,14 @@ section[id] { scroll-margin-top: var(--nav-offset); }
 .hero-sub { font-size: 1.15rem; opacity: 0.7; margin-bottom: 0.75rem; }
 .hero-desc { opacity: 0.6; max-width: 520px; margin-bottom: 1.75rem; line-height: 1.75; }
 .hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; }
+.hero-btns-center { justify-content: center; }
+.hero-btns-right { justify-content: flex-end; }
+.hero-content { display: flex; flex-direction: column; width: 100%; }
+.hero-content.hero-align-left-top, .hero-content.hero-align-left-center, .hero-content.hero-align-left-bottom { align-items: flex-start; text-align: left; }
+.hero-content.hero-align-center-top, .hero-content.hero-align-center-center, .hero-content.hero-align-center-bottom { align-items: center; text-align: center; margin-left: auto; margin-right: auto; }
+.hero-content.hero-align-right-top, .hero-content.hero-align-right-center, .hero-content.hero-align-right-bottom { align-items: flex-end; text-align: right; margin-left: auto; }
+.hero-block { width: 100%; }
+.btn-outline-light { border-color: rgba(255,255,255,0.6) !important; color: #fff !important; }
 .btn-primary {
   display: inline-block; background: var(--primary); color: #fff; padding: 0.75rem 2rem;
   border-radius: var(--radius); font-weight: 600; text-decoration: none; font-size: 0.95rem;

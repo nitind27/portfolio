@@ -13,6 +13,7 @@ import {
   GallerySection, VideosSection, SocialSection, TestimonialsSection, StatsSection,
   TeamSection, PricingSection, FAQSection, CustomSection,
 } from './AdvancedSections';
+import { HeroSection } from './HeroSection';
 import { DynamicFieldsGrid } from './DynamicFields';
 import { getSectionPad, isNarrowDeviceView, isMobileDeviceView } from '@/lib/responsive';
 import { getMotionVariants, getMotionViewport, getSectionHoverProps } from '@/lib/section-animation';
@@ -1293,98 +1294,21 @@ function SectionRenderer({ section, theme, index, social, smtp, isMobile }: {
 
   // ── HERO ──
   if (section.type === 'hero') {
-    const layout = fv('heroLayout') || 'image-right';
-    const headline = fv('headline') || 'Hello World';
-    const sub = fv('subheadline') || '';
-    const desc = fv('description') || '';
-    const ctaText = fv('ctaText') || 'View Work';
-    const ctaLink = fv('ctaLink') || '#';
-    const ctaSecText = fv('ctaSecondaryText') || '';
-    const ctaSecLink = fv('ctaSecondaryLink') || '#';
-    const avatar = fv('avatar') || '';
-    const bannerImgs = fa('bannerImages');
-
-    const textBlock = (
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ color: theme.primaryColor, fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.8rem', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Welcome</p>
-        <h1 style={{ fontSize: 'clamp(1.8rem, 4vw, 3.2rem)', fontWeight: 800, lineHeight: 1.1, marginBottom: '1rem' }}>{headline}</h1>
-        {sub && <p style={{ fontSize: '1.15rem', opacity: 0.7, marginBottom: '0.75rem' }}>{sub}</p>}
-        {desc && <p style={{ opacity: 0.6, maxWidth: 520, marginBottom: '1.75rem', lineHeight: 1.75 }}>{desc}</p>}
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <a href={ctaLink} style={{ display: 'inline-block', background: theme.primaryColor, color: '#fff', padding: '0.75rem 2rem', borderRadius: radius, fontWeight: 600, textDecoration: 'none', fontSize: '0.95rem' }}>{ctaText}</a>
-          {ctaSecText && <a href={ctaSecLink} style={{ display: 'inline-block', border: `2px solid ${theme.primaryColor}`, color: theme.primaryColor, padding: '0.75rem 2rem', borderRadius: radius, fontWeight: 600, textDecoration: 'none', fontSize: '0.95rem' }}>{ctaSecText}</a>}
-        </div>
-        <SocialBar social={social} color={theme.primaryColor} />
-      </div>
-    );
-
-    const imageBlock = avatar ? (
-      <div style={{ flex: '0 0 auto', width: isMobile ? '100%' : 'clamp(180px, 32%, 360px)', maxWidth: isMobile ? 320 : undefined, margin: isMobile ? '0 auto' : undefined }}>
-        <img src={avatar} alt="hero" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: layout === 'split' ? 0 : radius, boxShadow: `0 24px 64px ${theme.primaryColor}30` }} />
-      </div>
-    ) : null;
-
-    if (layout === 'banner') {
-      const bgImg = bannerImgs[0] || avatar;
-      return (
-        <motion.section id={section.id} initial="hidden" animate={triggerLoad ? 'visible' : undefined} whileInView={triggerLoad ? undefined : 'visible'} viewport={sectionViewport} variants={sectionVariants} whileHover={sectionHover}
-          style={{ position: 'relative', minHeight: isMobile ? '58vh' : '72vh', display: 'flex', alignItems: 'center', overflow: 'hidden', transformOrigin: 'center center' }}>
-          {bgImg && <img src={bgImg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />}
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.28) 100%)' }} />
-          <div style={{ position: 'relative', zIndex: 1, padding: `${pad} ${isMobile ? '1rem' : '1.5rem'}`, maxWidth: 1200, margin: '0 auto', width: '100%', color: '#fff' }}>
-            <p style={{ color: theme.primaryColor, fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.8rem', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Welcome</p>
-            <h1 style={{ fontSize: 'clamp(2rem, 5vw, 4rem)', fontWeight: 800, lineHeight: 1.1, marginBottom: '1rem', color: '#fff' }}>{headline}</h1>
-            {sub && <p style={{ fontSize: '1.2rem', opacity: 0.85, marginBottom: '0.75rem' }}>{sub}</p>}
-            {desc && <p style={{ opacity: 0.7, maxWidth: 560, marginBottom: '2rem', lineHeight: 1.75 }}>{desc}</p>}
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <a href={ctaLink} style={{ display: 'inline-block', background: theme.primaryColor, color: '#fff', padding: '0.75rem 2rem', borderRadius: radius, fontWeight: 600, textDecoration: 'none' }}>{ctaText}</a>
-              {ctaSecText && <a href={ctaSecLink} style={{ display: 'inline-block', border: '2px solid rgba(255,255,255,0.6)', color: '#fff', padding: '0.75rem 2rem', borderRadius: radius, fontWeight: 600, textDecoration: 'none' }}>{ctaSecText}</a>}
-            </div>
-          </div>
-        </motion.section>
-      );
-    }
-
-    if (layout === 'slideshow') {
-      return (
-        <motion.section id={section.id} initial="hidden" animate={triggerLoad ? 'visible' : undefined} whileInView={triggerLoad ? undefined : 'visible'} viewport={sectionViewport} variants={sectionVariants} whileHover={sectionHover} style={{ position: 'relative', transformOrigin: 'center center' }}>
-          <Slideshow images={bannerImgs.length ? bannerImgs : (avatar ? [avatar] : [])} height={isMobile ? 360 : 520} theme={theme} />
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', zIndex: 3, padding: isMobile ? '0 1rem' : '0 1.5rem', pointerEvents: 'none' }}>
-            <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%', pointerEvents: 'auto' }}>
-              <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800, color: '#fff', textShadow: '0 2px 24px rgba(0,0,0,0.6)', marginBottom: '0.75rem' }}>{headline}</h1>
-              {sub && <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.85)', marginBottom: '1.5rem' }}>{sub}</p>}
-              <a href={ctaLink} style={{ display: 'inline-block', background: theme.primaryColor, color: '#fff', padding: '0.75rem 2rem', borderRadius: radius, fontWeight: 600, textDecoration: 'none' }}>{ctaText}</a>
-            </div>
-          </div>
-        </motion.section>
-      );
-    }
-
-    if (layout === 'split') {
-      return (
-        <motion.section id={section.id} initial="hidden" animate={triggerLoad ? 'visible' : undefined} whileInView={triggerLoad ? undefined : 'visible'} viewport={sectionViewport} variants={sectionVariants} whileHover={sectionHover}
-          style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', minHeight: isMobile ? 'auto' : '72vh', transformOrigin: 'center center' }}>
-          <div style={{ padding: isMobile ? `${pad} 1.25rem` : `${pad} 3rem`, display: 'flex', alignItems: 'center', background: theme.backgroundColor }}>{textBlock}</div>
-          <div style={{ overflow: 'hidden', minHeight: isMobile ? 260 : undefined }}>
-            {avatar ? <img src={avatar} alt="" style={{ width: '100%', height: isMobile ? 260 : '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: isMobile ? 260 : '100%', background: `${theme.primaryColor}22` }} />}
-          </div>
-        </motion.section>
-      );
-    }
-
     return (
-      <motion.section id={section.id} initial="hidden" animate={triggerLoad ? 'visible' : undefined} whileInView={triggerLoad ? undefined : 'visible'} viewport={sectionViewport} variants={sectionVariants} whileHover={sectionHover}
-        style={{ padding: `${pad} ${isMobile ? '1rem' : '1.5rem'}`, minHeight: isMobile ? 'auto' : '62vh', display: 'flex', alignItems: 'center', transformOrigin: 'center center' }}>
-        <div style={{
-          maxWidth: 1200, margin: '0 auto', width: '100%', display: 'flex', alignItems: 'center',
-          gap: isMobile ? '2rem' : '3rem',
-          flexDirection: isMobile ? 'column' : (layout === 'image-left' ? 'row-reverse' : 'row'),
-          flexWrap: 'wrap',
-        }}>
-          {textBlock}
-          {layout !== 'text-only' && imageBlock}
-        </div>
-      </motion.section>
+      <HeroSection
+        section={section}
+        theme={theme}
+        pad={pad}
+        radius={radius}
+        isMobile={isMobile}
+        social={social}
+        sectionVariants={sectionVariants}
+        sectionViewport={sectionViewport}
+        sectionHover={sectionHover}
+        triggerLoad={!!triggerLoad}
+        fv={fv}
+        fa={fa}
+      />
     );
   }
 
