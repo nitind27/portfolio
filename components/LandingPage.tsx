@@ -611,7 +611,7 @@ export default function LandingPage({
         initialError={initialAuthError}
       />
 
-      <GoogleSignInPrompt forceShow={showAuth} />
+      <GoogleSignInPrompt />
     </div>
   );
 }
