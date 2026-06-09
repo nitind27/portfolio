@@ -7,6 +7,7 @@ import { brand } from '@/lib/brand';
 import { adminInput } from './ui';
 import type { SubscriptionPlan, PlanFeatures, PlanFeatureKey } from '@/lib/plans-types';
 import { PLAN_FEATURE_LABELS } from '@/lib/plans-types';
+import { invalidatePlansCache } from '@/lib/plans-client';
 
 const BOOL_FEATURES = (Object.keys(PLAN_FEATURE_LABELS) as PlanFeatureKey[]).filter(
   k => k !== 'unlockedPortfolios' && k !== 'storageDays',
@@ -38,6 +39,7 @@ export default function PlanEditorModal({ open, plan, onClose, onSaved }: Props)
         body: JSON.stringify(editing),
       });
       if (!res.ok) throw new Error((await res.json()).error);
+      invalidatePlansCache();
       onSaved();
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Save failed');
@@ -58,8 +60,8 @@ export default function PlanEditorModal({ open, plan, onClose, onSaved }: Props)
           className="bg-[#0d1117] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
           <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
             <div>
-              <h2 className="font-bold text-lg">{editing.id ? 'Edit plan' : 'Create plan'}</h2>
-              <p className="text-xs text-gray-500">Configure pricing and feature permissions</p>
+              <h2 className="font-bold text-lg">Edit plan</h2>
+              <p className="text-xs text-gray-500">Changes apply to all users on this plan immediately</p>
             </div>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5"><X className="w-4 h-4" /></button>
           </div>
@@ -67,8 +69,8 @@ export default function PlanEditorModal({ open, plan, onClose, onSaved }: Props)
             <div className="grid sm:grid-cols-2 gap-3">
               <div><label className="text-xs text-gray-500 mb-1 block">Plan name</label>
                 <input value={editing.name || ''} onChange={e => setEditing(p => p ? { ...p, name: e.target.value } : p)} className={adminInput} /></div>
-              <div><label className="text-xs text-gray-500 mb-1 block">Slug (unique)</label>
-                <input value={editing.slug || ''} onChange={e => setEditing(p => p ? { ...p, slug: e.target.value } : p)} className={adminInput} /></div>
+              <div><label className="text-xs text-gray-500 mb-1 block">Slug</label>
+                <input value={editing.slug || ''} readOnly className={adminInput + ' opacity-60 cursor-not-allowed'} /></div>
               <div><label className="text-xs text-gray-500 mb-1 block">Price (₹)</label>
                 <input type="number" value={editing.price ?? 0} onChange={e => setEditing(p => p ? { ...p, price: Number(e.target.value) } : p)} className={adminInput} /></div>
               <div><label className="text-xs text-gray-500 mb-1 block">Tier level</label>
@@ -79,7 +81,9 @@ export default function PlanEditorModal({ open, plan, onClose, onSaved }: Props)
                 className={adminInput + ' resize-none h-16'} /></div>
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={editing.isActive !== false} onChange={e => setEditing(p => p ? { ...p, isActive: e.target.checked } : p)} /> Active plan</label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={Boolean(editing.isDefault)} onChange={e => setEditing(p => p ? { ...p, isDefault: e.target.checked } : p)} /> Default free tier</label>
+              {editing.slug === 'free' && (
+                <span className="text-xs text-gray-500">Default tier for new users</span>
+              )}
             </div>
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Feature permissions</p>

@@ -8,6 +8,11 @@ export interface UserPaymentRow {
   planName: string | null;
   planSlug: string | null;
   amount: number;
+  subtotal: number | null;
+  gstRate: number | null;
+  gstAmount: number | null;
+  gstin: string | null;
+  gstLegalName: string | null;
   currency: string;
   status: 'pending' | 'paid' | 'failed' | 'expired';
   paymentMethod: string | null;
@@ -39,7 +44,8 @@ export async function getUserBilling(userId: number): Promise<UserBillingSummary
   const user = userRows[0];
 
   const [paymentRows] = await pool.execute<RowDataPacket[]>(
-    `SELECT p.id, p.order_id, p.plan_id, p.amount, p.currency, p.status, p.payment_method,
+    `SELECT p.id, p.order_id, p.plan_id, p.amount, p.subtotal, p.gst_rate, p.gst_amount,
+            p.gstin, p.gst_legal_name, p.currency, p.status, p.payment_method,
             p.created_at, p.paid_at, sp.name AS plan_name, sp.slug AS plan_slug
      FROM payments p
      LEFT JOIN subscription_plans sp ON sp.id = p.plan_id
@@ -56,6 +62,11 @@ export async function getUserBilling(userId: number): Promise<UserBillingSummary
     planName: r.plan_name ? String(r.plan_name) : null,
     planSlug: r.plan_slug ? String(r.plan_slug) : null,
     amount: Number(r.amount),
+    subtotal: r.subtotal != null ? Number(r.subtotal) : null,
+    gstRate: r.gst_rate != null ? Number(r.gst_rate) : null,
+    gstAmount: r.gst_amount != null ? Number(r.gst_amount) : null,
+    gstin: r.gstin ? String(r.gstin) : null,
+    gstLegalName: r.gst_legal_name ? String(r.gst_legal_name) : null,
     currency: String(r.currency),
     status: String(r.status) as UserPaymentRow['status'],
     paymentMethod: r.payment_method ? String(r.payment_method) : null,

@@ -75,7 +75,7 @@ INSERT INTO subscription_plans (slug, name, description, price, tier, is_active,
 ),
 (
   'pro',
-  'Pro',
+  'Premium',
   'Export, share, publish and deploy one portfolio slot.',
   99.00,
   1,
@@ -101,36 +101,14 @@ INSERT INTO subscription_plans (slug, name, description, price, tier, is_active,
     'unlockedPortfolios', 1,
     'storageDays', 365
   )
-),
-(
-  'business',
-  'Business',
-  'Everything in Pro plus all premium templates and 3 portfolio slots.',
-  299.00,
-  2,
-  1,
-  0,
-  JSON_OBJECT(
-    'exportHtml', true,
-    'exportReact', true,
-    'exportNextjs', true,
-    'shareLink', true,
-    'publishOnline', true,
-    'hostingerDeploy', true,
-    'customCss', true,
-    'analytics', true,
-    'smtp', true,
-    'popupBuilder', true,
-    'sectionBlog', true,
-    'sectionTeam', true,
-    'sectionPricing', true,
-    'sectionFaq', true,
-    'sectionTestimonials', true,
-    'premiumLayouts', true,
-    'unlockedPortfolios', 3,
-    'storageDays', 365
-  )
 );
+
+-- Retire legacy Business tier (migrate users to Premium)
+UPDATE subscription_plans SET is_active = 0 WHERE slug = 'business';
+UPDATE users u
+INNER JOIN subscription_plans bp ON u.plan_id = bp.id AND bp.slug = 'business'
+INNER JOIN subscription_plans pp ON pp.slug = 'pro'
+SET u.plan_id = pp.id, u.is_premium = 1;
 
 -- Assign free plan to existing users
 UPDATE users u

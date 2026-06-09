@@ -1,13 +1,14 @@
 'use client';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { brand } from '@/lib/brand';
 
 export interface PanelTabItem<T extends string = string> {
   id: T;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
+  locked?: boolean;
 }
 
 interface Props<T extends string = string> {
@@ -126,11 +127,12 @@ export default function ScrollablePanelTabs<T extends string>({ tabs, activeId, 
                 data-panel-tab={t.id}
                 onClick={() => onSelect(t.id)}
                 className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap shrink-0 ${
-                  active ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  active ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : t.locked ? 'text-gray-600 hover:text-amber-400/90 hover:bg-amber-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden sm:inline">{t.label}</span>
+                {t.locked && <Lock className="w-3 h-3 shrink-0 text-amber-500/80" />}
               </button>
             );
           })}

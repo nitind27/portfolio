@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Crown, Download, Share2, Globe, Loader2, CheckCircle2, Rocket } from 'lucide-react';
+import { X, Crown, Download, Share2, Loader2, CheckCircle2, Rocket, Receipt } from 'lucide-react';
+import { calculateGst, formatGstMoney, getGstTaxLabel } from '@/lib/gst';
 import { useBuilderStore } from '@/lib/store';
 import type { PremiumModalReason } from '@/lib/portfolio-access-client';
 import type { SubscriptionPlan } from '@/lib/plans-types';
@@ -57,6 +58,8 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
   const [plansError, setPlansError] = useState('');
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const [taxRate, setTaxRate] = useState(18);
+  const [taxLabel, setTaxLabel] = useState('GST (18%)');
 
   const isRepurchase = reason === 'unlock_another' || Boolean(user?.isPremium);
 
@@ -75,6 +78,8 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
         setPlans(paid);
         if (paid[0]) setSelectedPlanId(paid[0].id);
         else setPlansError('No paid plans configured. Contact support.');
+        if (d.tax?.rate != null) setTaxRate(Number(d.tax.rate));
+        if (d.tax?.label) setTaxLabel(String(d.tax.label));
       })
       .catch((err: unknown) => {
         setPlans([]);
@@ -84,6 +89,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
   }, [open]);
 
   const selectedPlan = plans.find(p => p.id === selectedPlanId);
+  const pricing = selectedPlan ? calculateGst(selectedPlan.price, taxRate) : null;
 
   const handleUpgrade = async () => {
     setLoading(true);
@@ -92,6 +98,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
       const res = await fetch('/api/payment/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ repurchase: isRepurchase, planId: selectedPlanId }),
       });
       const data = await res.json();
@@ -152,8 +159,8 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
                   <Crown className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-white">{isRepurchase ? 'Unlock This Portfolio' : 'Choose a plan'}</h2>
-                  <p className="text-xs text-gray-400">{user?.planName || 'Free'} → upgrade for more</p>
+                  <h2 className="text-lg font-bold text-white">{isRepurchase ? 'Unlock This Portfolio' : 'Upgrade to Premium'}</h2>
+                  <p className="text-xs text-gray-400">{user?.planName || 'Free'} → ₹{selectedPlan?.price ?? process.env.NEXT_PUBLIC_PREMIUM_PRICE ?? 99} one-time</p>
                 </div>
               </div>
               <p className="text-sm text-blue-200/80">{REASON_TEXT[reason]}</p>
@@ -164,29 +171,25 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
                 <p className="text-sm text-gray-400 flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" /> Loading plans…
                 </p>
-              ) : plans.length > 0 ? (
-                <div className="space-y-2">
-                  {plans.map(p => (
-                    <button key={p.id} type="button" onClick={() => setSelectedPlanId(p.id)}
-                      className={`w-full text-left p-4 rounded-xl border transition ${
-                        selectedPlanId === p.id ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 hover:border-white/20'
-                      }`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-white">{p.name}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{p.description}</p>
-                        </div>
-                        <p className="text-lg font-bold text-white">₹{p.price}</p>
-                      </div>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {canExport(p.features) && <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400">Export</span>}
-                        {p.features.hostingerDeploy && <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">Deploy</span>}
-                        {p.features.unlockedPortfolios > 0 && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">{p.features.unlockedPortfolios} slot{p.features.unlockedPortfolios > 1 ? 's' : ''}</span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+              ) : selectedPlan ? (
+                <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/10">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-white">{selectedPlan.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{selectedPlan.description}</p>
+                    </div>
+                    <p className="text-lg font-bold text-white">
+                      {formatGstMoney(calculateGst(selectedPlan.price, taxRate).total)}
+                      <span className="text-[10px] font-normal text-gray-500 block">incl. {taxLabel}</span>
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {canExport(selectedPlan.features) && <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400">Export</span>}
+                    {selectedPlan.features.hostingerDeploy && <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">Deploy</span>}
+                    {selectedPlan.features.unlockedPortfolios > 0 && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">{selectedPlan.features.unlockedPortfolios} portfolio slot</span>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-amber-400/90">{plansError || 'No plans available.'}</p>
@@ -207,14 +210,37 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
                 ))}
               </div>
 
+              {pricing && (
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+                    <Receipt className="w-3.5 h-3.5" /> Price breakdown
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-300">
+                    <span>Plan amount</span>
+                    <span>{formatGstMoney(pricing.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-300">
+                    <span>{taxLabel}</span>
+                    <span>{formatGstMoney(pricing.gstAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-bold text-white pt-2 border-t border-white/10">
+                    <span>Total payable</span>
+                    <span>{formatGstMoney(pricing.total)}</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 pt-1">
+                    {getGstTaxLabel(pricing.gstRate)} applied as per India digital services tax rules. All prices are exclusive of tax.
+                  </p>
+                </div>
+              )}
+
               {error && <p className="text-red-400 text-sm">{error}</p>}
 
               <button onClick={handleUpgrade} disabled={loading || plansLoading || !selectedPlanId}
                 className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#f28c28] to-[#e07d10] hover:from-[#ffa033] hover:to-[#f28c28] disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition">
-                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting payment…</> : <>Pay ₹{selectedPlan?.price ?? '…'} with Cashfree</>}
+                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting payment…</> : <>Pay {pricing ? formatGstMoney(pricing.total) : '…'} with Cashfree</>}
               </button>
 
-              <p className="text-center text-[10px] text-gray-600">Secure payment via Cashfree</p>
+              <p className="text-center text-[10px] text-gray-600">Secure payment via Cashfree · {taxLabel} included at checkout</p>
             </div>
           </motion.div>
         </motion.div>

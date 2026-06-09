@@ -162,9 +162,9 @@ export default function BillingPageClient() {
                   <button
                     type="button"
                     onClick={() => {
-                      const csv = ['Order ID,Plan,Amount,Status,Date,Paid At',
+                      const csv = ['Order ID,Plan,Subtotal,GST Rate,GST Amount,Total,GSTIN,Status,Date,Paid At',
                         ...billing.payments.map(p =>
-                          [p.orderId, p.planName || '', p.amount, p.status, p.createdAt, p.paidAt || ''].join(','),
+                          [p.orderId, p.planName || '', p.subtotal ?? '', p.gstRate ?? '', p.gstAmount ?? '', p.amount, p.gstin || '', p.status, p.createdAt, p.paidAt || ''].join(','),
                         )].join('\n');
                       const blob = new Blob([csv], { type: 'text/csv' });
                       const a = document.createElement('a');
@@ -205,7 +205,17 @@ export default function BillingPageClient() {
                           <tr key={p.id} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
                             <td className="px-5 py-4 font-mono text-xs text-gray-300">{p.orderId}</td>
                             <td className="px-5 py-4 text-gray-300">{p.planName || '—'}</td>
-                            <td className="px-5 py-4 font-semibold text-white">{formatMoney(p.amount, p.currency)}</td>
+                            <td className="px-5 py-4">
+                              <p className="font-semibold text-white">{formatMoney(p.amount, p.currency)}</p>
+                              {p.gstAmount != null && p.gstAmount > 0 && (
+                                <p className="text-[10px] text-gray-500 mt-0.5">
+                                  Base {formatMoney(p.subtotal ?? p.amount - p.gstAmount, p.currency)} + GST {p.gstRate ?? 18}% ({formatMoney(p.gstAmount, p.currency)})
+                                </p>
+                              )}
+                              {p.gstin && (
+                                <p className="text-[10px] text-emerald-500/80 font-mono mt-0.5">{p.gstin}</p>
+                              )}
+                            </td>
                             <td className="px-5 py-4">
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border ${st.bg} ${st.color}`}>
                                 <Icon className="w-3 h-3" /> {st.label}

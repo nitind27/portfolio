@@ -10,7 +10,8 @@ import {
   DEFAULT_FREE_FEATURES,
 } from './plans-types';
 import { TEMPLATES } from './templates';
-import { ensurePlansReady } from './plans-seed';
+import { ensurePlansReady, invalidatePlansSeedCache } from './plans-seed';
+import { CANONICAL_PLAN_SLUGS } from './default-plans';
 
 interface DbPlanRow extends RowDataPacket {
   id: number;
@@ -185,6 +186,16 @@ export async function upsertPlan(data: {
   }
 
   if (data.id) {
+    const existing = await getPlanById(data.id);
+    if (existing && !CANONICAL_PLAN_SLUGS.includes(existing.slug as typeof CANONICAL_PLAN_SLUGS[number])) {
+      throw new Error('Only Free and Premium plans can be edited');
+    }
+    if (existing?.slug === 'free' && data.slug !== 'free') {
+      throw new Error('Free plan slug cannot be changed');
+    }
+    if (existing?.slug === 'pro' && data.slug !== 'pro') {
+      throw new Error('Premium plan slug cannot be changed');
+    }
     await pool.execute(
       `UPDATE subscription_plans SET slug=?, name=?, description=?, price=?, currency=?, tier=?, is_active=?, is_default=?, features=?
        WHERE id=?`,
@@ -194,7 +205,12 @@ export async function upsertPlan(data: {
         data.isDefault ? 1 : 0, featuresJson, data.id,
       ],
     );
+    invalidatePlansSeedCache();
     return data.id;
+  }
+
+  if (!CANONICAL_PLAN_SLUGS.includes(data.slug as typeof CANONICAL_PLAN_SLUGS[number])) {
+    throw new Error('Only Free (free) and Premium (pro) plans are supported');
   }
 
   const [result] = await pool.execute<ResultSetHeader>(
@@ -206,6 +222,7 @@ export async function upsertPlan(data: {
       data.isDefault ? 1 : 0, featuresJson,
     ],
   );
+  invalidatePlansSeedCache();
   return result.insertId;
 }
 
@@ -213,6 +230,9 @@ export async function deletePlan(id: number) {
   const pool = getPool();
   const plan = await getPlanById(id);
   if (!plan) throw new Error('Plan not found');
+  if (CANONICAL_PLAN_SLUGS.includes(plan.slug as typeof CANONICAL_PLAN_SLUGS[number])) {
+    throw new Error('Cannot delete Free or Premium plan');
+  }
   if (plan.isDefault) throw new Error('Cannot delete default free plan');
   const [users] = await pool.execute<RowDataPacket[]>(
     'SELECT COUNT(*) AS c FROM users WHERE plan_id = ?',

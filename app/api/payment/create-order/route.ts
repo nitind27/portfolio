@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/auth-server';
 import { getPlanById, getPlanBySlug, getUserPlan } from '@/lib/plans-server';
 import { ensurePlansReady } from '@/lib/plans-seed';
 import { canExport } from '@/lib/plans-types';
+import { calculateGst } from '@/lib/gst';
 
 export async function POST(req: NextRequest) {
   try {
@@ -44,13 +45,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const amount = plan.price;
+    const pricing = calculateGst(plan.price);
     const orderId = `pb_${user.id}_${Date.now()}`;
     const pool = getPool();
 
     const cfOrder = await createCashfreeOrder({
       orderId,
-      amount,
+      amount: pricing.total,
       customerId: `user_${user.id}`,
       customerName: user.name || 'Customer',
       customerEmail: user.email,
@@ -58,15 +59,22 @@ export async function POST(req: NextRequest) {
     });
 
     await pool.execute<ResultSetHeader>(
-      `INSERT INTO payments (user_id, order_id, cf_order_id, amount, plan_id, currency, status)
-       VALUES (?, ?, ?, ?, ?, 'INR', 'pending')`,
-      [user.id, orderId, cfOrder.cf_order_id, amount, plan.id],
+      `INSERT INTO payments (user_id, order_id, cf_order_id, amount, subtotal, gst_rate, gst_amount, gstin, gst_legal_name, gst_verified, plan_id, currency, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'INR', 'pending')`,
+      [
+        user.id, orderId, cfOrder.cf_order_id, pricing.total,
+        pricing.subtotal, pricing.gstRate, pricing.gstAmount,
+        null, null, 0, plan.id,
+      ],
     );
 
     return NextResponse.json({
       orderId,
       paymentSessionId: cfOrder.payment_session_id,
-      amount,
+      amount: pricing.total,
+      subtotal: pricing.subtotal,
+      gstRate: pricing.gstRate,
+      gstAmount: pricing.gstAmount,
       currency: 'INR',
       planId: plan.id,
       planName: plan.name,

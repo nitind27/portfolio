@@ -1,4 +1,5 @@
 import type { PlanFeatures, SubscriptionPlan } from './plans-types';
+import { canUseSection } from './plans-types';
 
 export interface PlansConfigResponse {
   plans: SubscriptionPlan[];
@@ -41,4 +42,9 @@ export function featureEnabled(config: PlansConfigResponse | null, key: keyof Pl
   if (typeof v === 'boolean') return v;
   if (typeof v === 'number') return v > 0;
   return false;
+}
+
+export function sectionLocked(config: PlansConfigResponse | null, sectionType: string): boolean {
+  if (!config) return false;
+  return !canUseSection(config.features, sectionType);
 }

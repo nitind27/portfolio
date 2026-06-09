@@ -1,6 +1,14 @@
 import type { PlanFeatures } from './plans-types';
+import { DEFAULT_FREE_FEATURES } from './plans-types';
 
-export const PRO_PLAN_FEATURES: PlanFeatures = {
+/** Canonical slugs — only Free + Premium (pro) are supported. */
+export const CANONICAL_PLAN_SLUGS = ['free', 'pro'] as const;
+export type CanonicalPlanSlug = (typeof CANONICAL_PLAN_SLUGS)[number];
+
+export const FREE_PLAN_FEATURES: PlanFeatures = { ...DEFAULT_FREE_FEATURES };
+
+/** Premium plan (slug: pro) — full export, deploy, and builder features. */
+export const PREMIUM_PLAN_FEATURES: PlanFeatures = {
   exportHtml: true,
   exportReact: true,
   exportNextjs: true,
@@ -21,15 +29,12 @@ export const PRO_PLAN_FEATURES: PlanFeatures = {
   storageDays: 365,
 };
 
-export const BUSINESS_PLAN_FEATURES: PlanFeatures = {
-  ...PRO_PLAN_FEATURES,
-  unlockedPortfolios: 3,
-};
+/** @deprecated Use PREMIUM_PLAN_FEATURES */
+export const PRO_PLAN_FEATURES = PREMIUM_PLAN_FEATURES;
 
-export function defaultProPrice() {
+export function defaultPremiumPrice() {
   return Number(process.env.PREMIUM_PRICE || process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99);
 }
 
-export function defaultBusinessPrice() {
-  return Number(process.env.BUSINESS_PRICE || 299);
-}
+/** @deprecated Use defaultPremiumPrice */
+export const defaultProPrice = defaultPremiumPrice;

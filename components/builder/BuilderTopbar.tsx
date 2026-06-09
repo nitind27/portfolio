@@ -21,6 +21,8 @@ import HostingerDeployModal from '../HostingerDeployModal';
 import { fetchPortfolioAccess, bindPortfolioSlot, accessToModalReason, type PremiumModalReason } from '@/lib/portfolio-access-client';
 import { openPreviewInNewTab } from '@/lib/preview-tab';
 import ScrollablePanelTabs from './ScrollablePanelTabs';
+import { fetchPlansConfig, featureEnabled, type PlansConfigResponse } from '@/lib/plans-client';
+import type { PlanFeatures } from '@/lib/plans-types';
 
 interface Props {
   rightTab: RightTab;
@@ -98,6 +100,11 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
   const [copied, setCopied] = useState(false);
   const [showPremium, setShowPremium] = useState(false);
   const [premiumReason, setPremiumReason] = useState<PremiumModalReason>('general');
+  const [planConfig, setPlanConfig] = useState<PlansConfigResponse | null>(null);
+
+  useEffect(() => {
+    fetchPlansConfig().then(setPlanConfig);
+  }, []);
   const [showHostinger, setShowHostinger] = useState(false);
   const [showHelpMenu, setShowHelpMenu] = useState(false);
   const helpRef = useRef<HTMLDivElement>(null);
@@ -205,19 +212,36 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
     if (!portfolio.published) togglePublished(portfolio.id);
   };
 
-  const tabs: { id: RightTab; icon: any; label: string }[] = [
-    { id: 'sections', icon: Layers, label: 'Sections' },
-    { id: 'theme', icon: Palette, label: 'Theme' },
-    { id: 'navbar', icon: PanelTop, label: 'Navbar' },
-    { id: 'footer', icon: PanelBottom, label: 'Footer' },
-    { id: 'templates', icon: LayoutTemplate, label: 'Templates' },
-    { id: 'popup', icon: Megaphone, label: 'Popup' },
-    { id: 'social', icon: Globe, label: 'Social' },
-    { id: 'seo', icon: Search, label: 'SEO' },
-    { id: 'smtp', icon: Mail, label: 'SMTP' },
-    { id: 'analytics', icon: BarChart2, label: 'Analytics' },
-    { id: 'css', icon: Code2, label: 'CSS' },
+  const TAB_FEATURES: Partial<Record<RightTab, keyof PlanFeatures>> = {
+    popup: 'popupBuilder',
+    smtp: 'smtp',
+    analytics: 'analytics',
+    css: 'customCss',
+  };
+
+  const tabs = [
+    { id: 'sections' as RightTab, icon: Layers, label: 'Sections' },
+    { id: 'theme' as RightTab, icon: Palette, label: 'Theme' },
+    { id: 'navbar' as RightTab, icon: PanelTop, label: 'Navbar' },
+    { id: 'footer' as RightTab, icon: PanelBottom, label: 'Footer' },
+    { id: 'templates' as RightTab, icon: LayoutTemplate, label: 'Templates' },
+    { id: 'popup' as RightTab, icon: Megaphone, label: 'Popup', locked: !featureEnabled(planConfig, 'popupBuilder') },
+    { id: 'social' as RightTab, icon: Globe, label: 'Social' },
+    { id: 'seo' as RightTab, icon: Search, label: 'SEO' },
+    { id: 'smtp' as RightTab, icon: Mail, label: 'SMTP', locked: !featureEnabled(planConfig, 'smtp') },
+    { id: 'analytics' as RightTab, icon: BarChart2, label: 'Analytics', locked: !featureEnabled(planConfig, 'analytics') },
+    { id: 'css' as RightTab, icon: Code2, label: 'CSS', locked: !featureEnabled(planConfig, 'customCss') },
   ];
+
+  const handleTabSelect = (id: RightTab) => {
+    const key = TAB_FEATURES[id];
+    if (key && !featureEnabled(planConfig, key)) {
+      setPremiumReason('general');
+      setShowPremium(true);
+      return;
+    }
+    setRightTab(id);
+  };
 
   return (
     <header className="h-14 border-b flex items-center px-3 gap-2 shrink-0" style={{ background: brand.navy, borderColor: brand.border }}>
@@ -288,7 +312,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
         className="flex-1 min-w-0 max-w-[min(100%,28rem)] xl:max-w-md 2xl:max-w-lg"
         tabs={tabs}
         activeId={rightTab}
-        onSelect={setRightTab}
+        onSelect={handleTabSelect}
       />
 
       {/* Zoom */}

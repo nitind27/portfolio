@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAllPlans } from '@/lib/plans-server';
+import { getGstRate, getGstTaxLabel } from '@/lib/gst';
 
 export async function GET() {
   try {
@@ -15,6 +16,11 @@ export async function GET() {
         tier: p.tier,
         features: p.features,
       })),
+      tax: {
+        rate: getGstRate(),
+        label: getGstTaxLabel(),
+        enabled: true,
+      },
     });
   } catch (err) {
     console.error('Plans list error:', err);

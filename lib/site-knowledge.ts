@@ -319,9 +319,9 @@ export const SITE_DOCS: DocSection[] = [
     id: 'plans-overview',
     category: 'billing',
     title: 'Plans overview',
-    summary: 'Free, Pro, and Business plan comparison.',
-    keywords: ['plans', 'pricing', 'free', 'pro', 'business', 'subscription'],
-    body: `**Free** — Build, preview, ${STORAGE_POLICY_DAYS}-day share link, basic sections\n**Pro (₹${PREMIUM})** — Export, deploy, 1 portfolio slot, premium sections, SMTP, analytics\n**Business (₹299)** — Everything in Pro + 3 portfolio slots + all premium templates\nView current plan on **Billing** page.`,
+    summary: 'Free and Premium plan comparison.',
+    keywords: ['plans', 'pricing', 'free', 'premium', 'pro', 'subscription'],
+    body: `**Free** — Build, preview, ${STORAGE_POLICY_DAYS}-day share link, basic sections\n**Premium (₹${PREMIUM})** — Export, deploy, 1 portfolio slot, premium sections, SMTP, analytics, custom CSS\nView current plan on **Billing** page.`,
   },
   {
     id: 'payment-flow',
@@ -329,7 +329,7 @@ export const SITE_DOCS: DocSection[] = [
     title: 'How payment works',
     summary: 'Cashfree checkout, order verification, instant unlock.',
     keywords: ['payment', 'cashfree', 'checkout', 'pay', 'order', 'upi', 'card'],
-    body: `1. Click Upgrade → choose Pro or Business\n2. Pay via Cashfree (UPI, card, netbanking)\n3. Redirect to callback page — payment verified automatically\n4. Plan activates instantly on your account\n5. Receipt appears in **Billing** history\nPayments processed securely by Cashfree — ${APP_NAME} does not store card numbers.`,
+    body: `1. Click Upgrade → Premium (₹${PREMIUM} + GST)\n2. Pay via Cashfree (UPI, card, netbanking)\n3. Redirect to callback page — payment verified automatically\n4. Plan activates instantly on your account\n5. Receipt appears in **Billing** history\nPayments processed securely by Cashfree — ${APP_NAME} does not store card numbers.`,
   },
   {
     id: 'refund-policy',
