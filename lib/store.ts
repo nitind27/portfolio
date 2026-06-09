@@ -162,7 +162,7 @@ interface BuilderState {
   mobilePanel: MobilePanel;
   popupPreviewNonce: number;
 
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<{ ok: boolean; error?: string }>;
+  login: (email: string, password: string, rememberMe?: boolean, adminOnly?: boolean) => Promise<{ ok: boolean; error?: string }>;
   register: (data: { name: string; email: string; phone: string; password: string }) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -298,12 +298,12 @@ export const useBuilderStore = create<BuilderState>()(
         } catch { /* ignore */ }
         return null;
       },
-      login: async (email, password, rememberMe = false) => {
+      login: async (email, password, rememberMe = false, adminOnly = false) => {
         try {
           const res = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, rememberMe }),
+            body: JSON.stringify({ email, password, rememberMe, adminOnly }),
           });
           const data = await res.json();
           if (!res.ok) return { ok: false, error: data.error || 'Login failed' };

@@ -90,9 +90,10 @@ interface AuthFormProps {
   onSubmitState?: (state: { loading: boolean; error: string }) => void;
   initialError?: string;
   showGoogleInline?: boolean;
+  adminOnly?: boolean;
 }
 
-function AuthForm({ mode, setMode, onClose, compact, formId, onSubmitState, initialError, showGoogleInline = false }: AuthFormProps) {
+function AuthForm({ mode, setMode, onClose, compact, formId, onSubmitState, initialError, showGoogleInline = false, adminOnly = false }: AuthFormProps) {
   const { login, register, isAuthenticated } = useBuilderStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -149,7 +150,7 @@ function AuthForm({ mode, setMode, onClose, compact, formId, onSubmitState, init
       const result = await register({ name, email, phone, password });
       if (!result.ok) setError(result.error || 'Registration failed');
     } else {
-      const result = await login(email, password, rememberMe);
+      const result = await login(email, password, rememberMe, adminOnly);
       if (!result.ok) setError(result.error || 'Login failed');
       else persistRememberMe(rememberMe, email);
     }
@@ -158,30 +159,32 @@ function AuthForm({ mode, setMode, onClose, compact, formId, onSubmitState, init
 
   return (
     <>
-      {showGoogleInline && <GoogleSignInButton />}
+      {showGoogleInline && !adminOnly && <GoogleSignInButton />}
 
-      <div
-        className="flex p-1 rounded-xl mb-4"
-        style={{ background: 'rgba(0,0,0,0.25)', border: `1px solid ${brand.border}` }}
-      >
-        {(['login', 'register'] as AuthMode[]).map(m => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => { setMode(m); resetErrors(); }}
-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-              mode === m ? 'text-white shadow-md' : 'text-gray-500 hover:text-gray-300'
-            }`}
-            style={
-              mode === m
-                ? { background: `linear-gradient(135deg, ${brand.accent}, ${brand.accentHover})` }
-                : undefined
-            }
-          >
-            {m === 'login' ? 'Sign in' : 'Register'}
-          </button>
-        ))}
-      </div>
+      {!adminOnly && (
+        <div
+          className="flex p-1 rounded-xl mb-4"
+          style={{ background: 'rgba(0,0,0,0.25)', border: `1px solid ${brand.border}` }}
+        >
+          {(['login', 'register'] as AuthMode[]).map(m => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => { setMode(m); resetErrors(); }}
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+                mode === m ? 'text-white shadow-md' : 'text-gray-500 hover:text-gray-300'
+              }`}
+              style={
+                mode === m
+                  ? { background: `linear-gradient(135deg, ${brand.accent}, ${brand.accentHover})` }
+                  : undefined
+              }
+            >
+              {m === 'login' ? 'Sign in' : 'Register'}
+            </button>
+          ))}
+        </div>
+      )}
 
       <form id={formId} onSubmit={handleSubmit} className="space-y-3">
         {mode === 'register' && (
@@ -294,14 +297,16 @@ function AuthForm({ mode, setMode, onClose, compact, formId, onSubmitState, init
                   <Loader2 className="w-4 h-4 animate-spin" /> Please wait…
                 </>
               ) : mode === 'login' ? (
-                'Sign in to your account'
+                adminOnly ? 'Sign in' : 'Sign in to your account'
               ) : (
                 'Create free account'
               )}
             </button>
-            <p className="text-center text-[10px] text-gray-600 leading-relaxed">
-              Free plan: {STORAGE_POLICY_DAYS}-day build & share · Premium from ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}
-            </p>
+            {!adminOnly && (
+              <p className="text-center text-[10px] text-gray-600 leading-relaxed">
+                Free plan: {STORAGE_POLICY_DAYS}-day build & share · Premium from ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}
+              </p>
+            )}
           </>
         )}
       </form>
@@ -348,10 +353,12 @@ function AuthCardHeader({
   mode,
   onClose,
   showClose = true,
+  adminOnly = false,
 }: {
   mode: AuthMode;
   onClose?: () => void;
   showClose?: boolean;
+  adminOnly?: boolean;
 }) {
   return (
     <div
@@ -375,12 +382,14 @@ function AuthCardHeader({
       <div className="flex flex-col items-center text-center pr-0">
         <BrandLogo size="sm" pad className="mb-3" />
         <h2 id="auth-modal-title" className="text-xl font-bold text-white leading-tight">
-          {mode === 'login' ? 'Welcome back' : 'Create your account'}
+          {adminOnly ? 'Sign in' : mode === 'login' ? 'Welcome back' : 'Create your account'}
         </h2>
         <p className="text-xs text-gray-400 mt-1 max-w-[280px]">
-          {mode === 'login'
-            ? 'Sign in to access your projects and builder'
-            : 'Start building your website in minutes — free'}
+          {adminOnly
+            ? 'Authorized staff only'
+            : mode === 'login'
+              ? 'Sign in to access your projects and builder'
+              : 'Start building your website in minutes — free'}
         </p>
       </div>
     </div>
@@ -392,9 +401,10 @@ interface AuthModalProps {
   onClose: () => void;
   initialMode?: AuthMode;
   initialError?: string;
+  adminOnly?: boolean;
 }
 
-export function AuthModal({ open, onClose, initialMode = 'login', initialError = '' }: AuthModalProps) {
+export function AuthModal({ open, onClose, initialMode = 'login', initialError = '', adminOnly = false }: AuthModalProps) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [submitState, setSubmitState] = useState({ loading: false, error: '' });
   const formId = useId();
@@ -424,7 +434,11 @@ export function AuthModal({ open, onClose, initialMode = 'login', initialError =
     };
   }, [open, onClose]);
 
-  const submitLabel = mode === 'login' ? 'Sign in to your account' : 'Create free account';
+  const submitLabel = adminOnly
+    ? 'Sign in'
+    : mode === 'login'
+      ? 'Sign in to your account'
+      : 'Create free account';
 
   return (
     <AnimatePresence>
@@ -453,10 +467,10 @@ export function AuthModal({ open, onClose, initialMode = 'login', initialError =
             style={{ borderColor: `${brand.accent}33`, background: brand.surface }}
             onClick={e => e.stopPropagation()}
           >
-            <AuthCardHeader mode={mode} onClose={onClose} showClose />
+            <AuthCardHeader mode={mode} onClose={onClose} showClose={!adminOnly} adminOnly={adminOnly} />
 
             <div
-              className={`px-6 pt-4 pb-2 ${mode === 'register' ? 'max-h-[min(42vh,340px)] overflow-y-auto no-scrollbar' : ''}`}
+              className={`px-6 pt-4 pb-2 ${mode === 'register' && !adminOnly ? 'max-h-[min(42vh,340px)] overflow-y-auto no-scrollbar' : ''}`}
             >
               <AuthForm
                 mode={mode}
@@ -467,6 +481,7 @@ export function AuthModal({ open, onClose, initialMode = 'login', initialError =
                 onSubmitState={setSubmitState}
                 initialError={initialError}
                 showGoogleInline={GOOGLE_AUTH_ENABLED}
+                adminOnly={adminOnly}
               />
             </div>
 
@@ -500,17 +515,19 @@ export function AuthModal({ open, onClose, initialMode = 'login', initialError =
               </button>
             </div>
 
-            <div
-              className="px-6 py-2.5 border-t text-center"
-              style={{ borderColor: brand.border, background: 'rgba(0,0,0,0.25)' }}
-            >
-              <p className="text-[10px] text-gray-600">
-                By continuing you agree to our{' '}
-                <a href="/privacy" className="text-orange-400/80 hover:text-orange-300 underline-offset-2 hover:underline">
-                  Privacy Policy
-                </a>
-              </p>
-            </div>
+            {!adminOnly && (
+              <div
+                className="px-6 py-2.5 border-t text-center"
+                style={{ borderColor: brand.border, background: 'rgba(0,0,0,0.25)' }}
+              >
+                <p className="text-[10px] text-gray-600">
+                  By continuing you agree to our{' '}
+                  <a href="/privacy" className="text-orange-400/80 hover:text-orange-300 underline-offset-2 hover:underline">
+                    Privacy Policy
+                  </a>
+                </p>
+              </div>
+            )}
           </motion.div>
         </div>
       )}

@@ -39,6 +39,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
+    const adminOnly = Boolean(body.adminOnly);
+    if (adminOnly && row.role !== 'admin') {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+    }
+
     const rememberMe = Boolean(body.rememberMe);
     const tokenTtl = rememberMe ? TOKEN_TTL_REMEMBER : '1d';
     const cookieMaxAge = rememberMe ? COOKIE_MAX_AGE_REMEMBER : COOKIE_MAX_AGE_DEFAULT;

@@ -49,7 +49,7 @@ export default function AdminPage() {
             ? 'Enter your credentials to access this area.'
             : 'Administrator access only.'}
         </p>
-        <AuthModal open={authOpen} onClose={() => setAuthOpen(true)} initialMode="login" />
+        <AuthModal open={authOpen} onClose={() => setAuthOpen(true)} initialMode="login" adminOnly />
       </div>
     );
   }
