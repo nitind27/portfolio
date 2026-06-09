@@ -39,19 +39,51 @@ type BaseProps = {
   fv: (id: string) => string; fa: (id: string) => string[];
 };
 
+// ── Card animation helpers ────────────────────────────────────────────────────
+import { CardAnimStyle, HeadingAnimStyle } from '@/lib/types';
+
+function getCardVariants(style: CardAnimStyle, i: number) {
+  const delay = i * 0.07;
+  switch (style) {
+    case 'stagger-left':
+      return { initial: { opacity: 0, x: 32 }, animate: { opacity: 1, x: 0 }, transition: { delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] as const } };
+    case 'stagger-scale':
+      return { initial: { opacity: 0, scale: 0.78 }, animate: { opacity: 1, scale: 1 }, transition: { delay, duration: 0.4, type: 'spring' as const, stiffness: 280, damping: 20 } };
+    case 'flip-in':
+      return { initial: { opacity: 0, rotateY: 35 }, animate: { opacity: 1, rotateY: 0 }, transition: { delay, duration: 0.5, ease: [0.22, 1, 0.36, 1] as const } };
+    case 'rubber-band':
+      return { initial: { opacity: 0, scale: 0.6 }, animate: { opacity: 1, scale: 1 }, transition: { delay, type: 'spring' as const, stiffness: 400, damping: 14 } };
+    case 'none':
+      return { initial: { opacity: 1 }, animate: { opacity: 1 }, transition: {} };
+    default: // stagger-up
+      return { initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 }, transition: { delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] as const } };
+  }
+}
+
+function getSectionCardAnim(section: PortfolioSection): CardAnimStyle {
+  return (section.style?.animation?.cardAnim as CardAnimStyle) || 'stagger-up';
+}
+
+function getSectionHeadingAnim(section: PortfolioSection): HeadingAnimStyle {
+  return (section.style?.animation?.headingAnim as HeadingAnimStyle) || 'none';
+}
+
 // ── SKILLS ───────────────────────────────────────────────────────────────────
 export function SkillsSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv, fa }: BaseProps) {
   const items = fa('skills') || fa('Skills');
   const subtitle = fv('subtitle');
+  const cardAnim = getSectionCardAnim(section);
+  const headingAnim = getSectionHeadingAnim(section);
   return (
     <SectionShell id={section.id} pad={pad} altBg={`${theme.primaryColor}08`} section={section} theme={theme}>
-      <SectionHeader title={sectionTitle} subtitle={subtitle || 'Technologies and tools I work with daily'} compact={isMobile} theme={theme} badge="Expertise" />
+      <SectionHeader title={sectionTitle} subtitle={subtitle || 'Technologies and tools I work with daily'} compact={isMobile} theme={theme} badge="Expertise" headingAnim={headingAnim} />
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
         {items.map((skill, i) => {
           const [name, levelStr] = parseSplit(skill, ':');
           const pct = levelStr ? Math.min(100, parseInt(levelStr) || 85) : 78 + (i % 5) * 4;
+          const cv = getCardVariants(cardAnim, i);
           return (
-            <motion.div key={i} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
+            <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
               <GlassCard theme={theme} radius={radius} hover>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{name}</span>
@@ -75,17 +107,20 @@ export function SkillsSection({ section, sectionTitle, theme, pad, altBg, varian
 export function ExperienceSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv, fa }: BaseProps) {
   const jobs = fa('jobs');
   const subtitle = fv('subtitle');
+  const cardAnim = getSectionCardAnim(section);
+  const headingAnim = getSectionHeadingAnim(section);
   return (
     <SectionShell id={section.id} pad={pad} altBg={altBg} section={section} theme={theme}>
-      <SectionHeader title={sectionTitle} subtitle={subtitle || 'My professional journey'} compact={isMobile} theme={theme} badge="Career" />
+      <SectionHeader title={sectionTitle} subtitle={subtitle || 'My professional journey'} compact={isMobile} theme={theme} badge="Career" headingAnim={headingAnim} />
       <div style={{ position: 'relative', maxWidth: 800, margin: '0 auto' }}>
         <div style={{ position: 'absolute', left: isMobile ? 15 : 23, top: 8, bottom: 8, width: 2, background: `linear-gradient(180deg, ${theme.primaryColor}, ${theme.secondaryColor}44)` }} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {jobs.map((job, i) => {
             const roleMatch = job.match(/^(.+?)\s*@\s*(.+?)\s*\((.+)\)$/);
             const [role, company, period] = roleMatch ? [roleMatch[1], roleMatch[2], roleMatch[3]] : [job, '', ''];
+            const cv = getCardVariants(cardAnim, i);
             return (
-              <motion.div key={i} initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+              <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}
                 style={{ display: 'flex', gap: '1.25rem', paddingLeft: isMobile ? '2.5rem' : '3.5rem', position: 'relative' }}>
                 <div style={{
                   position: 'absolute', left: isMobile ? 8 : 16, top: 20, width: 16, height: 16, borderRadius: '50%',
@@ -112,9 +147,11 @@ export function ProjectsSection({ section, sectionTitle, theme, pad, altBg, vari
   const subtitle = fv('subtitle');
   const layout = fv('projectsLayout') || 'cards';
   const gradients = PROJECT_GRADIENTS(theme.primaryColor, theme.secondaryColor);
+  const cardAnim = getSectionCardAnim(section);
+  const headingAnim = getSectionHeadingAnim(section);
   return (
     <SectionShell id={section.id} pad={pad} altBg={altBg} section={section} theme={theme}>
-      <SectionHeader title={sectionTitle} subtitle={subtitle || 'Selected work and case studies'} compact={isMobile} theme={theme} centered badge="Portfolio" />
+      <SectionHeader title={sectionTitle} subtitle={subtitle || 'Selected work and case studies'} compact={isMobile} theme={theme} centered badge="Portfolio" headingAnim={headingAnim} />
       <div style={{
         display: layout === 'list' ? 'flex' : 'grid',
         flexDirection: layout === 'list' ? 'column' : undefined,
@@ -124,36 +161,34 @@ export function ProjectsSection({ section, sectionTitle, theme, pad, altBg, vari
         {projects.map((proj, i) => {
           const [name, ...desc] = proj.split(' - ');
           const isFeatured = layout === 'cards' && i === 0 && projects.length > 2 && !isMobile;
-          const cardInner = (
-            <div style={{
-              borderRadius: radius, overflow: 'hidden', border: `1px solid ${theme.primaryColor}22`,
-              background: `${theme.primaryColor}06`, transition: 'transform 0.25s, box-shadow 0.25s',
-              display: layout === 'list' ? 'flex' : 'block', flexDirection: layout === 'list' ? (isMobile ? 'column' : 'row') : undefined,
-            }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 20px 50px ${theme.primaryColor}22`; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+          const cv = getCardVariants(cardAnim, i);
+          return (
+            <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}
+              style={{ gridColumn: isFeatured ? 'span 2' : undefined }}>
               <div style={{
-                height: layout === 'list' ? (isMobile ? 120 : 'auto') : (isFeatured ? 160 : 120),
-                minWidth: layout === 'list' && !isMobile ? 200 : undefined,
-                flex: layout === 'list' && !isMobile ? '0 0 200px' : undefined,
-                background: gradients[i % gradients.length], display: 'flex', alignItems: 'flex-end', padding: '1.25rem', position: 'relative',
-              }}>
-                <span style={{ fontSize: '3rem', fontWeight: 900, opacity: 0.15, position: 'absolute', right: 16, top: 8 }}>{String(i + 1).padStart(2, '0')}</span>
-                <span style={{ fontSize: '1.75rem' }}>🚀</span>
-              </div>
-              <div style={{ padding: '1.5rem', flex: layout === 'list' ? 1 : undefined }}>
-                <p style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '0.5rem' }}>{name || proj}</p>
-                {desc.length > 0 && <p style={{ opacity: 0.62, lineHeight: 1.7, fontSize: '0.9rem' }}>{desc.join(' - ')}</p>}
-                <div style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: theme.primaryColor, fontSize: '0.82rem', fontWeight: 600 }}>
-                  View Project →
+                borderRadius: radius, overflow: 'hidden', border: `1px solid ${theme.primaryColor}22`,
+                background: `${theme.primaryColor}06`, transition: 'transform 0.25s, box-shadow 0.25s',
+                display: layout === 'list' ? 'flex' : 'block', flexDirection: layout === 'list' ? (isMobile ? 'column' : 'row') : undefined,
+              }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 20px 50px ${theme.primaryColor}22`; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                <div style={{
+                  height: layout === 'list' ? (isMobile ? 120 : 'auto') : (isFeatured ? 160 : 120),
+                  minWidth: layout === 'list' && !isMobile ? 200 : undefined,
+                  flex: layout === 'list' && !isMobile ? '0 0 200px' : undefined,
+                  background: gradients[i % gradients.length], display: 'flex', alignItems: 'flex-end', padding: '1.25rem', position: 'relative',
+                }}>
+                  <span style={{ fontSize: '3rem', fontWeight: 900, opacity: 0.15, position: 'absolute', right: 16, top: 8 }}>{String(i + 1).padStart(2, '0')}</span>
+                  <span style={{ fontSize: '1.75rem' }}>🚀</span>
+                </div>
+                <div style={{ padding: '1.5rem', flex: layout === 'list' ? 1 : undefined }}>
+                  <p style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '0.5rem' }}>{name || proj}</p>
+                  {desc.length > 0 && <p style={{ opacity: 0.62, lineHeight: 1.7, fontSize: '0.9rem' }}>{desc.join(' - ')}</p>}
+                  <div style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: theme.primaryColor, fontSize: '0.82rem', fontWeight: 600 }}>
+                    View Project →
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-          return (
-            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}
-              style={{ gridColumn: isFeatured ? 'span 2' : undefined }}>
-              {cardInner}
             </motion.div>
           );
         })}
@@ -167,9 +202,11 @@ export function ServicesSection({ section, sectionTitle, theme, pad, altBg, vari
   const services = fa('services');
   const subtitle = fv('subtitle');
   const layout = fv('servicesLayout') || 'cards';
+  const cardAnim = getSectionCardAnim(section);
+  const headingAnim = getSectionHeadingAnim(section);
   return (
     <SectionShell id={section.id} pad={pad} altBg={altBg} section={section} theme={theme}>
-      <SectionHeader title={sectionTitle} subtitle={subtitle || 'What I can do for you'} compact={isMobile} theme={theme} centered badge="Services" />
+      <SectionHeader title={sectionTitle} subtitle={subtitle || 'What I can do for you'} compact={isMobile} theme={theme} centered badge="Services" headingAnim={headingAnim} />
       <div style={{
         display: layout === 'list' ? 'flex' : 'grid',
         flexDirection: layout === 'list' ? 'column' : undefined,
@@ -178,6 +215,7 @@ export function ServicesSection({ section, sectionTitle, theme, pad, altBg, vari
       }}>
         {services.map((svc, i) => {
           const [title, desc] = parseSplit(svc, ' - ');
+          const cv = getCardVariants(cardAnim, i);
           const iconEl = (
             <div style={{
               width: 56, height: 56, borderRadius: radius, margin: layout === 'list' ? 0 : '0 auto 1.1rem',
@@ -186,7 +224,7 @@ export function ServicesSection({ section, sectionTitle, theme, pad, altBg, vari
             }}>{SERVICE_ICONS[i % SERVICE_ICONS.length]}</div>
           );
           return (
-            <motion.div key={i} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06 }}>
+            <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
               <GlassCard theme={theme} radius={radius} hover style={{
                 textAlign: layout === 'list' ? 'left' : 'center',
                 padding: layout === 'list' ? '1.25rem 1.5rem' : '2rem 1.5rem',
@@ -268,16 +306,21 @@ export function BlogSection({ section, sectionTitle, theme, pad, altBg, variants
   const posts = getBlogPostsFromSection(section);
   const subtitle = fv('subtitle');
   const [activePost, setActivePost] = useState<BlogPostBlock | null>(null);
+  const cardAnim = getSectionCardAnim(section);
+  const headingAnim = getSectionHeadingAnim(section);
 
   return (
     <SectionShell id={section.id} pad={pad} altBg={altBg} section={section} theme={theme}>
-      <SectionHeader title={sectionTitle} subtitle={subtitle || 'Thoughts, tutorials, and updates'} compact={isMobile} theme={theme} badge="Blog" />
+      <SectionHeader title={sectionTitle} subtitle={subtitle || 'Thoughts, tutorials, and updates'} compact={isMobile} theme={theme} badge="Blog" headingAnim={headingAnim} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        {posts.map((post, i) => (
-          <motion.div key={post.id} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06 }}>
-            <BlogPostCard post={post} theme={theme} radius={radius} isMobile={isMobile} onRead={() => setActivePost(post)} />
-          </motion.div>
-        ))}
+        {posts.map((post, i) => {
+          const cv = getCardVariants(cardAnim, i);
+          return (
+            <motion.div key={post.id} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+              <BlogPostCard post={post} theme={theme} radius={radius} isMobile={isMobile} onRead={() => setActivePost(post)} />
+            </motion.div>
+          );
+        })}
       </div>
       <BlogReadModal post={activePost} theme={theme} radius={radius} isMobile={isMobile} onClose={() => setActivePost(null)} />
     </SectionShell>
@@ -482,15 +525,20 @@ function TestimonialCard({ item, theme, radius }: { item: TestimonialBlock; them
 export function TestimonialsSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv }: BaseProps) {
   const items = getTestimonialsFromSection(section).filter(t => t.quote?.trim() || t.author?.trim());
   const subtitle = fv('subtitle');
+  const cardAnim = getSectionCardAnim(section);
+  const headingAnim = getSectionHeadingAnim(section);
   return (
     <SectionShell id={section.id} pad={pad} altBg={altBg} section={section} theme={theme}>
-      <SectionHeader title={sectionTitle} subtitle={subtitle || undefined} compact={isMobile} theme={theme} centered badge="Reviews" />
+      <SectionHeader title={sectionTitle} subtitle={subtitle || undefined} compact={isMobile} theme={theme} centered badge="Reviews" headingAnim={headingAnim} />
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
-        {items.map((item, i) => (
-          <motion.div key={item.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
-            <TestimonialCard item={item} theme={theme} radius={radius} />
-          </motion.div>
-        ))}
+        {items.map((item, i) => {
+          const cv = getCardVariants(cardAnim, i);
+          return (
+            <motion.div key={item.id} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+              <TestimonialCard item={item} theme={theme} radius={radius} />
+            </motion.div>
+          );
+        })}
       </div>
     </SectionShell>
   );
@@ -505,6 +553,8 @@ export function StatsSection({ section, sectionTitle, theme, pad, fv, fa, isMobi
   const viewport = getMotionViewport(section, theme);
   const whileHover = getSectionHoverProps(section);
   const triggerLoad = section.style?.animation?.custom && section.style.animation.trigger === 'load';
+  const cardAnim = getSectionCardAnim(section);
+  const headingAnim = getSectionHeadingAnim(section);
   return (
     <motion.section id={section.id} initial="hidden" animate={triggerLoad ? 'visible' : undefined} whileInView={triggerLoad ? undefined : 'visible'} viewport={viewport} variants={variants} whileHover={whileHover}
       style={{
@@ -514,12 +564,13 @@ export function StatsSection({ section, sectionTitle, theme, pad, fv, fa, isMobi
       }}>
       <div style={{ position: 'absolute', inset: 0, opacity: 0.08, backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
       <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative' }}>
-        <SectionHeader title={sectionTitle} subtitle={subtitle} compact={isMobile} theme={{ ...theme, primaryColor: '#fff', textColor: '#fff' }} centered badge="Impact" />
+        <SectionHeader title={sectionTitle} subtitle={subtitle} compact={isMobile} theme={{ ...theme, primaryColor: '#fff', textColor: '#fff' }} centered badge="Impact" headingAnim={headingAnim} />
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '1.25rem' }}>
           {items.map((stat, i) => {
             const [num, ...rest] = stat.split(' ');
+            const cv = getCardVariants(cardAnim, i);
             return (
-              <motion.div key={i} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+              <motion.div key={i} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}
                 style={{
                   textAlign: 'center', padding: '1.75rem 1rem', borderRadius: 16,
                   background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
@@ -597,15 +648,20 @@ function TeamMemberCard({ member, theme, radius, isMobile }: { member: TeamMembe
 export function TeamSection({ section, sectionTitle, theme, pad, altBg, variants, radius, isMobile, fv }: BaseProps) {
   const members = getTeamMembersFromSection(section).filter(m => m.name?.trim());
   const subtitle = fv('subtitle');
+  const cardAnim = getSectionCardAnim(section);
+  const headingAnim = getSectionHeadingAnim(section);
   return (
     <SectionShell id={section.id} pad={pad} altBg={altBg} section={section} theme={theme}>
-      <SectionHeader title={sectionTitle} subtitle={subtitle || 'The people behind the work'} compact={isMobile} theme={theme} centered badge="Team" />
+      <SectionHeader title={sectionTitle} subtitle={subtitle || 'The people behind the work'} compact={isMobile} theme={theme} centered badge="Team" headingAnim={headingAnim} />
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.25rem' }}>
-        {members.map((member, i) => (
-          <motion.div key={member.id} initial={{ opacity: 0, scale: 0.94 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.06 }}>
-            <TeamMemberCard member={member} theme={theme} radius={radius} isMobile={isMobile} />
-          </motion.div>
-        ))}
+        {members.map((member, i) => {
+          const cv = getCardVariants(cardAnim, i);
+          return (
+            <motion.div key={member.id} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+              <TeamMemberCard member={member} theme={theme} radius={radius} isMobile={isMobile} />
+            </motion.div>
+          );
+        })}
       </div>
     </SectionShell>
   );
@@ -668,15 +724,20 @@ export function PricingSection({ section, sectionTitle, theme, pad, altBg, varia
   const layout = fv('pricingLayout') || 'columns-3';
   const colCount = layout === 'columns-2' ? 2 : layout === 'featured' ? Math.min(plans.length, 3) : 3;
   const cols = isMobile ? '1fr' : `repeat(${Math.min(colCount, Math.max(plans.length, 1))}, 1fr)`;
+  const cardAnim = getSectionCardAnim(section);
+  const headingAnim = getSectionHeadingAnim(section);
   return (
     <SectionShell id={section.id} pad={pad} altBg={altBg} section={section} theme={theme}>
-      <SectionHeader title={sectionTitle} subtitle={subtitle || 'Simple, transparent pricing'} compact={isMobile} theme={theme} centered badge="Pricing" />
+      <SectionHeader title={sectionTitle} subtitle={subtitle || 'Simple, transparent pricing'} compact={isMobile} theme={theme} centered badge="Pricing" headingAnim={headingAnim} />
       <div style={{ display: 'grid', gridTemplateColumns: cols, gap: '1.25rem', alignItems: 'stretch' }}>
-        {plans.map((plan, i) => (
-          <motion.div key={plan.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-            <PricingPlanCard plan={plan} theme={theme} radius={radius} isMobile={isMobile} />
-          </motion.div>
-        ))}
+        {plans.map((plan, i) => {
+          const cv = getCardVariants(cardAnim, i);
+          return (
+            <motion.div key={plan.id} initial={cv.initial} whileInView={cv.animate} viewport={{ once: true }} transition={cv.transition}>
+              <PricingPlanCard plan={plan} theme={theme} radius={radius} isMobile={isMobile} />
+            </motion.div>
+          );
+        })}
       </div>
     </SectionShell>
   );
@@ -707,10 +768,11 @@ function FAQAccordion({ item, theme, radius, index, isMobile }: { item: FAQItemB
 export function FAQSection({ section, sectionTitle, theme, pad, altBg, variants, radius, fv, isMobile }: BaseProps) {
   const items = getFAQItemsFromSection(section).filter(f => f.question?.trim());
   const subtitle = fv('subtitle');
+  const headingAnim = getSectionHeadingAnim(section);
   return (
     <SectionShell id={section.id} pad={pad} altBg={altBg} section={section} theme={theme}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
-        <SectionHeader title={sectionTitle} subtitle={subtitle || 'Common questions answered'} compact={isMobile} theme={theme} centered badge="FAQ" />
+        <SectionHeader title={sectionTitle} subtitle={subtitle || 'Common questions answered'} compact={isMobile} theme={theme} centered badge="FAQ" headingAnim={headingAnim} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {items.map((item, i) => (
             <FAQAccordion key={item.id} item={item} theme={theme} radius={radius} index={i} isMobile={isMobile} />

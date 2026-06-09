@@ -5,7 +5,7 @@ import { useBuilderStore } from '@/lib/store';
 import { TEMPLATES, getTemplatesForPurpose } from '@/lib/templates';
 import { WebsitePurpose, SectionType, CreatePortfolioOptions } from '@/lib/types';
 import {
-  WEBSITE_PURPOSES, getPurposeConfig, SECTION_LABELS,
+  WEBSITE_PURPOSES, getPurposeConfig, getSectionLabel, PURPOSE_SECTION_HINTS,
 } from '@/lib/website-purposes';
 import {
   getLayoutPresetsForPurpose, getDefaultLayoutPresetId, LayoutPresetId, LAYOUT_PRESETS,
@@ -225,17 +225,23 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
               </motion.div>
             )}
 
-            {step === 2 && (
+            {step === 2 && purposeConfig && (
               <motion.div key="s2" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}>
                 <h3 className="text-lg font-semibold mb-1">Which sections should your site include?</h3>
-                <p className="text-sm text-gray-500 mb-4">We pre-selected the best sections for your purpose. Toggle any you don&apos;t need.</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {Object.entries(SECTION_LABELS).map(([type, label]) => {
-                    const secType = type as SectionType;
+                <p className="text-sm text-gray-500 mb-4">
+                  Pre-selected the right sections for <span className="text-white font-medium">{purposeConfig.title}</span>. Toggle any you don&apos;t need, or add extras below.
+                </p>
+
+                {/* Recommended sections */}
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Recommended for {purposeConfig.title}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-5">
+                  {purposeConfig.recommendedSections.map(secType => {
                     const on = sections.includes(secType);
                     const locked = isSectionLocked(secType);
+                    const label = getSectionLabel(secType, purpose);
+                    const hint = PURPOSE_SECTION_HINTS[purpose!]?.[secType];
                     return (
-                      <button key={type} type="button"
+                      <button key={secType} type="button"
                         onClick={() => !locked && toggleSection(secType)}
                         disabled={locked}
                         className={`p-3 rounded-xl border text-left text-sm transition ${
@@ -247,11 +253,45 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
                           {locked ? <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                             : on ? <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" /> : null}
                         </span>
+                        {hint && <span className="text-[10px] text-gray-600 mt-0.5 block leading-tight">{hint}</span>}
                         {locked && <span className="text-[9px] text-amber-400/80 mt-1 block">Premium plan</span>}
                       </button>
                     );
                   })}
                 </div>
+
+                {/* Optional add-on sections */}
+                {purposeConfig.optionalSections.length > 0 && (
+                  <>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Optional Add-ons</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {purposeConfig.optionalSections.map(secType => {
+                        const on = sections.includes(secType);
+                        const locked = isSectionLocked(secType);
+                        const label = getSectionLabel(secType, purpose);
+                        const hint = PURPOSE_SECTION_HINTS[purpose!]?.[secType];
+                        return (
+                          <button key={secType} type="button"
+                            onClick={() => !locked && toggleSection(secType)}
+                            disabled={locked}
+                            className={`p-3 rounded-xl border text-left text-sm transition ${
+                              locked ? 'border-amber-500/20 bg-amber-500/5 text-gray-500 cursor-not-allowed opacity-70'
+                              : on ? 'border-blue-500/60 bg-blue-500/8 text-white' : 'border-white/8 text-gray-500 hover:bg-white/5 hover:text-gray-300'
+                            }`}>
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="font-medium text-xs">{label}</span>
+                            {locked ? <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                              : on ? <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" /> : null}
+                          </span>
+                          {hint && <span className="text-[10px] text-gray-600 mt-0.5 block leading-tight">{hint}</span>}
+                          {locked && <span className="text-[9px] text-amber-400/80 mt-1 block">Premium plan</span>}
+                        </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
                 <p className="text-xs text-gray-600 mt-3">{sections.length} section{sections.length !== 1 ? 's' : ''} selected</p>
               </motion.div>
             )}

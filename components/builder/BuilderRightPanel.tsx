@@ -3,7 +3,7 @@ import { useBuilderStore } from '@/lib/store';
 import { TEMPLATES } from '@/lib/templates';
 import { HexColorPicker } from 'react-colorful';
 import { useState, useMemo } from 'react';
-import { ThemeConfig, SMTPConfig, PopupConfig, NavbarConfig, NavbarMenuStyle, NavbarScrollBehavior, NavbarScrollAnimation, FooterConfig, SocialLinks } from '@/lib/types';
+import { ThemeConfig, SMTPConfig, PopupConfig, NavbarConfig, NavbarMenuStyle, NavbarScrollBehavior, NavbarScrollAnimation, NavbarCtaStyle, FooterConfig, SocialLinks, PortfolioSection } from '@/lib/types';
 import { RightTab } from '../Builder';
 import { Check, TestTube, Loader, ExternalLink, Eye } from 'lucide-react';
 import { APP_NAME } from '@/lib/brand';
@@ -33,7 +33,7 @@ export default function BuilderRightPanel({ tab }: Props) {
       ) : (
         <div className="flex-1 overflow-y-auto">
           {tab === 'theme' && <ThemePanel theme={portfolio.theme} onUpdate={updateTheme} />}
-          {tab === 'navbar' && portfolio.navbar && <NavbarPanel navbar={portfolio.navbar} onUpdate={updateNavbar} portfolioName={portfolio.name} />}
+          {tab === 'navbar' && portfolio.navbar && <NavbarPanel navbar={portfolio.navbar} onUpdate={updateNavbar} portfolioName={portfolio.name} sections={portfolio.sections} />}
           {tab === 'footer' && portfolio.footer && <FooterPanel footer={portfolio.footer} onUpdate={updateFooter} />}
           {tab === 'templates' && <TemplatesPanel current={portfolio.templateId} onSwitch={switchTemplate} />}
           {tab === 'seo' && <SEOPanel seo={portfolio.seo} onUpdate={updateSEO} />}
@@ -109,214 +109,407 @@ const SCROLL_ANIMATION_OPTIONS: { id: NavbarScrollAnimation; label: string }[] =
   { id: 'spring', label: 'Spring' },
 ];
 
-function NavbarPanel({ navbar, onUpdate, portfolioName }: { navbar: NavbarConfig; onUpdate: (u: Partial<NavbarConfig>) => void; portfolioName: string }) {
+function NavbarPanel({ navbar, onUpdate, portfolioName, sections }: {
+  navbar: NavbarConfig; onUpdate: (u: Partial<NavbarConfig>) => void;
+  portfolioName: string; sections: PortfolioSection[];
+}) {
   const inputCls = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500';
   const desktopMenu = navbar.desktopMenu ?? 'links';
   const scrollBehavior = navbar.scrollBehavior ?? 'none';
+  const [activeTab, setActiveTab] = useState<'general' | 'links' | 'cta' | 'colors'>('general');
 
-  const Toggle = ({ label, val, fieldKey }: { label: string; val: boolean; fieldKey: keyof NavbarConfig }) => (
-    <label className="flex items-center justify-between cursor-pointer p-2 bg-white/5 rounded-lg">
-      <span className="text-xs text-gray-300">{label}</span>
-      <div onClick={() => onUpdate({ [fieldKey]: !val } as Partial<NavbarConfig>)}
-        className={`w-9 h-5 rounded-full transition relative shrink-0 ${val ? 'bg-blue-600' : 'bg-white/10'}`}>
+  const Toggle = ({ label, val, onClick, hint }: { label: string; val: boolean; onClick: () => void; hint?: string }) => (
+    <label className="flex items-center justify-between cursor-pointer p-2 bg-white/5 rounded-lg gap-2">
+      <div className="min-w-0">
+        <span className="text-xs text-gray-300">{label}</span>
+        {hint && <p className="text-[10px] text-gray-600 mt-0.5">{hint}</p>}
+      </div>
+      <div onClick={onClick} className={`w-9 h-5 rounded-full transition relative shrink-0 ${val ? 'bg-blue-600' : 'bg-white/10'}`}>
         <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${val ? 'left-4' : 'left-0.5'}`} />
       </div>
     </label>
   );
 
+  const Slider = ({ label, value, min, max, step, unit, onChange }: {
+    label: string; value: number; min: number; max: number; step: number; unit?: string; onChange: (v: number) => void;
+  }) => (
+    <div>
+      <div className="flex justify-between mb-1">
+        <span className="text-[11px] text-gray-400">{label}</span>
+        <span className="text-[11px] text-blue-300 font-mono">{value}{unit}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-blue-500 cursor-pointer" />
+    </div>
+  );
+
+  const ColorRow = ({ label, value, onChange, hint }: { label: string; value: string; onChange: (v: string) => void; hint?: string }) => {
+    const [open, setOpen] = useState(false);
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[11px] text-gray-400">{label}</span>
+          {value && <button type="button" onClick={() => onChange('')} className="text-[10px] text-gray-600 hover:text-gray-300">reset</button>}
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setOpen(o => !o)}
+            className="w-8 h-7 rounded-lg border border-white/20 shrink-0 flex items-center justify-center"
+            style={{ background: value || 'transparent' }}>
+            {!value && <span className="text-gray-600 text-[10px]">auto</span>}
+          </button>
+          <input value={value} onChange={e => onChange(e.target.value)} placeholder="auto (uses theme)"
+            className={`${inputCls} flex-1`} />
+        </div>
+        {hint && <p className="text-[10px] text-gray-600 mt-0.5">{hint}</p>}
+        {open && (
+          <div className="mt-2">
+            <HexColorPicker color={value || '#ffffff'} onChange={onChange} style={{ width: '100%' }} />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Section visibility helpers
+  const hiddenSections = navbar.hiddenSections ?? [];
+  const customLabels = navbar.customLabels ?? {};
+
+  const toggleSection = (id: string) => {
+    const next = hiddenSections.includes(id)
+      ? hiddenSections.filter(s => s !== id)
+      : [...hiddenSections, id];
+    onUpdate({ hiddenSections: next });
+  };
+
+  const setCustomLabel = (id: string, label: string) => {
+    const next = { ...customLabels };
+    if (label.trim()) next[id] = label.trim();
+    else delete next[id];
+    onUpdate({ customLabels: next });
+  };
+
+  const SECTION_ICONS: Record<string, string> = {
+    hero: '🏠', about: '👤', skills: '⚡', experience: '💼', projects: '🚀',
+    gallery: '🖼️', testimonials: '💬', contact: '📧', videos: '🎬',
+    services: '🛠️', team: '👥', stats: '📊', social: '🔗',
+    pricing: '💰', faq: '❓', blog: '📝', custom: '✏️',
+  };
+
   return (
-    <div className="p-3 space-y-4">
-      <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Navbar</p>
-        <p className="text-xs text-gray-600 mt-1">Customize your site header layout and style.</p>
+    <div className="flex flex-col h-full">
+      {/* Tab bar */}
+      <div className="flex border-b border-white/10 shrink-0">
+        {([
+          { id: 'general' as const, label: 'General' },
+          { id: 'links' as const, label: 'Links' },
+          { id: 'cta' as const, label: 'CTA' },
+          { id: 'colors' as const, label: 'Colors' },
+        ]).map(t => (
+          <button key={t.id} type="button" onClick={() => setActiveTab(t.id)}
+            className={`flex-1 py-2.5 text-[11px] font-medium transition border-b-2 ${
+              activeTab === t.id ? 'border-blue-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'
+            }`}>
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      <div>
-        <label className="text-xs text-gray-400 block mb-1">Brand Name</label>
-        <input value={navbar.brandName} onChange={e => onUpdate({ brandName: e.target.value })} placeholder={portfolioName}
-          className={inputCls} />
-        <p className="text-[10px] text-gray-600 mt-1">Leave empty to use portfolio name</p>
-      </div>
+      <div className="flex-1 overflow-y-auto p-3 space-y-4">
 
-      <Toggle label="Show Logo" val={navbar.showLogo} fieldKey="showLogo" />
-      {navbar.showLogo && (
-        <div>
-          <label className="text-xs text-gray-400 block mb-1">Logo Image URL</label>
-          <input value={navbar.logoImage} onChange={e => onUpdate({ logoImage: e.target.value })} placeholder="https:// or paste uploaded image"
-            className={inputCls} />
-        </div>
-      )}
-
-      <Toggle label="Show Tagline" val={navbar.showTagline} fieldKey="showTagline" />
-      {navbar.showTagline && (
-        <div>
-          <label className="text-xs text-gray-400 block mb-1">Tagline</label>
-          <input value={navbar.tagline} onChange={e => onUpdate({ tagline: e.target.value })} placeholder="Designer & Developer"
-            className={inputCls} />
-        </div>
-      )}
-
-      <div>
-        <p className="text-xs text-gray-400 mb-1.5">Navbar Style</p>
-        <div className="grid grid-cols-2 gap-1">
-          {(['glass', 'solid', 'gradient', 'transparent'] as const).map(s => (
-            <button key={s} onClick={() => onUpdate({ style: s })}
-              className={`py-1.5 text-xs rounded capitalize transition ${navbar.style === s ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <p className="text-xs text-gray-400 mb-1.5">Layout</p>
-        <div className="grid grid-cols-3 gap-1">
-          {(['standard', 'centered', 'minimal'] as const).map(l => (
-            <button key={l} onClick={() => onUpdate({ layout: l })}
-              className={`py-1.5 text-xs rounded capitalize transition ${navbar.layout === l ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
-              {l}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="p-2.5 bg-white/[0.03] border border-white/10 rounded-xl space-y-3">
-        <div>
-          <p className="text-xs font-semibold text-gray-300">Desktop / Web Menu</p>
-          <p className="text-[10px] text-gray-600 mt-0.5">How navigation appears on desktop & tablet preview</p>
-        </div>
-        <div className="grid grid-cols-3 gap-1">
-          {([
-            { id: 'links' as const, label: 'Links Bar' },
-            { id: 'menu' as const, label: 'Menu Btn' },
-            { id: 'floating' as const, label: 'Floating' },
-          ]).map(o => (
-            <button key={o.id} onClick={() => onUpdate({ desktopMenu: o.id })}
-              className={`py-1.5 text-[10px] rounded transition ${desktopMenu === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
-              {o.label}
-            </button>
-          ))}
-        </div>
-        {desktopMenu === 'menu' && (
-          <MenuStylePicker label="Desktop popup style" value={navbar.desktopMenuStyle ?? 'drawer-right'} onChange={v => onUpdate({ desktopMenuStyle: v })} />
-        )}
-      </div>
-
-      <div className="p-2.5 bg-white/[0.03] border border-white/10 rounded-xl space-y-3">
-        <div>
-          <p className="text-xs font-semibold text-gray-300">Mobile Menu</p>
-          <p className="text-[10px] text-gray-600 mt-0.5">How navigation opens on mobile preview</p>
-        </div>
-        <MenuStylePicker label="Mobile menu style" value={navbar.mobileMenu ?? 'drawer-right'} onChange={v => onUpdate({ mobileMenu: v })} />
-        <div>
-          <p className="text-xs text-gray-400 mb-1.5">Menu Icon</p>
-          <div className="grid grid-cols-2 gap-1">
-            {([
-              { id: 'dots' as const, label: '⋮ Three Dots' },
-              { id: 'hamburger' as const, label: '☰ Hamburger' },
-            ]).map(o => (
-              <button key={o.id} onClick={() => onUpdate({ menuIcon: o.id })}
-                className={`py-1.5 text-xs rounded transition ${(navbar.menuIcon ?? 'dots') === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <p className="text-xs text-gray-400 mb-1.5">Link Style</p>
-        <div className="grid grid-cols-3 gap-1">
-          {(['minimal', 'underline', 'pill'] as const).map(l => (
-            <button key={l} onClick={() => onUpdate({ linkStyle: l })}
-              className={`py-1.5 text-xs rounded capitalize transition ${navbar.linkStyle === l ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
-              {l}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="p-2.5 bg-white/5 rounded-lg space-y-3">
-        <p className="text-xs font-medium text-gray-300">Link Spacing</p>
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-gray-400">Gap between links</label>
-            <span className="text-[10px] text-blue-400 font-mono">{navbar.linkGap ?? 14}px</span>
-          </div>
-          <input type="range" min={4} max={40} step={1}
-            value={navbar.linkGap ?? 14}
-            onChange={e => onUpdate({ linkGap: Number(e.target.value) })}
-            className="w-full accent-blue-500" />
-          <div className="flex gap-1 mt-1.5">
-            {([{ label: 'Tight', val: 8 }, { label: 'Normal', val: 14 }, { label: 'Wide', val: 24 }] as const).map(p => (
-              <button key={p.label} onClick={() => onUpdate({ linkGap: p.val })}
-                className={`flex-1 py-1 text-[10px] rounded transition ${(navbar.linkGap ?? 14) === p.val ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-500 hover:bg-white/10'}`}>
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-gray-400">Link padding (left/right)</label>
-            <span className="text-[10px] text-blue-400 font-mono">{navbar.linkPaddingX ?? 10}px</span>
-          </div>
-          <input type="range" min={0} max={24} step={1}
-            value={navbar.linkPaddingX ?? 10}
-            onChange={e => onUpdate({ linkPaddingX: Number(e.target.value) })}
-            className="w-full accent-blue-500" />
-        </div>
-      </div>
-
-      <div className="p-2.5 bg-white/[0.03] border border-white/10 rounded-xl space-y-3">
-        <div>
-          <p className="text-xs font-semibold text-gray-300">Scroll Effect</p>
-          <p className="text-[10px] text-gray-600 mt-0.5">Navbar behavior when scrolling down (desktop & tablet)</p>
-        </div>
-        <div className="grid grid-cols-3 gap-1">
-          {SCROLL_BEHAVIOR_OPTIONS.map(o => (
-            <button key={o.id} onClick={() => onUpdate({
-                scrollBehavior: o.id,
-                ...(o.id !== 'none' && !navbar.sticky ? { sticky: true } : {}),
-              })}
-              className={`py-1.5 text-[10px] rounded transition ${scrollBehavior === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
-              {o.label}
-            </button>
-          ))}
-        </div>
-        {scrollBehavior === 'float-on-scroll' && (
-          <p className="text-[10px] text-gray-600">Top par full navbar, scroll par floating pill style mein change hoga.</p>
-        )}
-        {scrollBehavior !== 'none' && (
+        {/* ── GENERAL TAB ── */}
+        {activeTab === 'general' && <>
           <div>
-            <p className="text-xs text-gray-400 mb-1.5">Scroll Animation</p>
-            <div className="grid grid-cols-3 gap-1">
-              {SCROLL_ANIMATION_OPTIONS.map(o => (
-                <button key={o.id} onClick={() => onUpdate({ scrollAnimation: o.id })}
-                  className={`py-1.5 text-[10px] rounded transition ${(navbar.scrollAnimation ?? 'smooth') === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
-                  {o.label}
+            <label className="text-xs text-gray-400 block mb-1">Brand Name</label>
+            <input value={navbar.brandName} onChange={e => onUpdate({ brandName: e.target.value })} placeholder={portfolioName} className={inputCls} />
+            <p className="text-[10px] text-gray-600 mt-1">Leave empty to use portfolio name</p>
+          </div>
+
+          <Toggle label="Show Logo" val={navbar.showLogo} onClick={() => onUpdate({ showLogo: !navbar.showLogo })} />
+          {navbar.showLogo && (
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Logo Image URL</label>
+                <input value={navbar.logoImage} onChange={e => onUpdate({ logoImage: e.target.value })} placeholder="https://..." className={inputCls} />
+                <p className="text-[10px] text-gray-600 mt-1">PNG with transparent background recommended</p>
+              </div>
+              <div>
+                <div className="flex justify-between mb-1">
+                  <label className="text-[11px] text-gray-400">Logo size</label>
+                  <span className="text-[11px] text-blue-300 font-mono">{navbar.logoSize ?? 38}px</span>
+                </div>
+                <input type="range" min={24} max={80} step={2}
+                  value={navbar.logoSize ?? 38}
+                  onChange={e => onUpdate({ logoSize: Number(e.target.value) })}
+                  className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-blue-500 cursor-pointer" />
+                <div className="flex gap-1 mt-1.5">
+                  {([{ l: 'S', v: 28 }, { l: 'M', v: 38 }, { l: 'L', v: 52 }, { l: 'XL', v: 64 }]).map(p => (
+                    <button key={p.v} onClick={() => onUpdate({ logoSize: p.v })}
+                      className={`flex-1 py-1 text-[10px] rounded transition ${(navbar.logoSize ?? 38) === p.v ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-500 hover:bg-white/10'}`}>
+                      {p.l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] text-gray-400 mb-1.5">Background removal</p>
+                <div className="grid grid-cols-3 gap-1">
+                  {([
+                    { id: 'normal' as const, label: 'None', hint: 'Original' },
+                    { id: 'multiply' as const, label: 'Multiply', hint: 'Remove white bg' },
+                    { id: 'screen' as const, label: 'Screen', hint: 'Remove dark bg' },
+                    { id: 'lighten' as const, label: 'Lighten', hint: 'For dark logos' },
+                    { id: 'darken' as const, label: 'Darken', hint: 'For light logos' },
+                  ]).map(o => (
+                    <button key={o.id} type="button" onClick={() => onUpdate({ logoBlend: o.id })}
+                      title={o.hint}
+                      className={`py-1.5 text-[10px] rounded transition ${(navbar.logoBlend ?? 'multiply') === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-600 mt-1">Use &quot;Multiply&quot; to remove white background from logo images</p>
+              </div>
+            </div>
+          )}
+
+          <Toggle label="Show Tagline" val={navbar.showTagline} onClick={() => onUpdate({ showTagline: !navbar.showTagline })} />
+          {navbar.showTagline && (
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Tagline</label>
+              <input value={navbar.tagline} onChange={e => onUpdate({ tagline: e.target.value })} placeholder="Designer & Developer" className={inputCls} />
+            </div>
+          )}
+
+          <div>
+            <p className="text-xs text-gray-400 mb-1.5">Navbar Style</p>
+            <div className="grid grid-cols-2 gap-1">
+              {(['glass', 'solid', 'gradient', 'transparent'] as const).map(s => (
+                <button key={s} onClick={() => onUpdate({ style: s })}
+                  className={`py-1.5 text-xs rounded capitalize transition ${navbar.style === s ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                  {s}
                 </button>
               ))}
             </div>
           </div>
-        )}
-      </div>
 
-      <Toggle label="Sticky Navbar" val={navbar.sticky} fieldKey="sticky" />
-      <Toggle label="Show CTA Button" val={navbar.showCta} fieldKey="showCta" />
-      {navbar.showCta && (
-        <>
           <div>
-            <label className="text-xs text-gray-400 block mb-1">CTA Text</label>
-            <input value={navbar.ctaText} onChange={e => onUpdate({ ctaText: e.target.value })} className={inputCls} />
+            <p className="text-xs text-gray-400 mb-1.5">Layout</p>
+            <div className="grid grid-cols-3 gap-1">
+              {(['standard', 'centered', 'minimal'] as const).map(l => (
+                <button key={l} onClick={() => onUpdate({ layout: l })}
+                  className={`py-1.5 text-xs rounded capitalize transition ${navbar.layout === l ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
           </div>
+
+          <div className="p-2.5 bg-white/[0.03] border border-white/10 rounded-xl space-y-3">
+            <p className="text-xs font-semibold text-gray-300">Desktop Menu</p>
+            <div className="grid grid-cols-3 gap-1">
+              {([{ id: 'links' as const, label: 'Links Bar' }, { id: 'menu' as const, label: 'Menu Btn' }, { id: 'floating' as const, label: 'Floating' }]).map(o => (
+                <button key={o.id} onClick={() => onUpdate({ desktopMenu: o.id })}
+                  className={`py-1.5 text-[10px] rounded transition ${desktopMenu === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            {desktopMenu === 'menu' && (
+              <MenuStylePicker label="Desktop popup style" value={navbar.desktopMenuStyle ?? 'drawer-right'} onChange={v => onUpdate({ desktopMenuStyle: v })} />
+            )}
+          </div>
+
+          <div className="p-2.5 bg-white/[0.03] border border-white/10 rounded-xl space-y-3">
+            <p className="text-xs font-semibold text-gray-300">Mobile Menu</p>
+            <MenuStylePicker label="Mobile menu style" value={navbar.mobileMenu ?? 'drawer-right'} onChange={v => onUpdate({ mobileMenu: v })} />
+            <div>
+              <p className="text-xs text-gray-400 mb-1.5">Menu Icon</p>
+              <div className="grid grid-cols-3 gap-1">
+                {([
+                  { id: 'dots' as const, label: '⋮ Dots' },
+                  { id: 'hamburger' as const, label: '☰ Burger' },
+                  { id: 'close-x' as const, label: '✕ X' },
+                ]).map(o => (
+                  <button key={o.id} onClick={() => onUpdate({ menuIcon: o.id })}
+                    className={`py-1.5 text-xs rounded transition ${(navbar.menuIcon ?? 'dots') === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-2.5 bg-white/[0.03] border border-white/10 rounded-xl space-y-3">
+            <p className="text-xs font-semibold text-gray-300">Scroll Effect</p>
+            <div className="grid grid-cols-3 gap-1">
+              {SCROLL_BEHAVIOR_OPTIONS.map(o => (
+                <button key={o.id} onClick={() => onUpdate({ scrollBehavior: o.id, ...(o.id !== 'none' && !navbar.sticky ? { sticky: true } : {}) })}
+                  className={`py-1.5 text-[10px] rounded transition ${scrollBehavior === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            {scrollBehavior !== 'none' && (
+              <div>
+                <p className="text-xs text-gray-400 mb-1.5">Scroll Animation</p>
+                <div className="grid grid-cols-3 gap-1">
+                  {SCROLL_ANIMATION_OPTIONS.map(o => (
+                    <button key={o.id} onClick={() => onUpdate({ scrollAnimation: o.id })}
+                      className={`py-1.5 text-[10px] rounded transition ${(navbar.scrollAnimation ?? 'smooth') === o.id ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Toggle label="Sticky Navbar" val={navbar.sticky} onClick={() => onUpdate({ sticky: !navbar.sticky })} hint="Stays at top when scrolling" />
+          <Toggle label="Show Social Icons" val={navbar.showSocial} onClick={() => onUpdate({ showSocial: !navbar.showSocial })} />
+        </>}
+
+        {/* ── LINKS TAB ── */}
+        {activeTab === 'links' && <>
           <div>
-            <label className="text-xs text-gray-400 block mb-1">CTA Link</label>
-            <input value={navbar.ctaLink} onChange={e => onUpdate({ ctaLink: e.target.value })} placeholder="#contact" className={inputCls} />
+            <p className="text-xs font-semibold text-gray-300 mb-0.5">Nav Menu Items</p>
+            <p className="text-[10px] text-gray-500 mb-3">Toggle visibility and rename each link. Hidden items won't show in navbar or mobile menu.</p>
+            <div className="space-y-1.5">
+              {sections.map(s => {
+                const isHidden = hiddenSections.includes(s.id);
+                const customLabel = customLabels[s.id] ?? '';
+                const icon = SECTION_ICONS[s.type] || '📄';
+                return (
+                  <div key={s.id} className={`rounded-xl border transition ${isHidden ? 'border-white/5 bg-white/2 opacity-50' : 'border-white/10 bg-white/3'}`}>
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <span className="text-sm shrink-0">{icon}</span>
+                      <span className="flex-1 text-xs font-medium text-gray-300 truncate">{s.title}</span>
+                      <button type="button" onClick={() => toggleSection(s.id)}
+                        className={`w-8 h-4 rounded-full transition relative shrink-0 ${!isHidden ? 'bg-blue-600' : 'bg-white/10'}`}>
+                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${!isHidden ? 'left-4' : 'left-0.5'}`} />
+                      </button>
+                    </div>
+                    {!isHidden && (
+                      <div className="px-3 pb-2">
+                        <input
+                          value={customLabel}
+                          onChange={e => setCustomLabel(s.id, e.target.value)}
+                          placeholder={`Custom label (default: "${s.title}")`}
+                          className="w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-gray-600 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </>
-      )}
-      <Toggle label="Show Social Icons" val={navbar.showSocial} fieldKey="showSocial" />
+
+          <div>
+            <p className="text-xs text-gray-400 mb-1.5">Link Style</p>
+            <div className="grid grid-cols-3 gap-1">
+              {(['minimal', 'underline', 'pill'] as const).map(l => (
+                <button key={l} onClick={() => onUpdate({ linkStyle: l })}
+                  className={`py-1.5 text-xs rounded capitalize transition ${navbar.linkStyle === l ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-2.5 bg-white/5 rounded-xl space-y-3">
+            <p className="text-xs font-medium text-gray-300">Link Sizing</p>
+            <Slider label="Font size" value={navbar.linkFontSize ?? 14} min={10} max={20} step={1} unit="px" onChange={v => onUpdate({ linkFontSize: v })} />
+            <div>
+              <p className="text-[11px] text-gray-400 mb-1.5">Font weight</p>
+              <div className="grid grid-cols-4 gap-1">
+                {([{ v: 400, l: 'Regular' }, { v: 500, l: 'Medium' }, { v: 600, l: 'Semi' }, { v: 700, l: 'Bold' }]).map(w => (
+                  <button key={w.v} onClick={() => onUpdate({ linkFontWeight: w.v })}
+                    className={`py-1 text-[10px] rounded transition ${(navbar.linkFontWeight ?? 500) === w.v ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+                    {w.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Slider label="Gap between links" value={navbar.linkGap ?? 14} min={4} max={40} step={1} unit="px" onChange={v => onUpdate({ linkGap: v })} />
+            <Slider label="Link padding (H)" value={navbar.linkPaddingX ?? 10} min={0} max={24} step={1} unit="px" onChange={v => onUpdate({ linkPaddingX: v })} />
+          </div>
+        </>}
+
+        {/* ── CTA TAB ── */}
+        {activeTab === 'cta' && <>
+          <Toggle label="Show CTA Button" val={navbar.showCta} onClick={() => onUpdate({ showCta: !navbar.showCta })} />
+          {navbar.showCta && (
+            <>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Button Text</label>
+                <input value={navbar.ctaText} onChange={e => onUpdate({ ctaText: e.target.value })} className={inputCls} />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Button Link</label>
+                <input value={navbar.ctaLink} onChange={e => onUpdate({ ctaLink: e.target.value })} placeholder="#contact" className={inputCls} />
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-400 mb-1.5">Button Style</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {([
+                    { id: 'filled' as NavbarCtaStyle, label: 'Filled', desc: 'Solid gradient background' },
+                    { id: 'outline' as NavbarCtaStyle, label: 'Outline', desc: 'Transparent with border' },
+                    { id: 'ghost' as NavbarCtaStyle, label: 'Ghost', desc: 'Subtle tinted background' },
+                    { id: 'pill' as NavbarCtaStyle, label: 'Pill', desc: 'Rounded pill shape' },
+                  ]).map(opt => (
+                    <button key={opt.id} type="button" onClick={() => onUpdate({ ctaStyle: opt.id })}
+                      className={`p-2.5 rounded-xl border text-left transition ${
+                        (navbar.ctaStyle ?? 'filled') === opt.id
+                          ? 'border-blue-500 bg-blue-500/15 text-white'
+                          : 'border-white/10 hover:bg-white/5 text-gray-400'
+                      }`}>
+                      <p className="text-xs font-semibold">{opt.label}</p>
+                      <p className="text-[10px] opacity-60 mt-0.5">{opt.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3 p-2.5 bg-white/[0.03] border border-white/10 rounded-xl">
+                <p className="text-xs font-semibold text-gray-300">Custom Colors</p>
+                <ColorRow label="Background / Accent color" value={navbar.ctaBgColor ?? ''} onChange={v => onUpdate({ ctaBgColor: v })} hint="Leave empty to use primary theme color" />
+                <ColorRow label="Text color" value={navbar.ctaTextColor ?? ''} onChange={v => onUpdate({ ctaTextColor: v })} hint="Leave empty for white" />
+              </div>
+
+              <div>
+                <div className="flex justify-between mb-1">
+                  <label className="text-[11px] text-gray-400">Border radius</label>
+                  <span className="text-[11px] text-blue-300 font-mono">{navbar.ctaBorderRadius ?? 8}px</span>
+                </div>
+                <input type="range" min={0} max={24} step={1}
+                  value={navbar.ctaBorderRadius ?? 8}
+                  onChange={e => onUpdate({ ctaBorderRadius: Number(e.target.value) })}
+                  className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-blue-500 cursor-pointer" />
+              </div>
+            </>
+          )}
+        </>}
+
+        {/* ── COLORS TAB ── */}
+        {activeTab === 'colors' && (
+          <div className="space-y-4">
+            <p className="text-[11px] text-gray-500 leading-relaxed">
+              Override navbar colors independently from your theme. Leave blank to use theme defaults.
+            </p>
+            <ColorRow label="Background color" value={navbar.bgColor ?? ''} onChange={v => onUpdate({ bgColor: v })} hint="Overrides the style setting above" />
+            <ColorRow label="Border / divider color" value={navbar.borderColor ?? ''} onChange={v => onUpdate({ borderColor: v })} />
+            <ColorRow label="Link & text color" value={navbar.textColor ?? ''} onChange={v => onUpdate({ textColor: v })} hint="Overrides link text color globally" />
+            <button type="button"
+              onClick={() => onUpdate({ bgColor: '', borderColor: '', textColor: '', ctaBgColor: '', ctaTextColor: '' })}
+              className="w-full py-2 text-xs text-gray-500 hover:text-gray-300 bg-white/5 rounded-lg transition">
+              Reset all color overrides
+            </button>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }

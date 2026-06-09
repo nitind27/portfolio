@@ -302,6 +302,8 @@ function handleHashNavClick(
 }
 
 function getNavBg(navbar: NavbarConfig, theme: ThemeConfig, scrolled: boolean): React.CSSProperties {
+  // Custom bg color override takes priority
+  if (navbar.bgColor) return { background: navbar.bgColor, backdropFilter: 'blur(16px)' };
   switch (navbar.style) {
     case 'solid':
       return { background: theme.backgroundColor };
@@ -314,20 +316,76 @@ function getNavBg(navbar: NavbarConfig, theme: ThemeConfig, scrolled: boolean): 
   }
 }
 
-function NavBrand({ name, tagline, logo, showLogo, showTagline, theme, radius, compact, truncate }: {
+// ── CTA button with custom styles ─────────────────────────────────────────────
+function NavCtaButton({ navbar, theme, radius, sections, onSectionSelect }: {
+  navbar: NavbarConfig; theme: ThemeConfig; radius: string;
+  sections: PortfolioSection[]; onSectionSelect?: (id: string) => void;
+}) {
+  const ctaStyle = navbar.ctaStyle ?? 'filled';
+  const bg = navbar.ctaBgColor || theme.primaryColor;
+  const txt = navbar.ctaTextColor || '#fff';
+  const br = navbar.ctaBorderRadius != null ? `${navbar.ctaBorderRadius}px` : radius;
+
+  const styleMap: Record<string, React.CSSProperties> = {
+    filled: {
+      background: `linear-gradient(135deg, ${bg}, ${theme.secondaryColor})`,
+      color: txt, border: 'none',
+      boxShadow: `0 4px 16px ${bg}35`,
+    },
+    outline: {
+      background: 'transparent', color: bg,
+      border: `2px solid ${bg}`,
+    },
+    ghost: {
+      background: `${bg}15`, color: bg, border: 'none',
+    },
+    pill: {
+      background: `linear-gradient(135deg, ${bg}, ${theme.secondaryColor})`,
+      color: txt, border: 'none', borderRadius: '9999px',
+      boxShadow: `0 4px 16px ${bg}35`,
+    },
+  };
+
+  return (
+    <a href={navbar.ctaLink || '#contact'}
+      onClick={e => handleHashNavClick(e, navbar.ctaLink || '#contact', sections, onSectionSelect)}
+      style={{
+        padding: '0.5rem 1.15rem', borderRadius: ctaStyle === 'pill' ? '9999px' : br,
+        fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap',
+        transition: 'transform 0.15s, opacity 0.15s', display: 'inline-block',
+        ...styleMap[ctaStyle],
+      }}
+      onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-1px)')}
+      onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}>
+      {navbar.ctaText}
+    </a>
+  );
+}
+
+function NavBrand({ name, tagline, logo, showLogo, showTagline, theme, radius, compact, truncate, logoSize, logoBlend }: {
   name: string; tagline: string; logo: string; showLogo: boolean; showTagline: boolean;
-  theme: ThemeConfig; radius: string; compact?: boolean; truncate?: boolean;
+  theme: ThemeConfig; radius: string; compact?: boolean; truncate?: boolean; logoSize?: number;
+  logoBlend?: 'normal' | 'multiply' | 'screen' | 'lighten' | 'darken';
 }) {
   const initial = name.charAt(0).toUpperCase();
+  const size = logoSize ?? (compact ? 32 : 38);
+  const blend = (logoBlend ?? 'multiply') as React.CSSProperties['mixBlendMode'];
   return (
     <a href="#portfolio-top" onClick={e => { e.preventDefault(); scrollPreviewToTop(); }}
       style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', textDecoration: 'none', color: 'inherit', flexShrink: truncate ? 1 : 0, minWidth: truncate ? 0 : undefined, overflow: truncate ? 'hidden' : undefined }}>
       {showLogo && (
         logo ? (
-          <img src={logo} alt={name} style={{ width: compact ? 32 : 38, height: compact ? 32 : 38, borderRadius: radius, objectFit: 'cover' }} />
+          <img src={logo} alt={name} style={{
+            width: size, height: size,
+            objectFit: 'contain',
+            background: 'transparent',
+            display: 'block',
+            flexShrink: 0,
+            mixBlendMode: blend,
+          }} />
         ) : (
           <div style={{
-            width: compact ? 32 : 38, height: compact ? 32 : 38, borderRadius: radius, flexShrink: 0,
+            width: size, height: size, borderRadius: radius, flexShrink: 0,
             background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontWeight: 800, fontSize: compact ? '0.9rem' : '1rem', color: '#fff',
@@ -381,13 +439,20 @@ function getNavLinkStyle(
   };
 }
 
-function NavLinks({ sections, theme, linkStyle, linkGap, linkPaddingX, horizontal, onSectionSelect }: {
-  sections: PortfolioSection[]; theme: ThemeConfig; linkStyle: NavbarConfig['linkStyle'];
+function NavLinks({ sections, navbar, theme, linkStyle, linkGap, linkPaddingX, horizontal, onSectionSelect }: {
+  sections: PortfolioSection[]; navbar: NavbarConfig; theme: ThemeConfig; linkStyle: NavbarConfig['linkStyle'];
   linkGap: number; linkPaddingX: number; horizontal?: boolean;
   onSectionSelect?: (id: string) => void;
 }) {
   const [hovered, setHovered] = useState<string | null>(null);
   const gap = linkGap ?? 14;
+  const hidden = new Set(navbar.hiddenSections ?? []);
+  const labels = navbar.customLabels ?? {};
+  const fontSize = navbar.linkFontSize;
+  const fontWeight = navbar.linkFontWeight;
+  const textColor = navbar.textColor;
+
+  const visibleSections = sections.filter(s => !hidden.has(s.id));
 
   return (
     <nav aria-label="Section navigation" style={{
@@ -398,15 +463,23 @@ function NavLinks({ sections, theme, linkStyle, linkGap, linkPaddingX, horizonta
       justifyContent: horizontal ? 'center' : 'flex-start',
       rowGap: horizontal ? '0.5rem' : undefined,
     }}>
-      {sections.map(s => (
-        <a key={s.id} href={`#${s.id}`}
-          style={getNavLinkStyle(linkStyle, theme, hovered === s.id, linkPaddingX ?? 10)}
-          onClick={e => { e.preventDefault(); goToPreviewSection(s.id, onSectionSelect); }}
-          onMouseEnter={() => setHovered(s.id)}
-          onMouseLeave={() => setHovered(null)}>
-          {s.title}
-        </a>
-      ))}
+      {visibleSections.map(s => {
+        const baseStyle = getNavLinkStyle(linkStyle, theme, hovered === s.id, linkPaddingX ?? 10);
+        return (
+          <a key={s.id} href={`#${s.id}`}
+            style={{
+              ...baseStyle,
+              ...(fontSize ? { fontSize: `${fontSize}px` } : {}),
+              ...(fontWeight ? { fontWeight } : {}),
+              ...(textColor && hovered !== s.id ? { color: textColor } : {}),
+            }}
+            onClick={e => { e.preventDefault(); goToPreviewSection(s.id, onSectionSelect); }}
+            onMouseEnter={() => setHovered(s.id)}
+            onMouseLeave={() => setHovered(null)}>
+            {labels[s.id] || s.title}
+          </a>
+        );
+      })}
     </nav>
   );
 }
@@ -457,14 +530,16 @@ function PortfolioNavbar({ portfolio, sections, theme, social, navbar, isMobile,
   const navHeight = isCompact ? Math.max(46, baseNavHeight - 14) : baseNavHeight;
   const motionState = getNavbarMotionState(scrollAnimation, isFloating, scrolled, hasScrollEffect);
 
+  const borderCol = navbar.borderColor || theme.primaryColor;
   const navInnerStyle: React.CSSProperties = {
     ...getNavBg(navbar, theme, scrolled || isFloating),
-    borderBottom: isFloating ? 'none' : scrolled ? `1px solid ${theme.primaryColor}28` : `1px solid ${theme.primaryColor}15`,
+    borderBottom: isFloating ? 'none' : scrolled ? `1px solid ${borderCol}28` : `1px solid ${borderCol}15`,
     borderRadius: isFloating ? radius : 0,
-    border: isFloating ? `1px solid ${theme.primaryColor}28` : undefined,
+    border: isFloating ? `1px solid ${borderCol}28` : undefined,
     boxShadow: isFloating
-      ? `0 10px 40px ${theme.primaryColor}18`
-      : scrolled ? `0 4px 24px ${theme.primaryColor}12` : 'none',
+      ? `0 10px 40px ${borderCol}18`
+      : scrolled ? `0 4px 24px ${borderCol}12` : 'none',
+    ...(navbar.textColor ? { color: navbar.textColor } : {}),
   };
 
   return (
@@ -502,7 +577,7 @@ function PortfolioNavbar({ portfolio, sections, theme, social, navbar, isMobile,
         }}>
           <NavBrand name={brandName} tagline={navbar.tagline} logo={navbar.logoImage}
             showLogo={navbar.showLogo} showTagline={navbar.showTagline && !isMinimal && !isNarrow && !isCompact} theme={theme} radius={radius}
-            compact={isMinimal || isNarrow || isCompact} truncate={isNarrow} />
+            compact={isMinimal || isNarrow || isCompact} truncate={isNarrow} logoSize={navbar.logoSize} logoBlend={navbar.logoBlend} />
         </div>
 
         {/* Desktop links + actions */}
@@ -510,13 +585,13 @@ function PortfolioNavbar({ portfolio, sections, theme, social, navbar, isMobile,
           <>
             {!isCentered && (
               <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '0 1.5rem', minWidth: 0 }}>
-                <NavLinks sections={sections} theme={theme} linkStyle={navbar.linkStyle}
+                <NavLinks sections={sections} navbar={navbar} theme={theme} linkStyle={navbar.linkStyle}
                   linkGap={navbar.linkGap ?? 14} linkPaddingX={navbar.linkPaddingX ?? 10} horizontal onSectionSelect={onSectionSelect} />
               </div>
             )}
             {isCentered && (
               <div style={{ width: '100%', display: 'flex', justifyContent: 'center', padding: '0.25rem 1rem 0.5rem' }}>
-                <NavLinks sections={sections} theme={theme} linkStyle={navbar.linkStyle}
+                <NavLinks sections={sections} navbar={navbar} theme={theme} linkStyle={navbar.linkStyle}
                   linkGap={navbar.linkGap ?? 14} linkPaddingX={navbar.linkPaddingX ?? 10} horizontal onSectionSelect={onSectionSelect} />
               </div>
             )}
@@ -524,18 +599,7 @@ function PortfolioNavbar({ portfolio, sections, theme, social, navbar, isMobile,
               ...(isCentered ? { position: 'absolute', right: '1.5rem', top: '50%', transform: 'translateY(-50%)' } : {}) }}>
               {navbar.showSocial && <NavSocialMini social={social} theme={theme} />}
               {navbar.showCta && navbar.ctaText && (
-                <a href={navbar.ctaLink || '#contact'}
-                  onClick={e => handleHashNavClick(e, navbar.ctaLink || '#contact', sections, onSectionSelect)}
-                  style={{
-                    padding: '0.5rem 1.15rem', borderRadius: radius, fontSize: '0.82rem', fontWeight: 700,
-                    background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
-                    color: '#fff', textDecoration: 'none', whiteSpace: 'nowrap',
-                    boxShadow: `0 4px 16px ${theme.primaryColor}35`, transition: 'transform 0.15s, opacity 0.15s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-1px)')}
-                  onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}>
-                  {navbar.ctaText}
-                </a>
+                <NavCtaButton navbar={navbar} theme={theme} radius={radius} sections={sections} onSectionSelect={onSectionSelect} />
               )}
             </div>
           </>
@@ -548,16 +612,7 @@ function PortfolioNavbar({ portfolio, sections, theme, social, navbar, isMobile,
           }}>
             {navbar.showSocial && <NavSocialMini social={social} theme={theme} />}
             {navbar.showCta && navbar.ctaText && (
-              <a href={navbar.ctaLink || '#contact'}
-                onClick={e => handleHashNavClick(e, navbar.ctaLink || '#contact', sections, onSectionSelect)}
-                style={{
-                  padding: '0.5rem 1.15rem', borderRadius: radius, fontSize: '0.82rem', fontWeight: 700,
-                  background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`,
-                  color: '#fff', textDecoration: 'none', whiteSpace: 'nowrap',
-                  boxShadow: `0 4px 16px ${theme.primaryColor}35`,
-                }}>
-                {navbar.ctaText}
-              </a>
+              <NavCtaButton navbar={navbar} theme={theme} radius={radius} sections={sections} onSectionSelect={onSectionSelect} />
             )}
             <SiteNavMenu sections={sections} name={brandName} theme={theme} navbar={navbar} social={social} radius={radius}
               menuStyle={navbar.desktopMenuStyle ?? 'drawer-right'} menuIcon={navbar.menuIcon ?? 'dots'} onSectionSelect={onSectionSelect} />
@@ -785,8 +840,9 @@ function SiteNavMenu({ sections, name, theme, navbar, social, radius, menuStyle,
                 WebkitOverflowScrolling: 'touch', touchAction: 'pan-y',
               }}
             >
-              {sections.map((s, i) => {
+              {sections.filter(s => !(navbar.hiddenSections ?? []).includes(s.id)).map((s, i) => {
                 const icon = SECTION_MENU_ICONS[s.type] || '📄';
+                const label = (navbar.customLabels ?? {})[s.id] || s.title;
                 return (
                   <motion.a
                     key={s.id}
@@ -808,7 +864,7 @@ function SiteNavMenu({ sections, name, theme, navbar, social, radius, menuStyle,
                       background: `${theme.primaryColor}18`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem',
                     }}>{icon}</span>
-                    <span style={{ flex: 1, fontWeight: 600, fontSize: '0.82rem', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
+                    <span style={{ flex: 1, fontWeight: 600, fontSize: '0.82rem', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
                     <span style={{ color: theme.primaryColor, opacity: 0.6, fontSize: '0.75rem' }}>›</span>
                   </motion.a>
                 );
@@ -1373,7 +1429,7 @@ function SectionRenderer({ section, theme, index, social, smtp, isMobile }: {
 }
 
 // ── About section ────────────────────────────────────────────────────────────
-const ABOUT_KNOWN_IDS = new Set(['aboutLayout', 'title', 'subtitle', 'role', 'bio', 'image', 'highlights', 'location', 'email', 'phone', 'website', 'availability']);
+const ABOUT_KNOWN_IDS = new Set(['aboutLayout', 'imageStyle', 'title', 'subtitle', 'role', 'bio', 'image', 'highlights', 'location', 'email', 'phone', 'website', 'availability']);
 
 const ABOUT_ICONS: Record<string, string> = {
   location: '📍', email: '📧', phone: '📞', website: '🌐', availability: '💼',
@@ -1463,6 +1519,19 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
   const phone = fv('phone');
   const website = fv('website');
   const availability = fv('availability');
+  const imageStyle = fv('imageStyle') || 'default';
+  // imageAnim from Animation → Elements tab overrides the motion behaviour
+  const imageAnimFromPanel = section.style?.animation?.imageAnim;
+
+  // Resolve effective states (panel overrides content field for motion)
+  const effectiveIsCircle = imageStyle === 'circle-glow' || imageAnimFromPanel === 'circle-glow';
+  const effectiveIsFloating = imageStyle === 'floating' || imageAnimFromPanel === 'float';
+  const effectiveIsRotate = imageStyle === 'rotate' || imageAnimFromPanel === 'rotate-idle';
+  const effectiveIsRotateHover = imageStyle === 'rotate-hover' || imageAnimFromPanel === 'rotate-hover';
+  const effectiveIsMorphBorder = imageStyle === 'morph-border' || imageAnimFromPanel === 'morph-border';
+  const effectiveIsTilt3d = imageStyle === 'tilt-3d' || imageAnimFromPanel === 'tilt-3d';
+  const effectiveIsPulseGlow = imageAnimFromPanel === 'pulse-glow';
+  const effectiveIsSpinSlow = imageAnimFromPanel === 'spin-slow';
 
   const infoItems = [
     location && { icon: ABOUT_ICONS.location, label: section.fields.find(f => f.id === 'location')?.label || 'Location', value: location },
@@ -1477,48 +1546,139 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
   const isCentered = aboutLayout === 'centered';
   const isWide = aboutLayout === 'wide';
 
-  const imageBlock = (
-    <div style={{ position: 'relative', maxWidth: isCentered ? 300 : undefined, margin: isCentered ? '0 auto' : undefined, width: isCentered ? '100%' : undefined }}>
-      <div style={{
-        position: 'absolute', inset: isMobile ? -8 : -12, borderRadius: `calc(${radius} + 8px)`,
-        background: `linear-gradient(135deg, ${theme.primaryColor}55, ${theme.secondaryColor}44)`,
-        transform: isCentered ? 'none' : 'rotate(-3deg)', zIndex: 0,
-      }} />
-      <div style={{
-        position: 'relative', zIndex: 1, borderRadius: radius, overflow: 'hidden',
-        aspectRatio: isWide ? '16/10' : '4/5', maxHeight: isWide ? 380 : 460,
-        boxShadow: `0 24px 64px ${theme.primaryColor}30`, background: `${theme.primaryColor}12`,
-      }}>
-        {image ? (
-          <img src={image} alt={role || sectionTitle} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', opacity: 0.35 }}>
-            <span style={{ fontSize: '4rem' }}>👤</span>
-            <span style={{ fontSize: '0.8rem' }}>Add profile photo</span>
-          </div>
-        )}
-      </div>
-      {role && (
-        <div style={{
-          position: 'absolute', bottom: isMobile ? -14 : -18, left: '50%', transform: 'translateX(-50%)',
-          background: theme.primaryColor, color: '#fff', padding: '0.5rem 1.25rem', borderRadius: radius,
-          fontSize: '0.78rem', fontWeight: 700, whiteSpace: 'nowrap', zIndex: 2,
-          boxShadow: `0 8px 24px ${theme.primaryColor}50`,
-        }}>{role}</div>
-      )}
+  // ── Image style helpers ──
+  const isCircle = effectiveIsCircle;
+  const isFloating = effectiveIsFloating;
+  const isRotate = effectiveIsRotate;
+  const isRotateHover = effectiveIsRotateHover;
+  const isMorphBorder = effectiveIsMorphBorder;
+  const isTilt3d = effectiveIsTilt3d;
+
+  const bgDecorStyle: React.CSSProperties = {
+    position: 'absolute',
+    inset: isMobile ? -8 : -12,
+    borderRadius: isCircle ? '50%' : isMorphBorder ? '60% 40% 30% 70% / 60% 30% 70% 40%' : `calc(${radius} + 8px)`,
+    background: `linear-gradient(135deg, ${theme.primaryColor}55, ${theme.secondaryColor}44)`,
+    transform: (isCentered || isCircle || isMorphBorder) ? 'none' : isRotate ? 'rotate(6deg)' : 'rotate(-3deg)',
+    zIndex: 0,
+    ...(isMorphBorder ? { animation: 'morphBorder 8s ease-in-out infinite' } : {}),
+  };
+
+  const imgWrapStyle: React.CSSProperties = {
+    position: 'relative', zIndex: 1,
+    borderRadius: isCircle ? '50%' : radius,
+    overflow: 'hidden',
+    aspectRatio: isCircle ? '1' : isWide ? '16/10' : '4/5',
+    maxHeight: isCircle ? 320 : isWide ? 380 : 460,
+    boxShadow: isCircle
+      ? `0 0 0 4px ${theme.primaryColor}33, 0 0 40px ${theme.primaryColor}44, 0 24px 64px ${theme.primaryColor}30`
+      : effectiveIsPulseGlow
+        ? `0 0 0 4px ${theme.primaryColor}44, 0 0 40px 8px ${theme.primaryColor}55, 0 24px 64px ${theme.primaryColor}30`
+        : `0 24px 64px ${theme.primaryColor}30`,
+    background: `${theme.primaryColor}12`,
+    ...(isFloating ? { animation: 'aboutFloat 4s ease-in-out infinite' } : {}),
+    ...(effectiveIsSpinSlow ? { animation: 'spinSlow 12s linear infinite' } : {}),
+  };
+
+  const imgEl = image ? (
+    <img src={image} alt={role || sectionTitle}
+      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.5s ease' }}
+      onMouseEnter={e => {
+        if (isRotateHover) e.currentTarget.style.transform = 'scale(1.06) rotate(3deg)';
+        else if (isTilt3d) e.currentTarget.style.transform = 'scale(1.05)';
+      }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+    />
+  ) : (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', opacity: 0.35 }}>
+      <span style={{ fontSize: '4rem' }}>👤</span>
+      <span style={{ fontSize: '0.8rem' }}>Add profile photo</span>
     </div>
   );
+
+  // Outer wrapper gets the 3d tilt or rotate animation
+  const outerWrapMotion = isTilt3d ? {
+    whileHover: { rotateY: 8, rotateX: -6, scale: 1.02 },
+    transition: { duration: 0.4, ease: 'easeOut' as const },
+    style: { perspective: 800, transformStyle: 'preserve-3d' as const },
+  } : isRotate ? {
+    animate: { rotate: [0, 2, -2, 1, 0] },
+    transition: { duration: 6, repeat: Infinity, ease: 'easeInOut' as const },
+  } : {};
+
+  const imageBlock = (
+    <motion.div
+      initial={{ opacity: 0, x: isCentered ? 0 : -24, y: isCentered ? 20 : 0 }}
+      whileInView={{ opacity: 1, x: 0, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      {...(isTilt3d ? { whileHover: { rotateY: 8, rotateX: -6, scale: 1.02 }, style: { perspective: 800 } } : {})}
+      style={{
+        position: 'relative',
+        maxWidth: isCentered ? 300 : undefined,
+        margin: isCentered ? '0 auto' : undefined,
+        width: isCentered ? '100%' : undefined,
+        ...(isTilt3d ? { perspective: 800 } : {}),
+      }}
+    >
+      <div style={bgDecorStyle} />
+      {/* Pulse ring for circle-glow */}
+      {isCircle && (
+        <motion.div
+          animate={{ scale: [1, 1.12, 1], opacity: [0.5, 0.2, 0.5] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            position: 'absolute', inset: -20, borderRadius: '50%',
+            background: `radial-gradient(circle, ${theme.primaryColor}22, transparent 70%)`,
+            zIndex: 0,
+          }}
+        />
+      )}
+      <motion.div
+        style={imgWrapStyle}
+        {...(isTilt3d ? { whileHover: { rotateY: 8, rotateX: -6 } } : {})}
+        {...(isRotate ? { animate: { rotate: [-1.5, 1.5, -1.5] }, transition: { duration: 5, repeat: Infinity, ease: 'easeInOut' as const } } : {})}
+      >
+        {imgEl}
+      </motion.div>
+      {role && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4 }}
+          style={{
+            position: 'absolute', bottom: isMobile ? -14 : -18, left: '50%', transform: 'translateX(-50%)',
+            background: theme.primaryColor, color: '#fff', padding: '0.5rem 1.25rem', borderRadius: radius,
+            fontSize: '0.78rem', fontWeight: 700, whiteSpace: 'nowrap', zIndex: 2,
+            boxShadow: `0 8px 24px ${theme.primaryColor}50`,
+          }}
+        >{role}</motion.div>
+      )}
+    </motion.div>
+  );
+
+  // Element animation based on section animation settings
+  const animCfg = section.style?.animation;
+  const cardAnim = animCfg?.cardAnim || 'stagger-up';
+  const headingAnim = animCfg?.headingAnim || 'none';
 
   const contentBlock = (
     <div style={{ paddingTop: isMobile ? 0 : '0.5rem', textAlign: isCentered ? 'center' : 'left' }}>
       {bio && (
-        <div style={{
-          padding: '1.5rem', borderRadius: radius, background: `${theme.primaryColor}06`,
-          border: `1px solid ${theme.primaryColor}14`, marginBottom: '2rem',
-          maxWidth: isCentered ? 640 : undefined, marginInline: isCentered ? 'auto' : undefined,
-        }}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.55, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            padding: '1.5rem', borderRadius: radius, background: `${theme.primaryColor}06`,
+            border: `1px solid ${theme.primaryColor}14`, marginBottom: '2rem',
+            maxWidth: isCentered ? 640 : undefined, marginInline: isCentered ? 'auto' : undefined,
+          }}
+        >
           <p style={{ opacity: 0.85, lineHeight: 1.9, fontSize: '1.02rem', whiteSpace: 'pre-wrap' }}>{bio}</p>
-        </div>
+        </motion.div>
       )}
       {highlights.length > 0 && (
         <div style={{
@@ -1529,12 +1689,26 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
           {highlights.filter(Boolean).map((item, i) => {
             const [num, ...rest] = item.split(' ');
             const isStat = /^\d/.test(num);
+            const cardInitial = cardAnim === 'stagger-left' ? { opacity: 0, x: -20 }
+              : cardAnim === 'stagger-scale' ? { opacity: 0, scale: 0.82 }
+              : cardAnim === 'flip-in' ? { opacity: 0, rotateY: 40 }
+              : { opacity: 0, y: 14 };
+            const cardAnimate = cardAnim === 'stagger-left' ? { opacity: 1, x: 0 }
+              : cardAnim === 'stagger-scale' ? { opacity: 1, scale: 1 }
+              : cardAnim === 'flip-in' ? { opacity: 1, rotateY: 0 }
+              : { opacity: 1, y: 0 };
             return (
-              <motion.div key={i} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}
+              <motion.div key={i}
+                initial={cardInitial}
+                whileInView={cardAnimate}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{ y: -3, scale: 1.02, transition: { duration: 0.2 } }}
                 style={{
                   padding: '1.1rem 1.25rem', borderRadius: radius, textAlign: 'center',
                   background: `linear-gradient(135deg, ${theme.primaryColor}14, ${theme.secondaryColor}10)`,
-                  border: `1px solid ${theme.primaryColor}22`,
+                  border: `1px solid ${theme.primaryColor}22`, cursor: 'default',
+                  transition: 'border-color 0.2s',
                 }}>
                 {isStat ? (
                   <>
@@ -1556,7 +1730,9 @@ function AboutSection({ section, sectionTitle, theme, pad, altBg, radius, isMobi
           gap: '0.75rem', maxWidth: isCentered ? 480 : undefined, marginInline: isCentered ? 'auto' : undefined,
         }}>
           {infoItems.map((item, i) => (
-            <AboutInfoCard key={i} icon={item.icon} label={item.label} value={item.value} href={item.href} theme={theme} radius={radius} />
+            <motion.div key={i} initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
+              <AboutInfoCard icon={item.icon} label={item.label} value={item.value} href={item.href} theme={theme} radius={radius} />
+            </motion.div>
           ))}
         </div>
       )}

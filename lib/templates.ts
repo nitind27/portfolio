@@ -202,6 +202,7 @@ export const SECTION_DEFAULTS: Record<string, { title: string; fields: Array<{ i
     title: 'About',
     fields: [
       { id: 'aboutLayout', label: 'Layout Style', type: 'select', value: 'split', options: ['split', 'centered', 'wide'] },
+      { id: 'imageStyle', label: 'Photo Style', type: 'select', value: 'default', options: ['default', 'rotate', 'rotate-hover', 'floating', 'circle-glow', 'tilt-3d', 'morph-border'] },
       { id: 'title', label: 'Section Title', type: 'text', value: 'About Me' },
       { id: 'subtitle', label: 'Tagline', type: 'text', value: 'Turning ideas into elegant digital experiences' },
       { id: 'role', label: 'Professional Title', type: 'text', value: 'Full Stack Developer & UI Designer' },

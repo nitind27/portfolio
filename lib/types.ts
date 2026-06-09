@@ -121,6 +121,34 @@ export interface HeroContentSettings {
 export type SectionAnimTrigger = 'scroll' | 'load';
 export type SectionAnimEasing = 'smooth' | 'snappy' | 'bounce' | 'spring' | 'linear';
 
+export type ImageAnimStyle =
+  | 'none'
+  | 'rotate-idle'
+  | 'rotate-hover'
+  | 'float'
+  | 'pulse-glow'
+  | 'parallax'
+  | 'tilt-3d'
+  | 'morph-border'
+  | 'spin-slow'
+  | 'circle-glow';
+
+export type HeadingAnimStyle =
+  | 'none'
+  | 'typewriter'
+  | 'gradient-slide'
+  | 'word-pop'
+  | 'blur-reveal'
+  | 'underline-draw';
+
+export type CardAnimStyle =
+  | 'none'
+  | 'stagger-up'
+  | 'stagger-left'
+  | 'stagger-scale'
+  | 'flip-in'
+  | 'rubber-band';
+
 export interface SectionAnimation {
   custom?: boolean;
   entrance?: SectionEntranceType;
@@ -136,6 +164,10 @@ export interface SectionAnimation {
   hoverEnabled?: boolean;
   hoverScale?: number;
   hoverLift?: number;
+  // Element-level animations
+  imageAnim?: ImageAnimStyle;
+  headingAnim?: HeadingAnimStyle;
+  cardAnim?: CardAnimStyle;
 }
 
 export interface SectionStyle {
@@ -210,14 +242,17 @@ export interface SMTPConfig {
 
 export type NavbarDesktopMenu = 'links' | 'menu' | 'floating';
 export type NavbarMenuStyle = 'drawer-right' | 'drawer-left' | 'fullscreen' | 'bottom-popup';
-export type NavbarMenuIcon = 'dots' | 'hamburger';
+export type NavbarMenuIcon = 'dots' | 'hamburger' | 'close-x';
 export type NavbarScrollBehavior = 'none' | 'float-on-scroll' | 'compact-on-scroll';
 export type NavbarScrollAnimation = 'smooth' | 'fade' | 'slide' | 'scale' | 'spring';
+export type NavbarCtaStyle = 'filled' | 'outline' | 'ghost' | 'pill';
 
 export interface NavbarConfig {
   brandName: string;
   tagline: string;
   logoImage: string;
+  logoSize?: number;
+  logoBlend?: 'normal' | 'multiply' | 'screen' | 'lighten' | 'darken';
   style: 'glass' | 'solid' | 'gradient' | 'transparent';
   layout: 'standard' | 'centered' | 'minimal';
   showLogo: boolean;
@@ -225,10 +260,16 @@ export interface NavbarConfig {
   showCta: boolean;
   ctaText: string;
   ctaLink: string;
+  ctaStyle?: NavbarCtaStyle;
+  ctaBgColor?: string;
+  ctaTextColor?: string;
+  ctaBorderRadius?: number;
   showSocial: boolean;
   linkStyle: 'underline' | 'pill' | 'minimal';
   linkGap: number;
   linkPaddingX: number;
+  linkFontSize?: number;
+  linkFontWeight?: number;
   sticky: boolean;
   desktopMenu: NavbarDesktopMenu;
   desktopMenuStyle: NavbarMenuStyle;
@@ -236,6 +277,13 @@ export interface NavbarConfig {
   menuIcon: NavbarMenuIcon;
   scrollBehavior: NavbarScrollBehavior;
   scrollAnimation: NavbarScrollAnimation;
+  // custom bg/border/text overrides
+  bgColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  // per-section visibility & label overrides
+  hiddenSections?: string[];
+  customLabels?: Record<string, string>;
 }
 
 export interface FooterConfig {
