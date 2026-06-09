@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth-server';
 import { isValidEmail } from '@/lib/validators';
 import { sendSupportTicket, type SupportTicketType } from '@/lib/system-email';
+import { createSupportTicket, markTicketEmailSent } from '@/lib/support-tickets';
 
 const VALID_TYPES = new Set<SupportTicketType>(['complaint', 'feedback', 'bug', 'billing', 'other']);
 
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     const user = await getCurrentUser(req);
 
-    const result = await sendSupportTicket({
+    const ticket = await createSupportTicket({
       type,
       name,
       email,
@@ -44,16 +45,30 @@ export async function POST(req: NextRequest) {
       message,
       orderId: orderId || undefined,
       userId: user?.id,
+      emailSent: false,
     });
 
-    if (!result.ok) {
-      return NextResponse.json(
-        { error: result.error || 'Could not send your message. Please email us directly at support.site99@gmail.com' },
-        { status: 503 },
-      );
+    const result = await sendSupportTicket({
+      type,
+      name,
+      email,
+      subject: `[${ticket.ticketRef}] ${subject}`,
+      message,
+      orderId: orderId || undefined,
+      userId: user?.id,
+    });
+
+    if (result.ok) {
+      await markTicketEmailSent(ticket.id);
+    } else {
+      console.warn('[Support] email failed, ticket saved:', ticket.ticketRef, result.error);
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      ticketRef: ticket.ticketRef,
+      emailSent: result.ok,
+    });
   } catch (err) {
     console.error('[Support] error:', err);
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });

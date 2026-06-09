@@ -32,6 +32,7 @@ export default function SupportPageClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const [ticketRef, setTicketRef] = useState('');
 
   useEffect(() => {
     fetch('/api/profile')
@@ -56,6 +57,7 @@ export default function SupportPageClient() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to send');
+      setTicketRef(data.ticketRef || '');
       setSent(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send. Please try again.');
@@ -76,7 +78,11 @@ export default function SupportPageClient() {
           </div>
           <h2 className="text-2xl font-bold text-white mb-3">Message sent!</h2>
           <p className="text-sm text-gray-400 leading-relaxed mb-6">
-            Thank you for reaching out. Our team at <strong className="text-gray-300">{SUPPORT_EMAIL}</strong> will
+            Thank you for reaching out.
+            {ticketRef && (
+              <> Your reference number is <strong className="text-orange-300 font-mono">{ticketRef}</strong>.</>
+            )}
+            {' '}Our team at <strong className="text-gray-300">{SUPPORT_EMAIL}</strong> will
             review your request and reply within <strong className="text-gray-300">24–48 hours</strong> on business days.
             A confirmation was sent to <strong className="text-gray-300">{email}</strong>.
           </p>

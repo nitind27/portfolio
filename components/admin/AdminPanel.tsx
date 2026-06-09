@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   LayoutDashboard, CreditCard, LayoutTemplate, Users,
-  Loader2, Shield, RefreshCw, Grid3x3, Receipt, Bell, ExternalLink, LogOut, Mail, Settings,
+  Loader2, Shield, RefreshCw, Grid3x3, Receipt, Bell, ExternalLink, LogOut, Mail, Settings, MessageSquare,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import BrandLogo from '../BrandLogo';
@@ -19,8 +19,9 @@ import UsersTab from './tabs/UsersTab';
 import PaymentsTab from './tabs/PaymentsTab';
 import EmailTab from './tabs/EmailTab';
 import SettingsTab from './tabs/SettingsTab';
+import SupportTab from './tabs/SupportTab';
 
-type Tab = 'overview' | 'plans' | 'features' | 'templates' | 'users' | 'payments' | 'email' | 'settings';
+type Tab = 'overview' | 'plans' | 'features' | 'templates' | 'users' | 'payments' | 'support' | 'email' | 'settings';
 
 const NAV: { id: Tab; label: string; desc: string; icon: typeof LayoutDashboard; group: string }[] = [
   { id: 'overview', label: 'Dashboard', desc: 'Analytics & activity', icon: LayoutDashboard, group: 'Main' },
@@ -29,6 +30,7 @@ const NAV: { id: Tab; label: string; desc: string; icon: typeof LayoutDashboard;
   { id: 'payments', label: 'Payments', desc: 'Orders & revenue', icon: Receipt, group: 'Billing' },
   { id: 'templates', label: 'Templates', desc: 'Access control', icon: LayoutTemplate, group: 'Content' },
   { id: 'users', label: 'Users', desc: 'Accounts & roles', icon: Users, group: 'Content' },
+  { id: 'support', label: 'Support', desc: 'Complaints & feedback', icon: MessageSquare, group: 'Content' },
   { id: 'email', label: 'Email & SMTP', desc: 'Transactional emails', icon: Mail, group: 'Settings' },
   { id: 'settings', label: 'Account', desc: 'Password & profile', icon: Settings, group: 'Settings' },
 ];
@@ -258,6 +260,7 @@ export default function AdminPanel() {
               {tab === 'templates' && <TemplatesTab templates={templates} plans={plans} onRefresh={loadAll} />}
               {tab === 'users' && <UsersTab users={users} plans={plans} onRefresh={loadAll} />}
               {tab === 'payments' && <PaymentsTab payments={payments} />}
+              {tab === 'support' && <SupportTab />}
               {tab === 'email' && <EmailTab />}
               {tab === 'settings' && <SettingsTab />}
             </>

@@ -1,0 +1,25 @@
+-- Support tickets (complaints, feedback, bugs) from /support page
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  ticket_ref VARCHAR(24) NOT NULL,
+  type ENUM('complaint','feedback','bug','billing','other') NOT NULL DEFAULT 'feedback',
+  status ENUM('open','in_progress','resolved','closed') NOT NULL DEFAULT 'open',
+  priority ENUM('low','normal','high') NOT NULL DEFAULT 'normal',
+  name VARCHAR(200) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  subject VARCHAR(500) NOT NULL,
+  message TEXT NOT NULL,
+  order_id VARCHAR(100) NULL,
+  user_id INT UNSIGNED NULL,
+  admin_notes TEXT NULL,
+  email_sent TINYINT(1) NOT NULL DEFAULT 0,
+  resolved_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_ticket_ref (ticket_ref),
+  KEY idx_status (status),
+  KEY idx_type (type),
+  KEY idx_created (created_at),
+  KEY idx_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
