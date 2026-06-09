@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { APP_NAME, APP_DESCRIPTION, LOGO_SRC, DESKTOP_VIEWPORT_WIDTH } from '@/lib/brand';
+import MaintenanceGate from '@/components/MaintenanceGate';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,7 +24,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <MaintenanceGate>{children}</MaintenanceGate>
+      </body>
     </html>
   );
 }

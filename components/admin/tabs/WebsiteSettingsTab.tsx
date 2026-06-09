@@ -102,7 +102,7 @@ export default function WebsiteSettingsTab() {
               </div>
               <p className="text-sm text-gray-500 mt-1 leading-relaxed">
                 {settings.maintenanceMode
-                  ? 'Visitors see the maintenance page. Admin panel remains accessible at /admin.'
+                  ? 'Public visitors see the maintenance page. You may still see the live site if logged in as admin with preview enabled — use incognito to test.'
                   : 'Website is publicly accessible. Turn on during updates or deployments.'}
               </p>
             </div>
@@ -162,7 +162,7 @@ export default function WebsiteSettingsTab() {
         <label className="flex items-center justify-between cursor-pointer p-3 rounded-xl bg-white/[0.03] border border-white/10 gap-3">
           <div>
             <p className="text-xs text-gray-300">Allow admin preview</p>
-            <p className="text-[10px] text-gray-600 mt-0.5">Logged-in admins can browse the full site while maintenance is on</p>
+            <p className="text-[10px] text-gray-600 mt-0.5">When ON, logged-in admins see the live site (with a banner). Turn OFF to see maintenance page yourself too.</p>
           </div>
           <button
             type="button"
