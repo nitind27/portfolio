@@ -14,6 +14,7 @@ import PricingEditor from './PricingEditor';
 import FAQEditor from './FAQEditor';
 import SectionAnimationEditor from './SectionAnimationEditor';
 import HeroContentEditor from './HeroContentEditor';
+import HeroLayoutEditor from './HeroLayoutEditor';
 import AboutLayoutEditor from './AboutLayoutEditor';
 import CustomSectionEditor from './CustomSectionEditor';
 import SectionHelpBanner from './SectionHelpBanner';
@@ -497,6 +498,7 @@ export default function SectionEditor({ sectionId, variant = 'canvas' }: Props) 
       {tab === 'animation' && <SectionAnimationEditor sectionId={sectionId} />}
 
       {tab === 'content' && <>
+      {section.type === 'hero' && <HeroLayoutEditor sectionId={sectionId} />}
       {section.type === 'hero' && <HeroContentEditor sectionId={sectionId} />}
       {section.type === 'about' && <AboutLayoutEditor sectionId={sectionId} />}
       {section.type === 'custom' && <CustomSectionEditor sectionId={sectionId} />}
@@ -504,7 +506,7 @@ export default function SectionEditor({ sectionId, variant = 'canvas' }: Props) 
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={section.fields.filter(f => !structuredFieldId || f.id !== structuredFieldId).map(f => f.id)} strategy={verticalListSortingStrategy}>
           <div className={`grid grid-cols-1 gap-3 overflow-y-auto pl-5 pr-1 ${isSidebar ? '' : `sm:grid-cols-2 lg:grid-cols-3 ${section.type === 'about' || section.type === 'contact' || isStructuredSection ? 'max-h-[32rem]' : 'max-h-72'}`}`}>
-            {section.fields.filter(f => !structuredFieldId || f.id !== structuredFieldId).map(field => (
+            {section.fields.filter(f => (!structuredFieldId || f.id !== structuredFieldId) && !(section.type === 'hero' && f.id === 'heroLayout')).map(field => (
               <SortableFieldRow key={field.id} field={field}>
                 <div className="relative group/del">
                   {renderField(field)}

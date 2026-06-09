@@ -14,6 +14,12 @@ import { getPricingPlansFromSection } from './pricing-utils';
 import { getFAQItemsFromSection } from './faq-utils';
 import { normalizeAboutLayout, aboutLayoutExportClass } from './about-layouts';
 import {
+  getHeroBackground,
+  heroBackgroundExportStyle,
+  heroBackgroundUsesLightText,
+  resolveHeroBackground,
+} from './hero-background';
+import {
   customContainerExportClass,
   customLayoutExportClass,
   getContentMaxWidth,
@@ -169,24 +175,46 @@ function renderHeroContent(section: PortfolioSection, portfolio: Portfolio, soci
   return `<div class="hero-content ${heroContentClass(hero)}" style="max-width:${hero.maxWidth ?? 640}px">${parts.join('')}</div>`;
 }
 
+function heroOverlayStyle(section: PortfolioSection, portfolio: Portfolio): string {
+  const resolved = resolveHeroBackground(section, portfolio.theme, {
+    layout: (fv(section, 'heroLayout') || 'image-right') as import('./types').HeroLayoutId,
+    bannerImage: fa(section, 'bannerImages')[0],
+    avatar: fv(section, 'avatar'),
+  });
+  if (!resolved.overlayStyle?.background) return '';
+  return ` style="background:${escapeHtml(String(resolved.overlayStyle.background))}"`;
+}
+
 function renderHero(section: PortfolioSection, portfolio: Portfolio, social: SocialLinks): string {
   const layout = fv(section, 'heroLayout') || 'image-right';
   const avatar = fv(section, 'avatar');
   const bannerImgs = fa(section, 'bannerImages');
   const id = escapeHtml(section.id);
-  const textBlock = renderHeroContent(section, portfolio, social);
+  const bgStyle = heroBackgroundExportStyle(section, portfolio.theme);
+  const bgAttr = bgStyle ? ` style="${escapeHtml(bgStyle)}"` : '';
+  const customBgType = getHeroBackground(section).type;
+  const light = heroBackgroundUsesLightText(section, portfolio.theme);
+  const textBlock = renderHeroContent(section, portfolio, social, light);
+  const overlayAttr = heroOverlayStyle(section, portfolio);
 
   if (layout === 'banner') {
     const bg = bannerImgs[0] || avatar;
-    return `<section id="${id}" ${heroSectionAttrs(section, portfolio).replace('class="', 'class="hero-banner ')}>
-      ${bg ? `<img src="${escapeHtml(bg)}" alt="">` : ''}
-      <div class="hero-banner-overlay"></div>
-      <div class="hero-banner-content container">${renderHeroContent(section, portfolio, social, true)}</div>
+    const usePhoto = Boolean(bg) && customBgType !== 'solid' && customBgType !== 'gradient';
+    return `<section id="${id}" ${heroSectionAttrs(section, portfolio).replace('class="', 'class="hero-banner ')}${usePhoto ? '' : bgAttr}>
+      ${usePhoto ? `<img src="${escapeHtml(bg)}" alt="">` : ''}
+      <div class="hero-banner-overlay"${usePhoto && !overlayAttr ? '' : overlayAttr}></div>
+      <div class="hero-banner-content container">${renderHeroContent(section, portfolio, social, light || usePhoto)}</div>
     </section>`;
   }
 
   if (layout === 'slideshow') {
     const imgs = bannerImgs.length ? bannerImgs : (avatar ? [avatar] : []);
+    if (!imgs.length) {
+      return `<section id="${id}" ${heroSectionAttrs(section, portfolio).replace('class="', 'class="hero-section hero-slideshow-fallback ')}${bgAttr}>
+        <div class="hero-banner-overlay"${overlayAttr}></div>
+        <div class="container" style="position:relative;z-index:2;min-height:360px;display:flex;align-items:center">${renderHeroContent(section, portfolio, social, light)}</div>
+      </section>`;
+    }
     const slides = imgs.map((src, i) =>
       `<div class="slide${i === 0 ? ' active' : ''}" data-slide="${i}"><img src="${escapeHtml(src)}" alt=""></div>`
     ).join('');
@@ -195,7 +223,7 @@ function renderHero(section: PortfolioSection, portfolio: Portfolio, social: Soc
     ).join('');
     return `<section id="${id}" ${heroSectionAttrs(section, portfolio)} style="position:relative">
       <div class="slideshow" data-slideshow>
-        ${slides}<div class="slide-overlay"></div>
+        ${slides}<div class="slide-overlay"${overlayAttr}></div>
         ${imgs.length > 1 ? `<button class="slide-nav slide-prev" data-slide-prev aria-label="Previous">‹</button><button class="slide-nav slide-next" data-slide-next aria-label="Next">›</button><div class="slide-dots">${dots}</div>` : ''}
         <div class="slide-content"><div class="container">${renderHeroContent(section, portfolio, social, true)}</div></div>
       </div>
@@ -204,14 +232,16 @@ function renderHero(section: PortfolioSection, portfolio: Portfolio, social: Soc
 
   if (layout === 'split') {
     return `<section id="${id}" ${heroSectionAttrs(section, portfolio).replace('class="', 'class="hero-split ')}>
-      <div class="hero-split-text">${textBlock}</div>
+      <div class="hero-split-text"${bgAttr}>${overlayAttr ? `<div class="hero-bg-overlay"${overlayAttr}></div>` : ''}<div style="position:relative;z-index:2">${textBlock}</div></div>
       <div class="hero-split-img">${avatar ? `<img src="${escapeHtml(avatar)}" alt="">` : `<div style="width:100%;height:100%;min-height:260px;background:color-mix(in srgb,var(--primary) 13%,transparent)"></div>`}</div>
     </section>`;
   }
 
   const imgBlock = avatar ? `<div class="hero-img-wrap"><img class="hero-img" src="${escapeHtml(avatar)}" alt="hero"></div>` : '';
   const flexClass = layout === 'image-left' ? 'reverse' : '';
-  return `<section id="${id}" ${heroSectionAttrs(section, portfolio).replace('class="', 'class="hero-section ')}><div class="container hero-inner ${flexClass}${layout === 'text-only' ? ' col' : ''}">
+  return `<section id="${id}" ${heroSectionAttrs(section, portfolio).replace('class="', 'class="hero-section ')}${bgAttr}>
+    ${overlayAttr ? `<div class="hero-bg-overlay"${overlayAttr}></div>` : ''}
+    <div class="container hero-inner ${flexClass}${layout === 'text-only' ? ' col' : ''}" style="position:relative;z-index:2">
     ${textBlock}${layout !== 'text-only' ? imgBlock : ''}
   </div></section>`;
 }

@@ -160,7 +160,10 @@ section[id] { scroll-margin-top: var(--nav-offset); }
 .grid-projects { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
 
 /* Hero */
-.hero-section { padding: var(--pad) clamp(0.85rem, 4vw, 1.5rem); min-height: 62vh; display: flex; align-items: center; }
+.hero-section { padding: var(--pad) clamp(0.85rem, 4vw, 1.5rem); min-height: 62vh; display: flex; align-items: center; position: relative; }
+.hero-bg-overlay { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.hero-split-text { position: relative; overflow: hidden; }
+.hero-slideshow-fallback { position: relative; min-height: 360px; display: flex; align-items: center; }
 .hero-inner { display: flex; align-items: center; gap: 3rem; flex-wrap: wrap; }
 .hero-inner.reverse { flex-direction: row-reverse; }
 .hero-inner.col { flex-direction: column; }

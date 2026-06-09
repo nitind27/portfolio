@@ -13,6 +13,8 @@ import {
 } from '@/lib/hero-content';
 import { getElementMotionVariants, getMotionVariants, getSectionHoverProps } from '@/lib/section-animation';
 import { useSectionViewport } from './preview-motion';
+import { getHeroBackground, resolveHeroBackground } from '@/lib/hero-background';
+import type { HeroLayoutId } from '@/lib/types';
 
 const SOCIAL_LABELS: Record<string, string> = {
   github: 'GH', linkedin: 'in', twitter: 'X', instagram: 'IG',
@@ -125,7 +127,13 @@ export function HeroSection({
 }: HeroSectionProps) {
   const sectionViewport = useSectionViewport(section, theme);
   const hero = getHeroContent(section);
-  const layout = fv('heroLayout') || 'image-right';
+  const layout = (fv('heroLayout') || 'image-right') as HeroLayoutId;
+  const bannerImgs = fa('bannerImages');
+  const bgResolved = resolveHeroBackground(section, theme, {
+    layout,
+    bannerImage: bannerImgs[0],
+    avatar: fv('avatar') || undefined,
+  });
   const headline = fv('headline') || 'Hello World';
   const sub = fv('subheadline') || '';
   const desc = fv('description') || '';
@@ -134,7 +142,6 @@ export function HeroSection({
   const ctaSecText = fv('ctaSecondaryText') || '';
   const ctaSecLink = fv('ctaSecondaryLink') || '#';
   const avatar = fv('avatar') || '';
-  const bannerImgs = fa('bannerImages');
   const alignH = hero.alignH || 'left';
   const btnJustify = alignH === 'center' ? 'center' : alignH === 'right' ? 'flex-end' : 'flex-start';
   const contentStyle = getHeroAlignStyles(hero, isMobile);
@@ -145,7 +152,7 @@ export function HeroSection({
     let blockIndex = 0;
     const blocks: Record<HeroBlockId, React.ReactNode | null> = {
       badge: (
-        <p style={{ color: theme.primaryColor, fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.8rem', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+        <p style={{ color: lightText ? 'rgba(255,255,255,0.85)' : theme.primaryColor, fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.8rem', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
           {hero.badgeText || 'Welcome'}
         </p>
       ),
@@ -208,29 +215,53 @@ export function HeroSection({
     </div>
   ) : null;
 
+  const BgOverlay = bgResolved.overlayStyle ? (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none', ...bgResolved.overlayStyle }} />
+  ) : null;
+  const lightText = bgResolved.lightText;
+  const customBgType = getHeroBackground(section).type;
+
   if (layout === 'banner') {
     const bgImg = bannerImgs[0] || avatar;
+    const usePhoto = Boolean(bgImg) && customBgType !== 'solid' && customBgType !== 'gradient';
+    const bannerLight = lightText || usePhoto;
     return (
       <motion.section id={section.id} initial="hidden" animate={triggerLoad ? 'visible' : undefined} whileInView={triggerLoad ? undefined : 'visible'} viewport={sectionViewport} variants={sectionVariants} whileHover={sectionHover}
-        style={{ position: 'relative', minHeight: isMobile ? '58vh' : '72vh', display: 'flex', overflow: 'hidden', transformOrigin: 'center center', ...outerStyle }}>
-        {bgImg && (
+        style={{ position: 'relative', minHeight: isMobile ? '58vh' : '72vh', display: 'flex', overflow: 'hidden', transformOrigin: 'center center', ...(usePhoto ? {} : bgResolved.sectionStyle), ...outerStyle }}>
+        {usePhoto && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={bgImg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img src={bgImg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
         )}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.28) 100%)' }} />
-        <div style={{ position: 'relative', zIndex: 1, padding: `${pad} ${isMobile ? '1rem' : '1.5rem'}`, maxWidth: 1200, margin: '0 auto', width: '100%', color: '#fff', flex: 1, ...outerStyle }}>
-          {renderContent(true)}
+        {BgOverlay || (usePhoto ? (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 1, background: 'linear-gradient(135deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.28) 100%)' }} />
+        ) : null)}
+        <div style={{ position: 'relative', zIndex: 2, padding: `${pad} ${isMobile ? '1rem' : '1.5rem'}`, maxWidth: 1200, margin: '0 auto', width: '100%', color: bannerLight ? '#fff' : undefined, flex: 1, ...outerStyle }}>
+          {renderContent(bannerLight)}
         </div>
       </motion.section>
     );
   }
 
   if (layout === 'slideshow') {
+    const slideImages = bannerImgs.length ? bannerImgs : (avatar ? [avatar] : []);
+    const hasSlides = slideImages.length > 0;
+    if (!hasSlides) {
+      return (
+        <motion.section id={section.id} initial="hidden" animate={triggerLoad ? 'visible' : undefined} whileInView={triggerLoad ? undefined : 'visible'} viewport={sectionViewport} variants={sectionVariants} whileHover={sectionHover}
+          style={{ position: 'relative', minHeight: isMobile ? 360 : 520, display: 'flex', transformOrigin: 'center center', ...bgResolved.sectionStyle, ...outerStyle }}>
+          {BgOverlay}
+          <div style={{ position: 'relative', zIndex: 2, padding: isMobile ? '0 1rem' : '0 1.5rem', maxWidth: 1200, margin: '0 auto', width: '100%', color: lightText ? '#fff' : undefined, alignSelf: 'center' }}>
+            {renderContent(lightText)}
+          </div>
+        </motion.section>
+      );
+    }
     return (
       <motion.section id={section.id} initial="hidden" animate={triggerLoad ? 'visible' : undefined} whileInView={triggerLoad ? undefined : 'visible'} viewport={sectionViewport} variants={sectionVariants} whileHover={sectionHover} style={{ position: 'relative', transformOrigin: 'center center' }}>
-        <Slideshow images={bannerImgs.length ? bannerImgs : (avatar ? [avatar] : [])} height={isMobile ? 360 : 520} theme={theme} />
+        <Slideshow images={slideImages} height={isMobile ? 360 : 520} theme={theme} />
+        {BgOverlay}
         <div style={{ position: 'absolute', inset: 0, display: 'flex', zIndex: 3, padding: isMobile ? '0 1rem' : '0 1.5rem', pointerEvents: 'none', ...outerStyle }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%', pointerEvents: 'auto' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', width: '100%', pointerEvents: 'auto', color: '#fff' }}>
             {renderContent(true)}
           </div>
         </div>
@@ -242,8 +273,11 @@ export function HeroSection({
     return (
       <motion.section id={section.id} initial="hidden" animate={triggerLoad ? 'visible' : undefined} whileInView={triggerLoad ? undefined : 'visible'} viewport={sectionViewport} variants={sectionVariants} whileHover={sectionHover}
         style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', minHeight: isMobile ? 'auto' : '72vh', transformOrigin: 'center center' }}>
-        <div style={{ padding: isMobile ? `${pad} 1.25rem` : `${pad} 3rem`, display: 'flex', background: theme.backgroundColor, ...outerStyle }}>
-          {renderContent()}
+        <div style={{ padding: isMobile ? `${pad} 1.25rem` : `${pad} 3rem`, display: 'flex', position: 'relative', overflow: 'hidden', ...bgResolved.sectionStyle, ...outerStyle }}>
+          {BgOverlay}
+          <div style={{ position: 'relative', zIndex: 2, color: lightText ? '#fff' : undefined, width: '100%' }}>
+            {renderContent(lightText)}
+          </div>
         </div>
         <div style={{ overflow: 'hidden', minHeight: isMobile ? 260 : undefined }}>
           {avatar ? (
@@ -259,16 +293,19 @@ export function HeroSection({
 
   return (
     <motion.section id={section.id} initial="hidden" animate={triggerLoad ? 'visible' : undefined} whileInView={triggerLoad ? undefined : 'visible'} viewport={sectionViewport} variants={sectionVariants} whileHover={sectionHover}
-      style={{ padding: `${pad} ${isMobile ? '1rem' : '1.5rem'}`, minHeight: isMobile ? 'auto' : '62vh', display: 'flex', transformOrigin: 'center center', ...outerStyle }}>
+      style={{ position: 'relative', padding: `${pad} ${isMobile ? '1rem' : '1.5rem'}`, minHeight: isMobile ? 'auto' : '62vh', display: 'flex', transformOrigin: 'center center', ...bgResolved.sectionStyle, ...outerStyle }}>
+      {BgOverlay}
       <div style={{
+        position: 'relative', zIndex: 2,
         maxWidth: 1200, margin: '0 auto', width: '100%', display: 'flex',
         gap: isMobile ? '2rem' : '3rem',
         flexDirection: isMobile ? 'column' : (layout === 'image-left' ? 'row-reverse' : 'row'),
         flexWrap: 'wrap',
         alignItems: 'center',
+        color: lightText ? '#fff' : undefined,
       }}>
         <div style={{ flex: 1, minWidth: 0, ...outerStyle }}>
-          {renderContent()}
+          {renderContent(lightText)}
         </div>
         {layout !== 'text-only' && imageBlock}
       </div>

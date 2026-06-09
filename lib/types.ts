@@ -107,6 +107,26 @@ export interface HeroBlockSettings {
   duration?: number;
 }
 
+export type HeroBgType = 'theme' | 'solid' | 'gradient' | 'image';
+export type HeroTextMode = 'auto' | 'light' | 'dark';
+
+export interface HeroBackgroundSettings {
+  type?: HeroBgType;
+  solidColor?: string;
+  gradientFrom?: string;
+  gradientTo?: string;
+  gradientVia?: string;
+  gradientAngle?: number;
+  useThreeColor?: boolean;
+  imageUrl?: string;
+  useBannerImage?: boolean;
+  overlayOpacity?: number;
+  overlayColor?: string;
+  textMode?: HeroTextMode;
+}
+
+export type HeroLayoutId = 'text-only' | 'image-right' | 'image-left' | 'banner' | 'slideshow' | 'split';
+
 export interface HeroContentSettings {
   alignH?: HeroAlignH;
   alignV?: HeroAlignV;
@@ -116,6 +136,7 @@ export interface HeroContentSettings {
   staggerBlocks?: boolean;
   blockOrder?: HeroBlockId[];
   blocks?: Partial<Record<HeroBlockId, HeroBlockSettings>>;
+  background?: HeroBackgroundSettings;
 }
 
 export type CustomLayoutId =
