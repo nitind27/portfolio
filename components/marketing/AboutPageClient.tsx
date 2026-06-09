@@ -56,6 +56,8 @@ export default function AboutPageClient() {
           <p className="text-sm text-gray-400 leading-relaxed">
             Need help? Use our <Link href="/ask" className="text-orange-400 hover:underline">Ask AI</Link> assistant
             or read the full <Link href="/docs" className="text-orange-400 hover:underline">documentation</Link>.
+            To raise a complaint or share feedback, visit{' '}
+            <Link href="/support" className="text-orange-400 hover:underline">Support</Link>.
             For billing questions see your <Link href="/billing" className="text-orange-400 hover:underline">Billing</Link> page.
           </p>
         </section>

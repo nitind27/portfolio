@@ -9,7 +9,7 @@
 import nodemailer from 'nodemailer';
 import type { RowDataPacket } from 'mysql2';
 import { getPool } from './db';
-import { APP_NAME } from './brand';
+import { APP_NAME, SUPPORT_EMAIL, brand } from './brand';
 import {
   welcomeEmailHtml, welcomeEmailText,
   paymentSuccessEmailHtml, paymentSuccessEmailText,
@@ -122,6 +122,7 @@ async function sendEmail(opts: {
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
     const cfg = await getSystemSmtp();
@@ -132,6 +133,7 @@ async function sendEmail(opts: {
     await transporter.sendMail({
       from: `"${cfg.fromName || APP_NAME}" <${cfg.fromEmail || cfg.user}>`,
       to: opts.to,
+      replyTo: opts.replyTo,
       subject: opts.subject,
       html: opts.html,
       text: opts.text,
@@ -306,5 +308,97 @@ export async function sendPaymentConfirmationIfNeeded(orderId: string): Promise<
   } else {
     console.error('[SystemEmail] payment confirmation failed for', orderId, result.error);
   }
+  return result;
+}
+
+export type SupportTicketType = 'complaint' | 'feedback' | 'bug' | 'billing' | 'other';
+
+const TICKET_LABELS: Record<SupportTicketType, string> = {
+  complaint: 'Complaint',
+  feedback: 'Feedback',
+  bug: 'Bug Report',
+  billing: 'Billing Issue',
+  other: 'Other',
+};
+
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** User complaint / feedback → support inbox */
+export async function sendSupportTicket(opts: {
+  type: SupportTicketType;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  orderId?: string;
+  userId?: number;
+}): Promise<{ ok: boolean; error?: string }> {
+  const typeLabel = TICKET_LABELS[opts.type] || 'Support';
+  const subjectLine = `[${APP_NAME} ${typeLabel}] ${opts.subject}`.slice(0, 180);
+  const appUrl = getAppUrl();
+
+  const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:640px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px;">
+      <div style="background:linear-gradient(135deg,${brand.navy},${brand.steel});color:#fff;padding:20px 24px;border-radius:10px;margin-bottom:20px;">
+        <p style="margin:0;font-size:12px;opacity:0.85;text-transform:uppercase;letter-spacing:0.08em;">${escapeHtml(APP_NAME)} Support</p>
+        <h1 style="margin:8px 0 0;font-size:20px;">${escapeHtml(typeLabel)}</h1>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;color:#334155;">
+        <tr><td style="padding:8px 0;font-weight:600;width:120px;vertical-align:top;">From</td><td style="padding:8px 0;">${escapeHtml(opts.name)}</td></tr>
+        <tr><td style="padding:8px 0;font-weight:600;">Email</td><td style="padding:8px 0;"><a href="mailto:${escapeHtml(opts.email)}">${escapeHtml(opts.email)}</a></td></tr>
+        <tr><td style="padding:8px 0;font-weight:600;">Type</td><td style="padding:8px 0;">${escapeHtml(typeLabel)}</td></tr>
+        ${opts.orderId ? `<tr><td style="padding:8px 0;font-weight:600;">Order ID</td><td style="padding:8px 0;font-family:monospace;">${escapeHtml(opts.orderId)}</td></tr>` : ''}
+        ${opts.userId ? `<tr><td style="padding:8px 0;font-weight:600;">User ID</td><td style="padding:8px 0;">#${opts.userId}</td></tr>` : ''}
+        <tr><td style="padding:8px 0;font-weight:600;">Subject</td><td style="padding:8px 0;">${escapeHtml(opts.subject)}</td></tr>
+      </table>
+      <div style="margin-top:20px;padding:16px 18px;background:#fff;border-radius:8px;border-left:4px solid ${brand.accent};">
+        <p style="margin:0 0 8px;font-weight:600;color:#475569;font-size:13px;">Message</p>
+        <p style="margin:0;line-height:1.7;color:#1e293b;white-space:pre-wrap;">${escapeHtml(opts.message)}</p>
+      </div>
+      <p style="margin-top:20px;font-size:12px;color:#94a3b8;">Submitted via <a href="${appUrl}/support">${appUrl}/support</a></p>
+    </div>
+  `;
+
+  const text = [
+    `${APP_NAME} ${typeLabel}`,
+    `From: ${opts.name} <${opts.email}>`,
+    opts.orderId ? `Order: ${opts.orderId}` : '',
+    opts.userId ? `User ID: ${opts.userId}` : '',
+    `Subject: ${opts.subject}`,
+    '',
+    opts.message,
+  ].filter(Boolean).join('\n');
+
+  const result = await sendEmail({
+    to: SUPPORT_EMAIL,
+    replyTo: opts.email,
+    subject: subjectLine,
+    html,
+    text,
+  });
+
+  if (result.ok) {
+    await sendEmail({
+      to: opts.email,
+      subject: `We received your ${typeLabel.toLowerCase()} — ${APP_NAME}`,
+      html: `
+        <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
+          <h2 style="color:${brand.navy};">Thank you, ${escapeHtml(opts.name)}</h2>
+          <p style="color:#475569;line-height:1.7;">We received your <strong>${escapeHtml(typeLabel.toLowerCase())}</strong> and our team will review it shortly.</p>
+          <p style="color:#475569;line-height:1.7;">Typical response time: <strong>24–48 hours</strong> on business days.</p>
+          <p style="color:#94a3b8;font-size:13px;margin-top:24px;">Reference: ${escapeHtml(opts.subject)}</p>
+          <p style="color:#94a3b8;font-size:13px;">— ${escapeHtml(APP_NAME)} Support</p>
+        </div>
+      `,
+      text: `Thank you ${opts.name}. We received your ${typeLabel.toLowerCase()} and will respond within 24-48 hours.\n\nReference: ${opts.subject}\n— ${APP_NAME} Support`,
+    }).catch(() => {});
+  }
+
   return result;
 }

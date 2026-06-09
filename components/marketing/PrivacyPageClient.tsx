@@ -31,7 +31,7 @@ const SECTIONS = [
   },
   {
     title: '7. Your rights',
-    body: `You may request access to or deletion of your account data by contacting support. Deleting your account removes projects and personal data subject to legal retention requirements for payment records.`,
+    body: `You may request access to or deletion of your account data via our Support page or by emailing support.site99@gmail.com. Deleting your account removes projects and personal data subject to legal retention requirements for payment records.`,
   },
   {
     title: '8. Payment & refund policy',

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Bot, Receipt, ChevronDown, HelpCircle, UserCircle } from 'lucide-react';
+import { BookOpen, Bot, Receipt, ChevronDown, HelpCircle, UserCircle, MessageSquare } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { brand } from '@/lib/brand';
 
@@ -35,6 +35,13 @@ const LINKS = [
     short: 'Billing',
     icon: Receipt,
     hint: 'Plans & payment history',
+  },
+  {
+    href: '/support',
+    label: 'Support',
+    short: 'Support',
+    icon: MessageSquare,
+    hint: 'Complaints & feedback',
   },
 ] as const;
 

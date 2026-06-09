@@ -11,6 +11,7 @@ const MAIN_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/docs', label: 'Documentation' },
   { href: '/ask', label: 'Ask AI' },
+  { href: '/support', label: 'Support' },
   { href: '/about', label: 'About' },
 ];
 

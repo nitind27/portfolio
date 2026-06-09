@@ -7,6 +7,7 @@ export const APP_SLUG = 'site99';
 export const APP_DOMAIN = 'site99.com';
 export const LOGO_SRC = `/logo/logo.png?v=${LOGO_VERSION}`;
 export const APP_TAGLINE = 'Building the future online.';
+export const SUPPORT_EMAIL = 'support.site99@gmail.com';
 export const APP_DESCRIPTION = 'Create professional websites, portfolios, and online stores — no code required.';
 export const STORAGE_POLICY_DAYS = 7;
 export const STORAGE_POLICY_TEXT = `Projects stay in your account for ${STORAGE_POLICY_DAYS} days on the free plan. You can publish and share a live link during that time — anyone with the link can view it. Upgrade to export, deploy, and keep projects longer.`;
