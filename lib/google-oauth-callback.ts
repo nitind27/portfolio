@@ -144,7 +144,9 @@ export async function handleGoogleOAuthCallback(req: NextRequest) {
     const token = await createToken(user, TOKEN_TTL_REGISTER);
     await setAuthCookie(token, COOKIE_MAX_AGE_REGISTER);
 
-    return NextResponse.redirect(resolveRequestOrigin(req));
+    const origin = resolveRequestOrigin(req);
+    const dest = user.role === 'admin' ? `${origin}/admin` : origin;
+    return NextResponse.redirect(dest);
   } catch (err) {
     console.error('Google callback error:', err);
     return redirectWithError(req, 'Google sign-in failed. Please try again.');

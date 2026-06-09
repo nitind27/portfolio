@@ -8,9 +8,11 @@ import Dashboard from '@/components/Dashboard';
 import { Loader2 } from 'lucide-react';
 import { brand } from '@/lib/brand';
 import type { AuthMode } from '@/components/LoginPage';
+import { useRedirectIfAdmin } from '@/lib/use-redirect-admin';
 
 function HomeContent() {
   const { isAuthenticated, authLoading, initAuth } = useBuilderStore();
+  const redirectingAdmin = useRedirectIfAdmin();
   const searchParams = useSearchParams();
   const wantsLogin = searchParams.get('login') === '1';
   const wantsRegister = searchParams.get('register') === '1';
@@ -28,7 +30,16 @@ function HomeContent() {
     );
   }
 
-  if (isAuthenticated) return <Dashboard />;
+  if (isAuthenticated) {
+    if (redirectingAdmin) {
+      return (
+        <div className="min-h-screen flex items-center justify-center" style={{ background: brand.bg }}>
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: brand.accent }} />
+        </div>
+      );
+    }
+    return <Dashboard />;
+  }
 
   return (
     <LandingPage

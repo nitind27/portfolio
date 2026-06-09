@@ -11,6 +11,7 @@ import MarketingShell from '@/components/marketing/MarketingShell';
 import PremiumModal from '@/components/PremiumModal';
 import { useBuilderStore } from '@/lib/store';
 import { brand } from '@/lib/brand';
+import { useRedirectIfAdmin } from '@/lib/use-redirect-admin';
 import type { UserPaymentRow } from '@/lib/billing-server';
 
 interface BillingData {
@@ -44,6 +45,7 @@ function formatMoney(amount: number, currency = 'INR') {
 export default function BillingPageClient() {
   const router = useRouter();
   const { isAuthenticated, authLoading, initAuth } = useBuilderStore();
+  const redirectingAdmin = useRedirectIfAdmin();
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -67,7 +69,7 @@ export default function BillingPageClient() {
       .finally(() => setLoading(false));
   }, [isAuthenticated, authLoading, router]);
 
-  if (authLoading || (loading && isAuthenticated)) {
+  if (redirectingAdmin || authLoading || (loading && isAuthenticated)) {
     return (
       <MarketingShell>
         <div className="flex items-center justify-center py-32">

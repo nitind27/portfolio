@@ -11,6 +11,7 @@ import MarketingShell from '@/components/marketing/MarketingShell';
 import { useBuilderStore } from '@/lib/store';
 import { brand } from '@/lib/brand';
 import type { UserProfile } from '@/lib/types';
+import { useRedirectIfAdmin } from '@/lib/use-redirect-admin';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', {
@@ -32,6 +33,7 @@ const INPUT =
 export default function ProfilePageClient() {
   const router = useRouter();
   const { isAuthenticated, authLoading, initAuth, refreshSession } = useBuilderStore();
+  const redirectingAdmin = useRedirectIfAdmin();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -120,7 +122,7 @@ export default function ProfilePageClient() {
     }
   };
 
-  if (authLoading || (loading && isAuthenticated)) {
+  if (redirectingAdmin || authLoading || (loading && isAuthenticated)) {
     return (
       <MarketingShell>
         <div className="flex items-center justify-center py-32">

@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
-  LayoutDashboard, CreditCard, LayoutTemplate, Users, ArrowLeft,
-  Loader2, Shield, RefreshCw, Grid3x3, Receipt, Bell, ExternalLink, LogOut, Mail,
+  LayoutDashboard, CreditCard, LayoutTemplate, Users,
+  Loader2, Shield, RefreshCw, Grid3x3, Receipt, Bell, ExternalLink, LogOut, Mail, Settings,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import BrandLogo from '../BrandLogo';
@@ -18,8 +18,9 @@ import TemplatesTab from './tabs/TemplatesTab';
 import UsersTab from './tabs/UsersTab';
 import PaymentsTab from './tabs/PaymentsTab';
 import EmailTab from './tabs/EmailTab';
+import SettingsTab from './tabs/SettingsTab';
 
-type Tab = 'overview' | 'plans' | 'features' | 'templates' | 'users' | 'payments' | 'email';
+type Tab = 'overview' | 'plans' | 'features' | 'templates' | 'users' | 'payments' | 'email' | 'settings';
 
 const NAV: { id: Tab; label: string; desc: string; icon: typeof LayoutDashboard; group: string }[] = [
   { id: 'overview', label: 'Dashboard', desc: 'Analytics & activity', icon: LayoutDashboard, group: 'Main' },
@@ -29,6 +30,7 @@ const NAV: { id: Tab; label: string; desc: string; icon: typeof LayoutDashboard;
   { id: 'templates', label: 'Templates', desc: 'Access control', icon: LayoutTemplate, group: 'Content' },
   { id: 'users', label: 'Users', desc: 'Accounts & roles', icon: Users, group: 'Content' },
   { id: 'email', label: 'Email & SMTP', desc: 'Transactional emails', icon: Mail, group: 'Settings' },
+  { id: 'settings', label: 'Account', desc: 'Password & profile', icon: Settings, group: 'Settings' },
 ];
 
 interface AdminTemplate {
@@ -175,13 +177,6 @@ export default function AdminPanel() {
           )}
           <button
             type="button"
-            onClick={() => router.push('/')}
-            className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-gray-400 hover:text-white rounded-xl hover:bg-white/5 transition"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 shrink-0" /> Back to builder
-          </button>
-          <button
-            type="button"
             onClick={() => { logout(); router.push('/'); }}
             className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-medium text-red-400/90 hover:text-red-300 rounded-xl border border-red-500/20 bg-red-500/[0.06] hover:bg-red-500/10 transition"
           >
@@ -264,6 +259,7 @@ export default function AdminPanel() {
               {tab === 'users' && <UsersTab users={users} plans={plans} onRefresh={loadAll} />}
               {tab === 'payments' && <PaymentsTab payments={payments} />}
               {tab === 'email' && <EmailTab />}
+              {tab === 'settings' && <SettingsTab />}
             </>
           )}
         </div>

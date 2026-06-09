@@ -10,7 +10,7 @@ import OnboardingTour from './builder/OnboardingTour';
 import { DASHBOARD_TOUR_STEPS } from '@/lib/tour-steps';
 import {
   Plus, Trash2, Copy, Edit3, LogOut, Layers, CheckCircle2,
-  Circle, Search, Grid3x3, List, Clock, Globe, Crown, Shield,
+  Circle, Search, Grid3x3, List, Clock, Globe, Crown, Loader2,
 } from 'lucide-react';
 import DashboardHelpNav from './DashboardHelpNav';
 import PremiumModal from './PremiumModal';
@@ -18,8 +18,10 @@ import ProjectExpiryBadge from './ProjectExpiryBadge';
 import BrandLogo from './BrandLogo';
 import { brand, STORAGE_POLICY_DAYS } from '@/lib/brand';
 import { getDaysRemaining } from '@/lib/project-expiry';
+import { useRedirectIfAdmin } from '@/lib/use-redirect-admin';
 
 export default function Dashboard() {
+  const redirectingAdmin = useRedirectIfAdmin();
   const {
     portfolios, deletePortfolio, duplicatePortfolio,
     setActivePortfolio, activePortfolioId, logout, togglePublished,
@@ -45,6 +47,14 @@ export default function Dashboard() {
       return () => clearTimeout(t);
     }
   }, [hasSeenDashboardTour]);
+
+  if (redirectingAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: brand.bg }}>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: brand.accent }} />
+      </div>
+    );
+  }
 
   const activePortfolio = portfolios.find(p => p.id === activePortfolioId);
   if (activePortfolio) return <Builder />;
@@ -77,12 +87,6 @@ export default function Dashboard() {
 
           {user && (
             <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400 mr-2">
-              {user.role === 'admin' && (
-                <a href="/admin"
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-blue-500/30 text-blue-300 hover:bg-blue-500/10 transition text-xs font-medium">
-                  <Shield className="w-3 h-3" /> Admin
-                </a>
-              )}
               <a href="/profile" className="hover:text-white transition truncate max-w-[120px]">
                 {user.name}
               </a>

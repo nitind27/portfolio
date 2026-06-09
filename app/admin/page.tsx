@@ -9,13 +9,15 @@ import { brand } from '@/lib/brand';
 
 export default function AdminPage() {
   const router = useRouter();
-  const { isAuthenticated, authLoading, initAuth } = useBuilderStore();
+  const { isAuthenticated, authLoading, initAuth, user } = useBuilderStore();
 
   useEffect(() => { initAuth(); }, [initAuth]);
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) router.replace('/');
-  }, [authLoading, isAuthenticated, router]);
+    if (authLoading) return;
+    if (!isAuthenticated) router.replace('/?login=1');
+    else if (user?.role !== 'admin') router.replace('/');
+  }, [authLoading, isAuthenticated, user?.role, router]);
 
   if (authLoading) {
     return (
@@ -25,7 +27,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated || user?.role !== 'admin') return null;
 
   return <AdminPanel />;
 }
