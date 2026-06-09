@@ -102,7 +102,7 @@ export default function WebsiteSettingsTab() {
               </div>
               <p className="text-sm text-gray-500 mt-1 leading-relaxed">
                 {settings.maintenanceMode
-                  ? 'Public visitors see the maintenance page. You may still see the live site if logged in as admin with preview enabled — use incognito to test.'
+                  ? 'Public visitors only see the maintenance page. Staff sign in at /admin — no admin links are shown to users.'
                   : 'Website is publicly accessible. Turn on during updates or deployments.'}
               </p>
             </div>
@@ -159,20 +159,6 @@ export default function WebsiteSettingsTab() {
           />
         </div>
 
-        <label className="flex items-center justify-between cursor-pointer p-3 rounded-xl bg-white/[0.03] border border-white/10 gap-3">
-          <div>
-            <p className="text-xs text-gray-300">Allow admin preview</p>
-            <p className="text-[10px] text-gray-600 mt-0.5">When ON, logged-in admins see the live site (with a banner). Turn OFF to see maintenance page yourself too.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setDraft(d => d ? { ...d, allowAdminBypass: !d.allowAdminBypass } : d)}
-            className={`w-10 h-5 rounded-full transition relative shrink-0 ${draft.allowAdminBypass ? 'bg-blue-600' : 'bg-white/10'}`}
-          >
-            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${draft.allowAdminBypass ? 'left-5' : 'left-0.5'}`} />
-          </button>
-        </label>
-
         <div className="flex flex-wrap items-center gap-3 pt-2">
           <button
             type="button"
@@ -181,7 +167,6 @@ export default function WebsiteSettingsTab() {
               maintenanceTitle: draft.maintenanceTitle,
               maintenanceMessage: draft.maintenanceMessage,
               maintenanceEta: draft.maintenanceEta,
-              allowAdminBypass: draft.allowAdminBypass,
             })}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
             style={{ background: brand.accent }}

@@ -1,9 +1,8 @@
 import { headers } from 'next/headers';
 import { getPublicSiteStatus } from '@/lib/site-settings';
-import { getCurrentUser } from '@/lib/auth-server';
 import MaintenancePage from './MaintenancePage';
-import AdminMaintenanceBanner from './AdminMaintenanceBanner';
 
+/** Only staff login + APIs + support — no public site during maintenance */
 const BYPASS_PREFIXES = ['/admin', '/api', '/maintenance', '/support'];
 
 function shouldBypassPath(pathname: string) {
@@ -29,18 +28,6 @@ export default async function MaintenanceGate({ children }: { children: React.Re
   const status = await getPublicSiteStatus();
   if (!status.maintenanceMode) {
     return <>{children}</>;
-  }
-
-  if (status.allowAdminBypass) {
-    const user = await getCurrentUser();
-    if (user?.role === 'admin') {
-      return (
-        <>
-          <AdminMaintenanceBanner />
-          {children}
-        </>
-      );
-    }
   }
 
   return <MaintenancePage />;

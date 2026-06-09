@@ -52,14 +52,8 @@ export default function MaintenancePage() {
         style={{ background: brand.accent }}
       />
 
-      <header className="relative z-10 px-6 py-6 flex items-center justify-between max-w-4xl mx-auto w-full">
+      <header className="relative z-10 px-6 py-6 flex items-center justify-center max-w-4xl mx-auto w-full">
         <BrandLogo size="sm" />
-        <Link
-          href="/admin"
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20"
-        >
-          <Shield className="w-3.5 h-3.5" /> Admin
-        </Link>
       </header>
 
       <main className="relative z-10 flex-1 flex items-center justify-center px-6 py-12">
