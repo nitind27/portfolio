@@ -1,20 +1,38 @@
 /**
- * India tax on digital/SaaS services (OIDAR): 18% GST.
- * Plan prices are exclusive of tax; GST is added at checkout (B2C default).
- * Rate configurable via GST_RATE env (default 18).
+ * India tax on digital/SaaS services.
+ * GST is only charged when the business is GST-registered (CHARGE_GST=true or GSTIN set).
+ * Unregistered businesses: all-inclusive pricing, no GST line at checkout.
  */
 
 export const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
 const GSTIN_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
+/** Whether to add GST at checkout (requires GST registration). */
+export function isGstCharged(): boolean {
+  const flag = process.env.CHARGE_GST?.trim().toLowerCase();
+  if (flag === 'false' || flag === '0' || flag === 'no') return false;
+  if (flag === 'true' || flag === '1' || flag === 'yes') return true;
+  const gstin = (process.env.NEXT_PUBLIC_COMPANY_GSTIN || process.env.COMPANY_GSTIN || '').trim();
+  return gstin.length > 0;
+}
+
 export function getGstRate(): number {
+  if (!isGstCharged()) return 0;
   const rate = Number(process.env.GST_RATE ?? 18);
   return Number.isFinite(rate) && rate >= 0 && rate <= 100 ? rate : 18;
 }
 
 export function getGstTaxLabel(rate = getGstRate()): string {
+  if (!isGstCharged() || rate <= 0) return 'All-inclusive price';
   return `GST (${rate}%)`;
+}
+
+export function formatPremiumPriceLabel(price: number, currency = 'INR'): string {
+  const symbol = currency === 'INR' ? '₹' : `${currency} `;
+  if (!isGstCharged()) return `${symbol}${price} (all-inclusive)`;
+  const { total } = calculateGst(price);
+  return `${symbol}${price} + GST = ${symbol}${total}`;
 }
 
 export interface GstBreakdown {
@@ -26,9 +44,10 @@ export interface GstBreakdown {
 
 export function calculateGst(subtotal: number, gstRate = getGstRate()): GstBreakdown {
   const base = Math.round(subtotal * 100) / 100;
-  const gstAmount = Math.round(base * gstRate) / 100;
+  const rate = isGstCharged() ? gstRate : 0;
+  const gstAmount = rate > 0 ? Math.round(base * rate) / 100 : 0;
   const total = Math.round((base + gstAmount) * 100) / 100;
-  return { subtotal: base, gstRate, gstAmount, total };
+  return { subtotal: base, gstRate: rate, gstAmount, total };
 }
 
 export function normalizeGstin(value: string): string {

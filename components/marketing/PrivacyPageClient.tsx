@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import MarketingShell from './MarketingShell';
 import { APP_NAME, APP_DOMAIN, STORAGE_POLICY_DAYS, brand } from '@/lib/brand';
+import { company } from '@/lib/company';
 
 const SECTIONS = [
   {
@@ -31,7 +32,7 @@ const SECTIONS = [
   },
   {
     title: '7. Your rights',
-    body: `You may request access to or deletion of your account data via our Support page or by emailing support.site99@gmail.com. Deleting your account removes projects and personal data subject to legal retention requirements for payment records.`,
+    body: `You may request access to or deletion of your account data via our Support page or by emailing ${company.email}. Deleting your account removes projects and personal data subject to legal retention requirements for payment records.`,
   },
   {
     title: '8. Payment & refund policy',
@@ -71,6 +72,11 @@ export default function PrivacyPageClient() {
             </section>
           ))}
         </div>
+
+        <p className="mt-10 text-sm text-gray-500">
+          Questions? <Link href="/contact" className="text-orange-400 hover:underline">Contact us</Link> or read our{' '}
+          <Link href="/terms" className="text-orange-400 hover:underline">Terms of Service</Link>.
+        </p>
       </div>
     </MarketingShell>
   );

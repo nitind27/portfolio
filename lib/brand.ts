@@ -4,7 +4,21 @@ export const LOGO_VERSION = '2';
 /** site99 — app branding (matches public/logo/logo.png) */
 export const APP_NAME = 'site99';
 export const APP_SLUG = 'site99';
-export const APP_DOMAIN = 'site99.com';
+export const APP_DOMAIN = 'site99.online';
+
+/** Public website URL for legal/marketing pages (never localhost) */
+export const PUBLIC_SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://site99.online'
+).replace(/\/$/, '');
+
+/** Canonical public URL — ignores localhost dev APP_URL */
+export function getPublicWebsiteUrl(): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
+  if (siteUrl) return siteUrl;
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
+  if (appUrl && !/localhost|127\.0\.0\.1/i.test(appUrl)) return appUrl;
+  return PUBLIC_SITE_URL;
+}
 export const LOGO_SRC = `/logo/logo.png?v=${LOGO_VERSION}`;
 export const APP_TAGLINE = 'Building the future online.';
 export const SUPPORT_EMAIL = 'support.site99@gmail.com';

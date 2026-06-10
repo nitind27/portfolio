@@ -2,8 +2,11 @@ import { headers } from 'next/headers';
 import { getPublicSiteStatus } from '@/lib/site-settings';
 import MaintenancePage from './MaintenancePage';
 
-/** Only staff login + APIs + support — no public site during maintenance */
-const BYPASS_PREFIXES = ['/admin', '/api', '/maintenance', '/support'];
+/** Staff login, APIs, support & legal/info pages during maintenance */
+const BYPASS_PREFIXES = [
+  '/admin', '/api', '/maintenance', '/support',
+  '/about', '/contact', '/privacy', '/terms',
+];
 
 function shouldBypassPath(pathname: string) {
   if (BYPASS_PREFIXES.some(p => pathname.startsWith(p))) return true;

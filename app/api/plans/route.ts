@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAllPlans } from '@/lib/plans-server';
-import { getGstRate, getGstTaxLabel } from '@/lib/gst';
+import { getGstRate, getGstTaxLabel, isGstCharged } from '@/lib/gst';
 
 export async function GET() {
   try {
@@ -19,7 +19,7 @@ export async function GET() {
       tax: {
         rate: getGstRate(),
         label: getGstTaxLabel(),
-        enabled: true,
+        enabled: isGstCharged(),
       },
     });
   } catch (err) {

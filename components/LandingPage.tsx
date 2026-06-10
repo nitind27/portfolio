@@ -595,9 +595,11 @@ export default function LandingPage({
             ))}
             <a href="/docs" className="hover:text-white transition">Docs</a>
             <a href="/ask" className="hover:text-white transition">Ask AI</a>
-            <a href="/support" className="hover:text-white transition">Support</a>
             <a href="/about" className="hover:text-white transition">About</a>
+            <a href="/contact" className="hover:text-white transition">Contact</a>
+            <a href="/support" className="hover:text-white transition">Support</a>
             <a href="/privacy" className="hover:text-white transition">Privacy</a>
+            <a href="/terms" className="hover:text-white transition">Terms</a>
           </div>
           <p className="text-xs text-[#64748b]">
             © {new Date().getFullYear()} {APP_NAME}. {APP_TAGLINE}

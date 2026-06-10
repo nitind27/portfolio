@@ -11,12 +11,14 @@ const MAIN_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/docs', label: 'Documentation' },
   { href: '/ask', label: 'Ask AI' },
-  { href: '/support', label: 'Support' },
   { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
+  { href: '/support', label: 'Support' },
 ];
 
 const LEGAL_LINKS = [
   { href: '/privacy', label: 'Privacy Policy' },
+  { href: '/terms', label: 'Terms of Service' },
   { href: '/docs#refund-policy', label: 'Refund Policy' },
   { href: '/billing', label: 'Billing' },
 ];

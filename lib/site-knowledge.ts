@@ -1,4 +1,5 @@
 import { APP_NAME, APP_DOMAIN, STORAGE_POLICY_DAYS } from './brand';
+import { formatPremiumPriceLabel } from './gst';
 
 export interface DocSection {
   id: string;
@@ -24,7 +25,8 @@ export const DOC_CATEGORIES: DocCategory[] = [
   { id: 'legal', label: 'Legal & policies', icon: '⚖️' },
 ];
 
-const PREMIUM = process.env.NEXT_PUBLIC_PREMIUM_PRICE || '99';
+const PREMIUM = Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE || process.env.PREMIUM_PRICE || 99);
+const PREMIUM_LABEL = formatPremiumPriceLabel(PREMIUM);
 
 export const SITE_DOCS: DocSection[] = [
   {
@@ -297,7 +299,7 @@ export const SITE_DOCS: DocSection[] = [
     title: 'Premium share & export slot',
     summary: 'Pro unlocks export, long-term share, and Hostinger deploy.',
     keywords: ['premium', 'pro', 'export', 'zip', 'unlock', 'slot'],
-    body: `Pro plan (₹${PREMIUM} one-time) unlocks one portfolio slot:\n• Export HTML, React, Next.js ZIP\n• Share/publish long-term (365 days storage)\n• Hostinger deploy to your domain\n• SMTP, analytics, custom CSS, premium sections\nFirst export or deploy binds the slot to that project. Upgrade again to unlock another portfolio.`,
+    body: `Pro plan (${PREMIUM_LABEL} one-time) unlocks one portfolio slot:\n• Export HTML, React, Next.js ZIP\n• Share/publish long-term (365 days storage)\n• Hostinger deploy to your domain\n• SMTP, analytics, custom CSS, premium sections\nFirst export or deploy binds the slot to that project. Upgrade again to unlock another portfolio.`,
   },
   {
     id: 'export',
@@ -321,7 +323,7 @@ export const SITE_DOCS: DocSection[] = [
     title: 'Plans overview',
     summary: 'Free and Premium plan comparison.',
     keywords: ['plans', 'pricing', 'free', 'premium', 'pro', 'subscription'],
-    body: `**Free** — Build, preview, ${STORAGE_POLICY_DAYS}-day share link, basic sections\n**Premium (₹${PREMIUM})** — Export, deploy, 1 portfolio slot, premium sections, SMTP, analytics, custom CSS\nView current plan on **Billing** page.`,
+    body: `**Free** — Build, preview, ${STORAGE_POLICY_DAYS}-day share link, basic sections\n**Premium (${PREMIUM_LABEL})** — Export, deploy, 1 portfolio slot, premium sections, SMTP, analytics, custom CSS\nView current plan on **Billing** page.`,
   },
   {
     id: 'payment-flow',
@@ -329,7 +331,7 @@ export const SITE_DOCS: DocSection[] = [
     title: 'How payment works',
     summary: 'Cashfree checkout, order verification, instant unlock.',
     keywords: ['payment', 'cashfree', 'checkout', 'pay', 'order', 'upi', 'card'],
-    body: `1. Click Upgrade → Premium (₹${PREMIUM} + GST)\n2. Pay via Cashfree (UPI, card, netbanking)\n3. Redirect to callback page — payment verified automatically\n4. Plan activates instantly on your account\n5. Receipt appears in **Billing** history\nPayments processed securely by Cashfree — ${APP_NAME} does not store card numbers.`,
+    body: `1. Click Upgrade → Premium (${PREMIUM_LABEL})\n2. Pay via Cashfree (UPI, card, netbanking)\n3. Redirect to callback page — payment verified automatically\n4. Plan activates instantly on your account\n5. Receipt appears in **Billing** history\nPayments processed securely by Cashfree — ${APP_NAME} does not store card numbers.`,
   },
   {
     id: 'refund-policy',

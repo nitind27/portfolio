@@ -58,8 +58,9 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
   const [plansError, setPlansError] = useState('');
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
-  const [taxRate, setTaxRate] = useState(18);
-  const [taxLabel, setTaxLabel] = useState('GST (18%)');
+  const [taxRate, setTaxRate] = useState(0);
+  const [taxLabel, setTaxLabel] = useState('All-inclusive price');
+  const [taxEnabled, setTaxEnabled] = useState(false);
 
   const isRepurchase = reason === 'unlock_another' || Boolean(user?.isPremium);
 
@@ -80,6 +81,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
         else setPlansError('No paid plans configured. Contact support.');
         if (d.tax?.rate != null) setTaxRate(Number(d.tax.rate));
         if (d.tax?.label) setTaxLabel(String(d.tax.label));
+        setTaxEnabled(Boolean(d.tax?.enabled));
       })
       .catch((err: unknown) => {
         setPlans([]);
@@ -180,7 +182,9 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
                     </div>
                     <p className="text-lg font-bold text-white">
                       {formatGstMoney(calculateGst(selectedPlan.price, taxRate).total)}
-                      <span className="text-[10px] font-normal text-gray-500 block">incl. {taxLabel}</span>
+                      <span className="text-[10px] font-normal text-gray-500 block">
+                        {taxEnabled ? `incl. ${taxLabel}` : taxLabel}
+                      </span>
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-2">
@@ -215,21 +219,35 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
                   <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
                     <Receipt className="w-3.5 h-3.5" /> Price breakdown
                   </div>
-                  <div className="flex justify-between text-sm text-gray-300">
-                    <span>Plan amount</span>
-                    <span>{formatGstMoney(pricing.subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-300">
-                    <span>{taxLabel}</span>
-                    <span>{formatGstMoney(pricing.gstAmount)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm font-bold text-white pt-2 border-t border-white/10">
-                    <span>Total payable</span>
-                    <span>{formatGstMoney(pricing.total)}</span>
-                  </div>
-                  <p className="text-[10px] text-gray-500 pt-1">
-                    {getGstTaxLabel(pricing.gstRate)} applied as per India digital services tax rules. All prices are exclusive of tax.
-                  </p>
+                  {taxEnabled && pricing.gstAmount > 0 ? (
+                    <>
+                      <div className="flex justify-between text-sm text-gray-300">
+                        <span>Plan amount</span>
+                        <span>{formatGstMoney(pricing.subtotal)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-gray-300">
+                        <span>{taxLabel}</span>
+                        <span>{formatGstMoney(pricing.gstAmount)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-bold text-white pt-2 border-t border-white/10">
+                        <span>Total payable</span>
+                        <span>{formatGstMoney(pricing.total)}</span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 pt-1">
+                        {getGstTaxLabel(pricing.gstRate)} applied as per India digital services tax rules.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between text-sm font-bold text-white">
+                        <span>Total payable</span>
+                        <span>{formatGstMoney(pricing.total)}</span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 pt-1">
+                        All-inclusive price. No GST charged — seller is not GST-registered.
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -240,7 +258,10 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
                 {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting payment…</> : <>Pay {pricing ? formatGstMoney(pricing.total) : '…'} with Cashfree</>}
               </button>
 
-              <p className="text-center text-[10px] text-gray-600">Secure payment via Cashfree · {taxLabel} included at checkout</p>
+              <p className="text-center text-[10px] text-gray-600">
+                Secure payment via Cashfree
+                {taxEnabled ? ` · ${taxLabel} included at checkout` : ' · all-inclusive price'}
+              </p>
             </div>
           </motion.div>
         </motion.div>
