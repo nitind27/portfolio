@@ -7,6 +7,7 @@ import { isValidEmail, isValidPhone, isValidPassword, normalizePhone } from '@/l
 import { tryGrantPromoFreeAccess } from '@/lib/promo-campaign';
 import { trackSiteEvent } from '@/lib/site-analytics';
 import { getPlanBySlug } from '@/lib/plans-server';
+import { verifyRegistrationOtp, consumeVerifiedOtp } from '@/lib/email-otp';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,6 +16,7 @@ export async function POST(req: NextRequest) {
     const email = String(body.email || '').trim().toLowerCase();
     const phone = normalizePhone(String(body.phone || ''));
     const password = String(body.password || '');
+    const otp = String(body.otp || '');
 
     if (!name || name.length < 2) {
       return NextResponse.json({ error: 'Name must be at least 2 characters' }, { status: 400 });
@@ -27,6 +29,11 @@ export async function POST(req: NextRequest) {
     }
     if (!isValidPassword(password)) {
       return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+    }
+
+    const otpCheck = await verifyRegistrationOtp(email, otp);
+    if (!otpCheck.ok) {
+      return NextResponse.json({ error: otpCheck.error || 'Invalid verification code' }, { status: 400 });
     }
 
     const pool = getPool();
@@ -95,6 +102,8 @@ export async function POST(req: NextRequest) {
 
     const token = await createToken(user, TOKEN_TTL_REGISTER);
     await setAuthCookie(token, COOKIE_MAX_AGE_REGISTER);
+
+    await consumeVerifiedOtp(email);
 
     import('@/lib/system-email').then(({ sendWelcomeEmailIfNeeded }) => {
       sendWelcomeEmailIfNeeded(result.insertId).catch(() => {});

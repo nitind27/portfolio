@@ -3,7 +3,7 @@
 import { useState, useEffect, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBuilderStore } from '@/lib/store';
-import { Mail, Lock, User, Phone, Loader2, Eye, EyeOff, X } from 'lucide-react';
+import { Mail, Lock, User, Phone, Loader2, Eye, EyeOff, X, ShieldCheck } from 'lucide-react';
 import BrandLogo from './BrandLogo';
 import { brand, STORAGE_POLICY_DAYS } from '@/lib/brand';
 
@@ -103,6 +103,23 @@ function AuthForm({ mode, setMode, onClose, compact, formId, onSubmitState, init
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [otpMessage, setOtpMessage] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown(c => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
+  useEffect(() => {
+    setOtpSent(false);
+    setOtp('');
+    setOtpMessage('');
+  }, [email]);
 
   useEffect(() => {
     if (isAuthenticated) onClose?.();
@@ -123,6 +140,33 @@ function AuthForm({ mode, setMode, onClose, compact, formId, onSubmitState, init
   }, [loading, error, initialError, onSubmitState]);
 
   const resetErrors = () => setError('');
+
+  const sendOtp = async () => {
+    setSendingOtp(true);
+    setError('');
+    setOtpMessage('');
+    try {
+      const res = await fetch('/api/auth/otp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Could not send verification code');
+        if (data.cooldown) setResendCooldown(Number(data.cooldown));
+        return;
+      }
+      setOtpSent(true);
+      setOtp('');
+      setResendCooldown(60);
+      setOtpMessage(`Code sent to ${email.trim().toLowerCase()}. Valid for 10 minutes.`);
+    } catch {
+      setError('Network error. Could not send verification code.');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
 
   const persistRememberMe = (checked: boolean, emailValue: string) => {
     try {
@@ -147,7 +191,17 @@ function AuthForm({ mode, setMode, onClose, compact, formId, onSubmitState, init
         setLoading(false);
         return;
       }
-      const result = await register({ name, email, phone, password });
+      if (!otpSent) {
+        setError('Please verify your email first — click Send verification code');
+        setLoading(false);
+        return;
+      }
+      if (!/^\d{6}$/.test(otp.replace(/\D/g, ''))) {
+        setError('Enter the 6-digit verification code from your email');
+        setLoading(false);
+        return;
+      }
+      const result = await register({ name, email, phone, password, otp: otp.replace(/\D/g, '') });
       if (!result.ok) setError(result.error || 'Registration failed');
     } else {
       const result = await login(email, password, rememberMe, adminOnly);
@@ -218,7 +272,52 @@ function AuthForm({ mode, setMode, onClose, compact, formId, onSubmitState, init
               className={INPUT_CLS}
             />
           </div>
+          {mode === 'register' && (
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={sendOtp}
+                disabled={sendingOtp || resendCooldown > 0 || !email.trim()}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold border border-orange-500/30 bg-orange-500/10 text-orange-300 hover:bg-orange-500/15 disabled:opacity-50 transition"
+              >
+                {sendingOtp ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending…</>
+                ) : resendCooldown > 0 ? (
+                  `Resend in ${resendCooldown}s`
+                ) : otpSent ? (
+                  <><ShieldCheck className="w-3.5 h-3.5" /> Resend code</>
+                ) : (
+                  <><Mail className="w-3.5 h-3.5" /> Send verification code</>
+                )}
+              </button>
+            </div>
+          )}
+          {mode === 'register' && otpMessage && (
+            <p className="text-[10px] text-green-400/90 mt-1.5">{otpMessage}</p>
+          )}
         </div>
+
+        {mode === 'register' && otpSent && (
+          <div>
+            <label className="block text-[11px] font-medium text-gray-400 mb-1 uppercase tracking-wide">Email verification code</label>
+            <div className="relative">
+              <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={otp}
+                onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); resetErrors(); }}
+                placeholder="6-digit OTP"
+                required
+                autoComplete="one-time-code"
+                className={`${INPUT_CLS} tracking-[0.35em] font-mono text-center text-base`}
+              />
+            </div>
+            <p className="text-[10px] text-gray-600 mt-1">Check your inbox (and spam folder) for the code.</p>
+          </div>
+        )}
 
         {mode === 'register' && (
           <div>

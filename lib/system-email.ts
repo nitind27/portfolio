@@ -14,6 +14,7 @@ import {
   welcomeEmailHtml, welcomeEmailText,
   paymentSuccessEmailHtml, paymentSuccessEmailText,
   paymentFailedEmailHtml, testEmailHtml,
+  otpEmailHtml, otpEmailText,
   type EmailTemplateData,
 } from './email-templates';
 
@@ -215,6 +216,29 @@ export async function sendPaymentFailedEmail(opts: {
     to: opts.to,
     subject: `Payment unsuccessful — ${APP_NAME}`,
     html: paymentFailedEmailHtml(data),
+  });
+}
+
+export async function sendOtpEmail(opts: {
+  to: string;
+  otp: string;
+  otpDisplay: string;
+  expiresMinutes?: number;
+}): Promise<{ ok: boolean; error?: string }> {
+  const cfg = await getSystemSmtp();
+  const data: EmailTemplateData = {
+    userEmail: opts.to,
+    otp: opts.otp,
+    otpDisplay: opts.otpDisplay,
+    expiresMinutes: opts.expiresMinutes ?? 10,
+    supportEmail: cfg?.fromEmail || cfg?.user || '',
+    appName: APP_NAME,
+  };
+  return sendEmail({
+    to: opts.to,
+    subject: `${opts.otpDisplay.replace(' ', '')} is your ${APP_NAME} verification code`,
+    html: otpEmailHtml(data),
+    text: otpEmailText(data),
   });
 }
 

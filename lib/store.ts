@@ -163,7 +163,7 @@ interface BuilderState {
   popupPreviewNonce: number;
 
   login: (email: string, password: string, rememberMe?: boolean, adminOnly?: boolean) => Promise<{ ok: boolean; error?: string }>;
-  register: (data: { name: string; email: string; phone: string; password: string }) => Promise<{ ok: boolean; error?: string }>;
+  register: (data: { name: string; email: string; phone: string; password: string; otp: string }) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
   initAuth: () => Promise<void>;

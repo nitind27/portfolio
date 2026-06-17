@@ -11,6 +11,9 @@ export interface EmailTemplateData {
   supportEmail?: string;
   customMessage?: string;
   appName?: string;
+  otp?: string;
+  otpDisplay?: string;
+  expiresMinutes?: number;
 }
 
 const baseStyle = `
@@ -174,4 +177,49 @@ export function testEmailHtml(data: EmailTemplateData): string {
       If you received this email, your SMTP settings are configured correctly and transactional emails (welcome, payment confirmation) will be delivered to users.
     </p>
   `, data);
+}
+
+export function otpEmailHtml(data: EmailTemplateData): string {
+  const otpDisplay = data.otpDisplay || data.otp || '------';
+  const expires = data.expiresMinutes ?? 10;
+
+  return htmlShell(`
+    <span class="emoji">🔐</span>
+    <p class="greeting">Verify your email</p>
+    <p class="text">
+      Use this one-time verification code to complete your ${data.appName || APP_NAME} registration.
+      Do not share this code with anyone.
+    </p>
+    <div style="text-align:center; margin: 1.75rem 0;">
+      <div style="display:inline-block; background:#0f172a; border: 2px dashed #6366f1; border-radius: 14px; padding: 1.25rem 2rem;">
+        <p style="margin:0 0 0.35rem; font-size:0.7rem; color:#64748b; text-transform:uppercase; letter-spacing:0.12em; font-weight:700;">Your OTP</p>
+        <p style="margin:0; font-size:2.25rem; font-weight:800; letter-spacing:0.35em; color:#f1f5f9; font-family:ui-monospace, monospace;">${otpDisplay}</p>
+      </div>
+    </div>
+    <p class="text" style="text-align:center; font-size:0.85rem;">
+      This code expires in <strong style="color:#f1f5f9;">${expires} minutes</strong>.
+    </p>
+    <div class="card">
+      <div class="card-row"><span class="card-label">Email</span><span class="card-value">${data.userEmail || '—'}</span></div>
+      <div class="card-row"><span class="card-label">Purpose</span><span class="card-value">Account registration</span></div>
+    </div>
+    <p class="text" style="font-size:0.8rem; color:#64748b;">
+      If you didn't request this code, you can safely ignore this email.
+    </p>
+  `, data);
+}
+
+export function otpEmailText(data: EmailTemplateData): string {
+  const otp = data.otp || '------';
+  const expires = data.expiresMinutes ?? 10;
+  return [
+    `Verify your email — ${data.appName || APP_NAME}`,
+    '',
+    `Your verification code: ${otp}`,
+    `Valid for ${expires} minutes.`,
+    '',
+    `Email: ${data.userEmail || ''}`,
+    '',
+    'If you did not request this, ignore this email.',
+  ].join('\n');
 }
