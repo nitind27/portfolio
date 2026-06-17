@@ -19,7 +19,7 @@ import BrandLogo from './BrandLogo';
 import { brand, STORAGE_POLICY_DAYS } from '@/lib/brand';
 import { getDaysRemaining } from '@/lib/project-expiry';
 import { useRedirectIfAdmin } from '@/lib/use-redirect-admin';
-import PromoModal from './PromoModal';
+import { usePromoStatus } from '@/lib/promo-client';
 import { trackSearchDebounced } from '@/lib/analytics-client';
 
 export default function Dashboard() {
@@ -36,6 +36,7 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterCategory, setFilterCategory] = useState('all');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const promo = usePromoStatus();
 
   useEffect(() => {
     purgeExpiredProjects();
@@ -102,13 +103,17 @@ export default function Dashboard() {
                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
                   <Crown className="w-3 h-3" /> Premium
                 </span>
-              ) : (
+              ) : !promo.hidePaidPricing && !promo.paidPlanDisabled ? (
                 <button onClick={() => setShowPremium(true)}
                   className="flex items-center gap-1 px-2 py-0.5 rounded-full text-amber-300 border border-amber-500/30 hover:bg-amber-500/10 transition"
                   style={{ background: 'rgba(245,158,11,0.1)' }}>
                   <Crown className="w-3 h-3" /> Upgrade ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}
                 </button>
-              )}
+              ) : promo.hidePaidPricing ? (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">
+                  <Crown className="w-3 h-3" /> Premium FREE
+                </span>
+              ) : null}
             </div>
           )}
           <button
@@ -389,7 +394,6 @@ export default function Dashboard() {
         />
       )}
 
-      <PromoModal isAuthenticated />
     </div>
   );
 }

@@ -1,77 +1,76 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Gift, Sparkles } from 'lucide-react';
 import { brand } from '@/lib/brand';
 import { trackAnalytics } from '@/lib/analytics-client';
+import { useBuilderStore } from '@/lib/store';
+import type { PublicPromoModal } from '@/lib/promo-client';
 
-const DISMISS_KEY = 'pb_promo_modal_dismissed';
-
-interface PromoModalData {
-  title: string;
-  message: string;
-  badge: string;
-  ctaText: string;
-  ctaAction: 'register' | 'dashboard';
-  showSlotsRemaining?: boolean;
-  slotsRemaining?: number;
-  freeGrantLimit?: number;
+function dismissKey(campaignKey: string) {
+  return `pb_promo_dismissed_${campaignKey}`;
 }
 
-interface Props {
-  isAuthenticated?: boolean;
-  onRegister?: () => void;
-}
-
-export default function PromoModal({ isAuthenticated = false, onRegister }: Props) {
-  const [modal, setModal] = useState<PromoModalData | null>(null);
+export default function PromoModalProvider() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, initAuth } = useBuilderStore();
+  const [modal, setModal] = useState<PublicPromoModal | null>(null);
+  const [showToLoggedIn, setShowToLoggedIn] = useState(false);
   const [visible, setVisible] = useState(false);
 
+  useEffect(() => { initAuth(); }, [initAuth]);
+
   const load = useCallback(async () => {
+    if (pathname?.startsWith('/admin')) return;
     try {
       const res = await fetch('/api/site/promo');
       const data = await res.json();
       if (!data.modal) return;
-      if (isAuthenticated && !data.modal.showToLoggedIn) return;
 
-      const dismissed = sessionStorage.getItem(DISMISS_KEY);
-      if (dismissed === '1') return;
+      const m = data.modal as PublicPromoModal & { showToLoggedIn?: boolean };
+      if (isAuthenticated && !m.showToLoggedIn) return;
 
-      setModal(data.modal);
+      const key = dismissKey(m.campaignKey || 'default');
+      if (localStorage.getItem(key) === '1') return;
+
+      setModal(m);
+      setShowToLoggedIn(Boolean(m.showToLoggedIn));
       setVisible(true);
-      trackAnalytics('modal_view', { metadata: { slotsRemaining: data.modal.slotsRemaining } });
+      trackAnalytics('modal_view', { metadata: { slotsRemaining: m.slotsRemaining } });
     } catch { /* ignore */ }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, pathname]);
 
   useEffect(() => {
-    const t = setTimeout(load, 1200);
+    const t = setTimeout(load, 800);
     return () => clearTimeout(t);
   }, [load]);
 
   const dismiss = () => {
     setVisible(false);
-    try { sessionStorage.setItem(DISMISS_KEY, '1'); } catch { /* ignore */ }
+    if (modal?.campaignKey) {
+      try { localStorage.setItem(dismissKey(modal.campaignKey), '1'); } catch { /* ignore */ }
+    }
   };
 
   const handleCta = () => {
     trackAnalytics('modal_cta', { metadata: { action: modal?.ctaAction } });
     dismiss();
-    if (modal?.ctaAction === 'register' && onRegister) {
-      onRegister();
+    if (!isAuthenticated) {
+      router.push('/?register=1');
     }
   };
 
-  if (!modal) return null;
-
   return (
     <AnimatePresence>
-      {visible && (
+      {visible && modal && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[250] flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
           onClick={dismiss}
         >
@@ -130,25 +129,14 @@ export default function PromoModal({ isAuthenticated = false, onRegister }: Prop
                 </div>
               )}
 
-              {(modal.ctaAction === 'register' && !isAuthenticated) && (
+              {(!isAuthenticated || showToLoggedIn) && (
                 <button
                   type="button"
                   onClick={handleCta}
                   className="w-full py-3 rounded-xl font-semibold text-sm transition hover:scale-[1.02] active:scale-[0.98]"
                   style={{ background: `linear-gradient(135deg, ${brand.accent}, ${brand.accentHover})`, color: brand.onAccent }}
                 >
-                  {modal.ctaText}
-                </button>
-              )}
-
-              {modal.ctaAction === 'dashboard' && isAuthenticated && (
-                <button
-                  type="button"
-                  onClick={handleCta}
-                  className="w-full py-3 rounded-xl font-semibold text-sm transition hover:scale-[1.02] active:scale-[0.98]"
-                  style={{ background: `linear-gradient(135deg, ${brand.accent}, ${brand.accentHover})`, color: brand.onAccent }}
-                >
-                  {modal.ctaText}
+                  {isAuthenticated ? 'Continue' : modal.ctaText}
                 </button>
               )}
 

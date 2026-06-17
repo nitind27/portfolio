@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { AuthModal, type AuthMode } from './LoginPage';
 import GoogleSignInPrompt from './GoogleSignInPrompt';
-import PromoModal from './PromoModal';
+import { usePromoStatus } from '@/lib/promo-client';
 import BrandLogo from './BrandLogo';
 import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION, APP_DOMAIN, STORAGE_POLICY_DAYS, brand } from '@/lib/brand';
 import { TEMPLATES } from '@/lib/templates';
@@ -192,6 +192,7 @@ export default function LandingPage({
   const [showAuth, setShowAuth] = useState(initialAuthOpen);
   const [authMode, setAuthMode] = useState<AuthMode>(initialAuthMode);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const promo = usePromoStatus();
 
   useEffect(() => {
     if (initialAuthOpen) {
@@ -307,7 +308,9 @@ export default function LandingPage({
                 { val: `${TEMPLATE_COUNT}+`, label: 'Templates' },
                 { val: '15+', label: 'Section types' },
                 { val: `${STORAGE_POLICY_DAYS}d`, label: 'Free storage' },
-                { val: `₹${PREMIUM_PRICE}`, label: 'Go premium' },
+                ...(promo.hidePaidPricing
+                  ? [{ val: 'FREE', label: promo.paidPlanDisabled ? 'All premium' : 'Limited offer' }]
+                  : [{ val: `₹${PREMIUM_PRICE}`, label: 'Go premium' }]),
               ].map(s => (
                 <div key={s.label}>
                   <p className="text-2xl font-bold text-white">{s.val}</p>
@@ -458,10 +461,38 @@ export default function LandingPage({
       <section id="pricing" className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 py-24">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="text-center mb-12">
           <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: brand.accent }}>Pricing</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Start free, upgrade when ready</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+            {promo.paidPlanDisabled ? 'Everything is free right now' : promo.hidePaidPricing ? 'Limited free premium offer' : 'Start free, upgrade when ready'}
+          </h2>
+          {promo.freeGrantEnabled && promo.slotsRemaining > 0 && !promo.paidPlanDisabled && (
+            <p className="text-sm text-gray-500 mt-2">{promo.slotsRemaining} free premium slots remaining</p>
+          )}
         </motion.div>
-        <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-          {[
+        <div className={`grid gap-6 max-w-3xl mx-auto ${promo.paidPlanDisabled ? 'max-w-lg' : 'md:grid-cols-2'}`}>
+          {promo.paidPlanDisabled ? (
+            <motion.div
+              initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}
+              className="relative p-8 rounded-2xl border ring-1 ring-green-500/40"
+              style={{ background: `linear-gradient(160deg, rgba(34,197,94,0.12), ${brand.surface})`, borderColor: 'rgba(34,197,94,0.3)' }}
+            >
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white bg-green-600">
+                All free
+              </span>
+              <h3 className="text-lg font-semibold text-white">Full Premium Access</h3>
+              <p className="text-3xl font-bold text-green-400 mt-2 mb-1">FREE</p>
+              <p className="text-sm text-[#64748b] mb-6">Export, deploy, share — everything unlocked. No payment required.</p>
+              <ul className="space-y-2.5 mb-8">
+                {['Export HTML / React / Next.js', 'Public share link', 'Hostinger deploy', 'All templates & sections'].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-[#94a3b8]">
+                    <Check className="w-4 h-4 shrink-0 text-green-400" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <PrimaryBtn onClick={() => openAuth('register')} className="w-full !justify-center">Get started free</PrimaryBtn>
+            </motion.div>
+          ) : (
+          [
             {
               name: 'Free',
               price: '₹0',
@@ -469,14 +500,17 @@ export default function LandingPage({
               features: ['Unlimited editing', `${STORAGE_POLICY_DAYS}-day cloud save`, 'Live preview', 'All templates'],
               cta: 'Start free',
               highlight: false,
+              authMode: 'register' as AuthMode,
             },
             {
               name: 'Premium',
-              price: `₹${PREMIUM_PRICE}`,
-              desc: 'One portfolio slot — export & deploy',
+              price: promo.hidePaidPricing ? 'FREE' : `₹${PREMIUM_PRICE}`,
+              priceSub: promo.hidePaidPricing && promo.slotsRemaining > 0 ? `${promo.slotsRemaining} slots left` : undefined,
+              desc: promo.hidePaidPricing ? 'Limited time — full premium free' : 'One portfolio slot — export & deploy',
               features: ['Export HTML / React / Next.js', 'Public share link', 'Hostinger deploy', 'Priority support'],
-              cta: 'Get started',
+              cta: promo.hidePaidPricing ? 'Claim free premium' : 'Get started',
               highlight: true,
+              authMode: (promo.hidePaidPricing ? 'register' : 'login') as AuthMode,
             },
           ].map((plan, i) => (
             <motion.div
@@ -498,7 +532,10 @@ export default function LandingPage({
                 </span>
               )}
               <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
-              <p className="text-3xl font-bold text-white mt-2 mb-1">{plan.price}</p>
+              <p className={`text-3xl font-bold mt-2 mb-1 ${plan.price === 'FREE' ? 'text-green-400' : 'text-white'}`}>{plan.price}</p>
+              {'priceSub' in plan && plan.priceSub && (
+                <p className="text-xs text-green-400/80 mb-1">{plan.priceSub}</p>
+              )}
               <p className="text-sm text-[#64748b] mb-6">{plan.desc}</p>
               <ul className="space-y-2.5 mb-8">
                 {plan.features.map(f => (
@@ -510,14 +547,14 @@ export default function LandingPage({
               </ul>
               <button
                 type="button"
-                onClick={() => openAuth('login')}
+                onClick={() => openAuth(plan.authMode)}
                 className={`w-full py-3 rounded-xl font-semibold text-sm transition ${plan.highlight ? '' : 'border border-white/10 text-white hover:bg-white/5'}`}
                 style={plan.highlight ? { background: `linear-gradient(135deg, ${brand.accent}, ${brand.accentHover})`, color: brand.onAccent } : undefined}
               >
                 {plan.cta}
               </button>
             </motion.div>
-          ))}
+          )))}
         </div>
       </section>
 
@@ -613,11 +650,6 @@ export default function LandingPage({
         onClose={() => setShowAuth(false)}
         initialMode={authMode}
         initialError={initialAuthError}
-      />
-
-      <PromoModal
-        isAuthenticated={false}
-        onRegister={() => openAuth('register')}
       />
 
       <GoogleSignInPrompt />

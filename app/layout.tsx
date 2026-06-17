@@ -4,6 +4,7 @@ import './globals.css';
 import { APP_NAME, APP_DESCRIPTION, LOGO_SRC, DESKTOP_VIEWPORT_WIDTH } from '@/lib/brand';
 import MaintenanceGate from '@/components/MaintenanceGate';
 import SiteAnalyticsTracker from '@/components/SiteAnalyticsTracker';
+import PromoModalProvider from '@/components/PromoModalProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={inter.className}>
         <MaintenanceGate>
           <SiteAnalyticsTracker />
+          <PromoModalProvider />
           {children}
         </MaintenanceGate>
       </body>

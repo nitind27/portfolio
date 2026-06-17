@@ -65,12 +65,20 @@ export default function PromoCampaignTab() {
     if (!state) return;
     const next = !state.settings.paidPlanDisabled;
     if (next && !confirm('Disable paid plan? All users will get premium features for free. Payment checkout will be blocked.')) return;
-    save({ paidPlanDisabled: next });
+    save({
+      paidPlanDisabled: next,
+      modalEnabled: next ? true : state.settings.modalEnabled,
+      showToLoggedIn: next ? true : state.settings.showToLoggedIn,
+    });
   };
 
   const toggleFreeGrant = () => {
     if (!state) return;
-    save({ freeGrantEnabled: !state.settings.freeGrantEnabled });
+    const next = !state.settings.freeGrantEnabled;
+    save({
+      freeGrantEnabled: next,
+      modalEnabled: next ? true : state.settings.modalEnabled,
+    });
   };
 
   const toggleModal = () => {

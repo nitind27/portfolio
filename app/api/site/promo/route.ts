@@ -9,6 +9,7 @@ export async function GET() {
     return NextResponse.json({
       paidPlanDisabled: false,
       freeGrantEnabled: false,
+      hidePaidPricing: false,
       modal: null,
     });
   }

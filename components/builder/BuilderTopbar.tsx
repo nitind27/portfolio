@@ -23,6 +23,7 @@ import { openPreviewInNewTab } from '@/lib/preview-tab';
 import ScrollablePanelTabs from './ScrollablePanelTabs';
 import { fetchPlansConfig, featureEnabled, type PlansConfigResponse } from '@/lib/plans-client';
 import type { PlanFeatures } from '@/lib/plans-types';
+import { usePromoStatus } from '@/lib/promo-client';
 
 interface Props {
   rightTab: RightTab;
@@ -101,6 +102,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
   const [showPremium, setShowPremium] = useState(false);
   const [premiumReason, setPremiumReason] = useState<PremiumModalReason>('general');
   const [planConfig, setPlanConfig] = useState<PlansConfigResponse | null>(null);
+  const promo = usePromoStatus();
 
   useEffect(() => {
     fetchPlansConfig().then(setPlanConfig);
@@ -510,7 +512,13 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
             <div className="px-4 pt-3 pb-2 border-b border-white/10">
               <p className="text-xs font-semibold text-white">Export As</p>
               <p className="text-xs text-gray-500 mt-0.5">
-                {isThisPortfolioUnlocked ? 'Download your portfolio as a ZIP' : hasBoundSlot ? `1 portfolio per ₹99 · unlock this for ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}` : `Premium required · ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}`}
+                {isThisPortfolioUnlocked
+                  ? 'Download your portfolio as a ZIP'
+                  : promo.hidePaidPricing
+                    ? 'Premium is free — unlock export for this portfolio'
+                    : hasBoundSlot
+                      ? `1 portfolio per ₹99 · unlock this for ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}`
+                      : `Premium required · ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}`}
               </p>
             </div>
             {([
@@ -543,7 +551,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
           ✓ Download unlocked
         </span>
       )}
-      {(!isPremium || (isPremium && !isThisPortfolioUnlocked)) && (
+      {(!isPremium || (isPremium && !isThisPortfolioUnlocked)) && !promo.hidePaidPricing && (
         <button
           onClick={() => { setPremiumReason(hasBoundSlot ? 'unlock_another' : 'general'); setShowPremium(true); }}
           className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/25 hover:bg-amber-500/25 transition shrink-0"

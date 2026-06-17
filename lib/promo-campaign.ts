@@ -184,6 +184,42 @@ export async function getPublicPromoStatus() {
   const settings = await getPromoCampaignSettings();
   const grantCount = await getPromoGrantCount();
   const slotsRemaining = Math.max(0, settings.freeGrantLimit - grantCount);
+  const grantsExhausted = settings.freeGrantEnabled && grantCount >= settings.freeGrantLimit;
+  const hidePaidPricing = settings.paidPlanDisabled
+    || (settings.freeGrantEnabled && slotsRemaining > 0);
+
+  const campaignActive = settings.paidPlanDisabled
+    || (settings.freeGrantEnabled && !grantsExhausted);
+
+  const shouldShowModal = settings.modalEnabled || campaignActive;
+
+  const campaignKey = [
+    settings.modalEnabled ? '1' : '0',
+    settings.paidPlanDisabled ? '1' : '0',
+    settings.freeGrantEnabled ? '1' : '0',
+    settings.freeGrantLimit,
+    grantCount,
+    settings.modalTitle,
+  ].join(':');
+
+  let modalTitle = settings.modalTitle;
+  let modalMessage = settings.modalMessage;
+  let modalBadge = settings.modalBadge;
+  let modalCtaText = settings.modalCtaText;
+
+  if (campaignActive && !settings.modalEnabled) {
+    if (settings.paidPlanDisabled) {
+      modalTitle = 'Premium is free for everyone!';
+      modalMessage = 'All premium features are unlocked — export, download, live deploy & share. No payment needed. Create your free account and start building.';
+      modalBadge = 'ALL FREE';
+      modalCtaText = 'Start building free';
+    } else if (settings.freeGrantEnabled && slotsRemaining > 0) {
+      modalTitle = `Free premium for first ${settings.freeGrantLimit} users`;
+      modalMessage = `Register now and get full premium access — export ZIP, share live link & deploy to your domain — completely FREE. Only ${slotsRemaining} slots left!`;
+      modalBadge = 'LIMITED OFFER';
+      modalCtaText = 'Claim free premium';
+    }
+  }
 
   return {
     paidPlanDisabled: settings.paidPlanDisabled,
@@ -191,17 +227,19 @@ export async function getPublicPromoStatus() {
     freeGrantLimit: settings.freeGrantLimit,
     freeGrantCount: grantCount,
     slotsRemaining,
-    grantsExhausted: settings.freeGrantEnabled && grantCount >= settings.freeGrantLimit,
-    modal: settings.modalEnabled ? {
-      title: settings.modalTitle,
-      message: settings.modalMessage,
-      badge: settings.modalBadge,
-      ctaText: settings.modalCtaText,
+    grantsExhausted,
+    hidePaidPricing,
+    modal: shouldShowModal ? {
+      title: modalTitle,
+      message: modalMessage,
+      badge: modalBadge,
+      ctaText: modalCtaText,
       ctaAction: settings.modalCtaAction,
-      showSlotsRemaining: settings.showSlotsRemaining,
-      showToLoggedIn: settings.showToLoggedIn,
+      showSlotsRemaining: settings.showSlotsRemaining && settings.freeGrantEnabled,
+      showToLoggedIn: settings.showToLoggedIn || settings.paidPlanDisabled,
       slotsRemaining: settings.showSlotsRemaining ? slotsRemaining : undefined,
       freeGrantLimit: settings.showSlotsRemaining ? settings.freeGrantLimit : undefined,
+      campaignKey,
     } : null,
   };
 }
