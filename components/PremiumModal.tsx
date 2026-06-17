@@ -61,6 +61,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
   const [taxRate, setTaxRate] = useState(0);
   const [taxLabel, setTaxLabel] = useState('All-inclusive price');
   const [taxEnabled, setTaxEnabled] = useState(false);
+  const [paidPlanDisabled, setPaidPlanDisabled] = useState(false);
 
   const isRepurchase = reason === 'unlock_another' || Boolean(user?.isPremium);
 
@@ -82,6 +83,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
         if (d.tax?.rate != null) setTaxRate(Number(d.tax.rate));
         if (d.tax?.label) setTaxLabel(String(d.tax.label));
         setTaxEnabled(Boolean(d.tax?.enabled));
+        setPaidPlanDisabled(Boolean(d.promo?.paidPlanDisabled));
       })
       .catch((err: unknown) => {
         setPlans([]);
@@ -253,15 +255,32 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
 
               {error && <p className="text-red-400 text-sm">{error}</p>}
 
-              <button onClick={handleUpgrade} disabled={loading || plansLoading || !selectedPlanId}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#f28c28] to-[#e07d10] hover:from-[#ffa033] hover:to-[#f28c28] disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition">
-                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting payment…</> : <>Pay {pricing ? formatGstMoney(pricing.total) : '…'} with Cashfree</>}
-              </button>
+              {paidPlanDisabled ? (
+                <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-center">
+                  <CheckCircle2 className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                  <p className="text-sm text-green-200 font-medium">Premium is free for everyone right now!</p>
+                  <p className="text-xs text-gray-400 mt-1">No payment needed — refresh your session to access all features.</p>
+                  <button
+                    type="button"
+                    onClick={async () => { await refreshSession(); onClose(); }}
+                    className="mt-4 w-full py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition"
+                  >
+                    Got it
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button onClick={handleUpgrade} disabled={loading || plansLoading || !selectedPlanId}
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#f28c28] to-[#e07d10] hover:from-[#ffa033] hover:to-[#f28c28] disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition">
+                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Starting payment…</> : <>Pay {pricing ? formatGstMoney(pricing.total) : '…'} with Cashfree</>}
+                  </button>
 
-              <p className="text-center text-[10px] text-gray-600">
-                Secure payment via Cashfree
-                {taxEnabled ? ` · ${taxLabel} included at checkout` : ' · all-inclusive price'}
-              </p>
+                  <p className="text-center text-[10px] text-gray-600">
+                    Secure payment via Cashfree
+                    {taxEnabled ? ` · ${taxLabel} included at checkout` : ' · all-inclusive price'}
+                  </p>
+                </>
+              )}
             </div>
           </motion.div>
         </motion.div>

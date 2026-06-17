@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { AuthModal, type AuthMode } from './LoginPage';
 import GoogleSignInPrompt from './GoogleSignInPrompt';
+import PromoModal from './PromoModal';
 import BrandLogo from './BrandLogo';
 import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION, APP_DOMAIN, STORAGE_POLICY_DAYS, brand } from '@/lib/brand';
 import { TEMPLATES } from '@/lib/templates';
@@ -612,6 +613,11 @@ export default function LandingPage({
         onClose={() => setShowAuth(false)}
         initialMode={authMode}
         initialError={initialAuthError}
+      />
+
+      <PromoModal
+        isAuthenticated={false}
+        onRegister={() => openAuth('register')}
       />
 
       <GoogleSignInPrompt />

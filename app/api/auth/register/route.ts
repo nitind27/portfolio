@@ -4,6 +4,9 @@ import { getPool } from '@/lib/db';
 import { hashPassword, createToken, setAuthCookie, toAuthUser, TOKEN_TTL_REGISTER, COOKIE_MAX_AGE_REGISTER } from '@/lib/auth-server';
 import { ensureAuthSchema } from '@/lib/auth-schema';
 import { isValidEmail, isValidPhone, isValidPassword, normalizePhone } from '@/lib/validators';
+import { tryGrantPromoFreeAccess } from '@/lib/promo-campaign';
+import { trackSiteEvent } from '@/lib/site-analytics';
+import { getPlanBySlug } from '@/lib/plans-server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -72,6 +75,23 @@ export async function POST(req: NextRequest) {
       plan_slug: planId ? 'free' : null,
       plan_name: planId ? 'Free' : null,
     });
+
+    const promoGranted = await tryGrantPromoFreeAccess(result.insertId);
+    if (promoGranted) {
+      const proPlan = await getPlanBySlug('pro');
+      if (proPlan) {
+        user.planId = proPlan.id;
+        user.planSlug = proPlan.slug;
+        user.planName = proPlan.name;
+        user.isPremium = true;
+      }
+    }
+
+    trackSiteEvent({
+      eventType: 'registration',
+      userId: result.insertId,
+      metadata: { promoGranted, source: body.promoSource || null },
+    }).catch(() => {});
 
     const token = await createToken(user, TOKEN_TTL_REGISTER);
     await setAuthCookie(token, COOKIE_MAX_AGE_REGISTER);

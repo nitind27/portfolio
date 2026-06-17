@@ -12,6 +12,7 @@ import {
 import { TEMPLATES } from './templates';
 import { ensurePlansReady, invalidatePlansSeedCache } from './plans-seed';
 import { CANONICAL_PLAN_SLUGS } from './default-plans';
+import { isPaidPlanGloballyDisabled } from './promo-campaign';
 
 interface DbPlanRow extends RowDataPacket {
   id: number;
@@ -97,6 +98,10 @@ export async function getAllPlans(activeOnly = false): Promise<SubscriptionPlan[
 }
 
 export async function getUserPlan(user: AuthUser | null): Promise<SubscriptionPlan> {
+  if (user && await isPaidPlanGloballyDisabled()) {
+    const pro = await getPlanBySlug('pro');
+    if (pro) return pro;
+  }
   if (!user?.planId) return getDefaultPlan();
   const plan = await getPlanById(user.planId);
   return plan ?? getDefaultPlan();

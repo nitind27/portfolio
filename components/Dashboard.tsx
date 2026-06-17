@@ -19,6 +19,8 @@ import BrandLogo from './BrandLogo';
 import { brand, STORAGE_POLICY_DAYS } from '@/lib/brand';
 import { getDaysRemaining } from '@/lib/project-expiry';
 import { useRedirectIfAdmin } from '@/lib/use-redirect-admin';
+import PromoModal from './PromoModal';
+import { trackSearchDebounced } from '@/lib/analytics-client';
 
 export default function Dashboard() {
   const redirectingAdmin = useRedirectIfAdmin();
@@ -47,6 +49,12 @@ export default function Dashboard() {
       return () => clearTimeout(t);
     }
   }, [hasSeenDashboardTour]);
+
+  useEffect(() => {
+    if (search.trim().length >= 2) {
+      trackSearchDebounced(search, 'dashboard_projects');
+    }
+  }, [search]);
 
   if (redirectingAdmin) {
     return (
@@ -380,6 +388,8 @@ export default function Dashboard() {
           onComplete={() => { setShowTour(false); completeDashboardTour(); }}
         />
       )}
+
+      <PromoModal isAuthenticated />
     </div>
   );
 }

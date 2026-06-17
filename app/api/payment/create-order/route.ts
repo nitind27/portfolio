@@ -7,12 +7,20 @@ import { getPlanById, getPlanBySlug, getUserPlan } from '@/lib/plans-server';
 import { ensurePlansReady } from '@/lib/plans-seed';
 import { canExport } from '@/lib/plans-types';
 import { calculateGst } from '@/lib/gst';
+import { isPaidPlanGloballyDisabled } from '@/lib/promo-campaign';
 
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser(req);
     if (!user) {
       return NextResponse.json({ error: 'Please login first' }, { status: 401 });
+    }
+
+    if (await isPaidPlanGloballyDisabled()) {
+      return NextResponse.json({
+        error: 'Premium is currently free for all users. No payment required.',
+        code: 'PAID_PLAN_DISABLED',
+      }, { status: 400 });
     }
 
     const body = await req.json().catch(() => ({}));

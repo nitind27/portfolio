@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   LayoutDashboard, CreditCard, LayoutTemplate, Users,
   Loader2, Shield, RefreshCw, Grid3x3, Receipt, Bell, ExternalLink, LogOut, Mail, Settings, MessageSquare, Globe,
+  BarChart3, Gift,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import BrandLogo from '../BrandLogo';
@@ -21,11 +22,15 @@ import EmailTab from './tabs/EmailTab';
 import SettingsTab from './tabs/SettingsTab';
 import SupportTab from './tabs/SupportTab';
 import WebsiteSettingsTab from './tabs/WebsiteSettingsTab';
+import WebsiteAnalyticsTab from './tabs/WebsiteAnalyticsTab';
+import PromoCampaignTab from './tabs/PromoCampaignTab';
 
-type Tab = 'overview' | 'plans' | 'features' | 'templates' | 'users' | 'payments' | 'support' | 'website' | 'email' | 'settings';
+type Tab = 'overview' | 'analytics' | 'promo' | 'plans' | 'features' | 'templates' | 'users' | 'payments' | 'support' | 'website' | 'email' | 'settings';
 
 const NAV: { id: Tab; label: string; desc: string; icon: typeof LayoutDashboard; group: string }[] = [
-  { id: 'overview', label: 'Dashboard', desc: 'Analytics & activity', icon: LayoutDashboard, group: 'Main' },
+  { id: 'overview', label: 'Dashboard', desc: 'Revenue & activity', icon: LayoutDashboard, group: 'Main' },
+  { id: 'analytics', label: 'Site analytics', desc: 'Searches & visitors', icon: BarChart3, group: 'Main' },
+  { id: 'promo', label: 'Promo & plans', desc: 'Free grants & popup', icon: Gift, group: 'Main' },
   { id: 'plans', label: 'Plans', desc: 'Pricing & tiers', icon: CreditCard, group: 'Billing' },
   { id: 'features', label: 'Feature matrix', desc: 'Toggle permissions', icon: Grid3x3, group: 'Billing' },
   { id: 'payments', label: 'Payments', desc: 'Orders & revenue', icon: Receipt, group: 'Billing' },
@@ -257,6 +262,8 @@ export default function AdminPanel() {
           ) : (
             <>
               {tab === 'overview' && stats && <OverviewTab stats={stats} />}
+              {tab === 'analytics' && <WebsiteAnalyticsTab />}
+              {tab === 'promo' && <PromoCampaignTab />}
               {tab === 'plans' && <PlansTab plans={plans} onRefresh={loadAll} />}
               {tab === 'features' && <FeaturesMatrixTab plans={plans} onRefresh={loadAll} />}
               {tab === 'templates' && <TemplatesTab templates={templates} plans={plans} onRefresh={loadAll} />}

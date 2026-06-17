@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getAllPlans } from '@/lib/plans-server';
 import { getGstRate, getGstTaxLabel, isGstCharged } from '@/lib/gst';
+import { getPublicPromoStatus } from '@/lib/promo-campaign';
 
 export async function GET() {
   try {
-    const plans = await getAllPlans(true);
+    const [plans, promo] = await Promise.all([
+      getAllPlans(true),
+      getPublicPromoStatus(),
+    ]);
     return NextResponse.json({
       plans: plans.map(p => ({
         id: p.id,
@@ -20,6 +24,12 @@ export async function GET() {
         rate: getGstRate(),
         label: getGstTaxLabel(),
         enabled: isGstCharged(),
+      },
+      promo: {
+        paidPlanDisabled: promo.paidPlanDisabled,
+        freeGrantEnabled: promo.freeGrantEnabled,
+        slotsRemaining: promo.slotsRemaining,
+        grantsExhausted: promo.grantsExhausted,
       },
     });
   } catch (err) {

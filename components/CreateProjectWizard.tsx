@@ -13,6 +13,7 @@ import {
 } from '@/lib/purpose-layouts';
 import BrandLogo from './BrandLogo';
 import LayoutWireframe from './LayoutWireframe';
+import { trackSearchDebounced } from '@/lib/analytics-client';
 import TemplatesGallery from './shared/TemplatesGallery';
 import { ChevronLeft, ChevronRight, Check, X, LayoutTemplate, Crown } from 'lucide-react';
 import { fetchPlansConfig, type PlansConfigResponse, featureEnabled } from '@/lib/plans-client';
@@ -82,6 +83,12 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
         );
       }),
     })).filter(cat => cat.purposes.length > 0);
+  }, [purposeSearch]);
+
+  useEffect(() => {
+    if (purposeSearch.trim().length >= 2) {
+      trackSearchDebounced(purposeSearch, 'create_wizard');
+    }
   }, [purposeSearch]);
 
   useEffect(() => {
