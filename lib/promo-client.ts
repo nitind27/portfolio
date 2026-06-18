@@ -74,6 +74,10 @@ export function usePromoStatus() {
   return { ...status, loading, refresh };
 }
 
+export function shouldHidePayOptions(promo: Pick<PublicPromoStatus, 'hidePaidPricing' | 'paidPlanDisabled'>): boolean {
+  return promo.hidePaidPricing || promo.paidPlanDisabled;
+}
+
 export function invalidatePromoClientCache() {
   cache = null;
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { getPool } from '@/lib/db';
-import { hashPassword, createToken, setAuthCookie, toAuthUser, TOKEN_TTL_REGISTER, COOKIE_MAX_AGE_REGISTER } from '@/lib/auth-server';
+import { hashPassword, createToken, setAuthCookie, toAuthUser, enrichAuthUser, TOKEN_TTL_REGISTER, COOKIE_MAX_AGE_REGISTER } from '@/lib/auth-server';
 import { ensureAuthSchema } from '@/lib/auth-schema';
 import { isValidEmail, isValidPhone, isValidPassword, normalizePhone } from '@/lib/validators';
 import { tryGrantPromoFreeAccess } from '@/lib/promo-campaign';
@@ -100,7 +100,8 @@ export async function POST(req: NextRequest) {
       metadata: { promoGranted, source: body.promoSource || null },
     }).catch(() => {});
 
-    const token = await createToken(user, TOKEN_TTL_REGISTER);
+    const enrichedUser = await enrichAuthUser(user);
+    const token = await createToken(enrichedUser, TOKEN_TTL_REGISTER);
     await setAuthCookie(token, COOKIE_MAX_AGE_REGISTER);
 
     await consumeVerifiedOtp(email);
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
       sendWelcomeEmailIfNeeded(result.insertId).catch(() => {});
     }).catch(() => {});
 
-    return NextResponse.json({ user });
+    return NextResponse.json({ user: enrichedUser });
   } catch (err) {
     console.error('Register error:', err);
     return NextResponse.json({ error: 'Registration failed. Check database connection.' }, { status: 500 });

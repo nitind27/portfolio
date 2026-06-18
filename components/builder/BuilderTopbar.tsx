@@ -26,7 +26,7 @@ import { openPreviewInNewTab } from '@/lib/preview-tab';
 import ScrollablePanelTabs from './ScrollablePanelTabs';
 import { fetchPlansConfig, featureEnabled, type PlansConfigResponse } from '@/lib/plans-client';
 import type { PlanFeatures } from '@/lib/plans-types';
-import { usePromoStatus } from '@/lib/promo-client';
+import { usePromoStatus, shouldHidePayOptions } from '@/lib/promo-client';
 
 interface Props {
   rightTab: RightTab;
@@ -117,14 +117,16 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
   const helpRef = useRef<HTMLDivElement>(null);
 
   const isPremium = Boolean(user?.isPremium);
+  const payHidden = shouldHidePayOptions(promo);
+  const hasPremiumAccess = isPremium || payHidden;
   const isThisPortfolioUnlocked = Boolean(
     user?.premiumPortfolioId && portfolio?.id === user.premiumPortfolioId,
   );
   const hasBoundSlot = Boolean(user?.premiumPortfolioId);
 
   const shareDaysLeft = portfolio ? getDaysRemaining(portfolio.createdAt) : 0;
-  const canTrialShare = !isPremium && shareDaysLeft > 0;
-  const canUseShare = isThisPortfolioUnlocked || canTrialShare || (isPremium && !hasBoundSlot);
+  const canTrialShare = !hasPremiumAccess && shareDaysLeft > 0;
+  const canUseShare = isThisPortfolioUnlocked || canTrialShare || (hasPremiumAccess && !hasBoundSlot);
   const shareStatusText = !canUseShare
     ? (hasBoundSlot ? '🔒 Premium slot used on another portfolio' : shareDaysLeft <= 0 ? `🔒 Free share expired (${STORAGE_POLICY_DAYS}-day limit)` : '🔒 Upgrade to share')
     : canTrialShare && !isThisPortfolioUnlocked
@@ -154,7 +156,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
       }
 
       const reason = accessToModalReason(access.status, action);
-      if (reason) {
+      if (reason && !payHidden) {
         setPremiumReason(reason);
         setShowPremium(true);
       }
@@ -212,8 +214,10 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
     const allowed = await ensurePortfolioAccess('deploy');
     if (!allowed) return;
     if (!featureEnabled(planConfig, 'vercelDeploy')) {
-      setPremiumReason('general');
-      setShowPremium(true);
+      if (!payHidden) {
+        setPremiumReason('general');
+        setShowPremium(true);
+      }
       return;
     }
     setShowVercel(true);
@@ -520,15 +524,16 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
       <div ref={exportRef} className="shrink-0">
         <button
           onClick={async () => {
-            if (!isPremium) {
-              setPremiumReason('export');
-              setShowPremium(true);
+            if (!isThisPortfolioUnlocked && hasBoundSlot) {
+              if (!payHidden) {
+                setPremiumReason('unlock_another');
+                setShowPremium(true);
+              }
               return;
             }
-            if (!isThisPortfolioUnlocked && hasBoundSlot) {
-              setPremiumReason('unlock_another');
-              setShowPremium(true);
-              return;
+            if (!isThisPortfolioUnlocked && !hasPremiumAccess) {
+              const allowed = await ensurePortfolioAccess('export');
+              if (!allowed) return;
             }
             setShowExport(v => !v); setShowShare(false);
           }}
@@ -549,7 +554,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
               <p className="text-xs text-gray-500 mt-0.5">
                 {isThisPortfolioUnlocked
                   ? 'Download your portfolio as a ZIP'
-                  : promo.hidePaidPricing
+                  : payHidden
                     ? 'Premium is free — unlock export for this portfolio'
                     : hasBoundSlot
                       ? `1 portfolio per ₹99 · unlock this for ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}`
@@ -586,7 +591,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
           ✓ Download unlocked
         </span>
       )}
-      {(!isPremium || (isPremium && !isThisPortfolioUnlocked)) && !promo.hidePaidPricing && (
+      {(!hasPremiumAccess || (hasPremiumAccess && !isThisPortfolioUnlocked)) && !payHidden && (
         <button
           onClick={() => { setPremiumReason(hasBoundSlot ? 'unlock_another' : 'general'); setShowPremium(true); }}
           className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/25 hover:bg-amber-500/25 transition shrink-0"

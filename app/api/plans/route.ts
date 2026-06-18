@@ -30,6 +30,7 @@ export async function GET() {
         freeGrantEnabled: promo.freeGrantEnabled,
         slotsRemaining: promo.slotsRemaining,
         grantsExhausted: promo.grantsExhausted,
+        hidePaidPricing: promo.hidePaidPricing,
       },
     });
   } catch (err) {

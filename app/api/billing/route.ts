@@ -1,25 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth-server';
+import { enrichAuthUser, getCurrentUser } from '@/lib/auth-server';
 import { getUserBilling } from '@/lib/billing-server';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getCurrentUser(req);
-    if (!user) {
+    const raw = await getCurrentUser(req);
+    if (!raw) {
       return NextResponse.json({ error: 'Please login first' }, { status: 401 });
     }
+    const user = await enrichAuthUser(raw);
 
     const billing = await getUserBilling(user.id);
     return NextResponse.json({
       user: {
         name: user.name,
         email: user.email,
-        planName: billing.planName,
-        planSlug: billing.planSlug,
-        isPremium: billing.isPremium,
+        planName: user.planName || billing.planName,
+        planSlug: user.planSlug || billing.planSlug,
+        isPremium: user.isPremium,
         premiumPurchasedAt: billing.premiumPurchasedAt,
       },
       ...billing,
+      isPremium: user.isPremium,
+      planName: user.planName || billing.planName,
+      planSlug: user.planSlug || billing.planSlug,
     });
   } catch (err) {
     console.error('Billing error:', err);

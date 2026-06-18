@@ -15,6 +15,8 @@ const COOKIE_MAX_AGE_REMEMBER = 60 * 60 * 24 * 30; // 30 days
 const COOKIE_MAX_AGE_REGISTER = 60 * 60 * 24 * 7; // 7 days
 
 import type { AuthUser } from './types';
+import { isPaidPlanGloballyDisabled } from './promo-campaign';
+import { getPlanBySlug } from './plans-server';
 
 export type { AuthUser };
 
@@ -135,6 +137,20 @@ export async function getCurrentUser(req?: NextRequest): Promise<AuthUser | null
 export async function refreshAuthCookie(user: AuthUser) {
   const token = await createToken(user, TOKEN_TTL_REGISTER);
   await setAuthCookie(token, COOKIE_MAX_AGE_REGISTER);
+}
+
+/** Reflect global free-premium mode in the session user shown to the client. */
+export async function enrichAuthUser(user: AuthUser): Promise<AuthUser> {
+  if (!await isPaidPlanGloballyDisabled()) return user;
+  const pro = await getPlanBySlug('pro');
+  if (!pro) return { ...user, isPremium: true };
+  return {
+    ...user,
+    isPremium: true,
+    planId: pro.id,
+    planSlug: pro.slug,
+    planName: pro.name,
+  };
 }
 
 export async function fetchUserById(userId: number): Promise<AuthUser | null> {

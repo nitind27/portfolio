@@ -62,6 +62,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
   const [taxLabel, setTaxLabel] = useState('All-inclusive price');
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [paidPlanDisabled, setPaidPlanDisabled] = useState(false);
+  const [hidePaidPricing, setHidePaidPricing] = useState(false);
 
   const isRepurchase = reason === 'unlock_another' || Boolean(user?.isPremium);
 
@@ -84,6 +85,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
         if (d.tax?.label) setTaxLabel(String(d.tax.label));
         setTaxEnabled(Boolean(d.tax?.enabled));
         setPaidPlanDisabled(Boolean(d.promo?.paidPlanDisabled));
+        setHidePaidPricing(Boolean(d.promo?.hidePaidPricing) || Boolean(d.promo?.paidPlanDisabled));
       })
       .catch((err: unknown) => {
         setPlans([]);
@@ -93,6 +95,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
   }, [open]);
 
   const selectedPlan = plans.find(p => p.id === selectedPlanId);
+  const payHidden = hidePaidPricing || paidPlanDisabled;
   const pricing = selectedPlan ? calculateGst(selectedPlan.price, taxRate) : null;
 
   const handleUpgrade = async () => {
@@ -163,8 +166,12 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
                   <Crown className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-white">{isRepurchase ? 'Unlock This Portfolio' : 'Upgrade to Premium'}</h2>
-                  <p className="text-xs text-gray-400">{user?.planName || 'Free'} → ₹{selectedPlan?.price ?? process.env.NEXT_PUBLIC_PREMIUM_PRICE ?? 99} one-time</p>
+                  <h2 className="text-lg font-bold text-white">{payHidden ? 'Premium is free' : isRepurchase ? 'Unlock This Portfolio' : 'Upgrade to Premium'}</h2>
+                  <p className="text-xs text-gray-400">
+                    {payHidden
+                      ? 'Export, deploy & share — no payment needed'
+                      : `${user?.planName || 'Free'} → ₹${selectedPlan?.price ?? process.env.NEXT_PUBLIC_PREMIUM_PRICE ?? 99} one-time`}
+                  </p>
                 </div>
               </div>
               <p className="text-sm text-blue-200/80">{REASON_TEXT[reason]}</p>
@@ -255,10 +262,12 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
 
               {error && <p className="text-red-400 text-sm">{error}</p>}
 
-              {paidPlanDisabled ? (
+              {payHidden ? (
                 <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-center">
                   <CheckCircle2 className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                  <p className="text-sm text-green-200 font-medium">Premium is free for everyone right now!</p>
+                  <p className="text-sm text-green-200 font-medium">
+                    {paidPlanDisabled ? 'Premium is free for everyone right now!' : 'Free premium offer is active!'}
+                  </p>
                   <p className="text-xs text-gray-400 mt-1">No payment needed — refresh your session to access all features.</p>
                   <button
                     type="button"
@@ -268,6 +277,10 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
                     Got it
                   </button>
                 </div>
+              ) : plansLoading ? (
+                <button disabled className="w-full flex items-center justify-center gap-2 bg-white/10 text-gray-400 font-bold py-3.5 rounded-xl">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+                </button>
               ) : (
                 <>
                   <button onClick={handleUpgrade} disabled={loading || plansLoading || !selectedPlanId}

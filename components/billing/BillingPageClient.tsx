@@ -8,6 +8,7 @@ import {
   Download, ArrowLeft, Sparkles,
 } from 'lucide-react';
 import MarketingShell from '@/components/marketing/MarketingShell';
+import { usePromoStatus, shouldHidePayOptions } from '@/lib/promo-client';
 import PremiumModal from '@/components/PremiumModal';
 import { useBuilderStore } from '@/lib/store';
 import { brand } from '@/lib/brand';
@@ -45,6 +46,8 @@ function formatMoney(amount: number, currency = 'INR') {
 export default function BillingPageClient() {
   const router = useRouter();
   const { isAuthenticated, authLoading, initAuth } = useBuilderStore();
+  const promo = usePromoStatus();
+  const payHidden = shouldHidePayOptions(promo);
   const redirectingAdmin = useRedirectIfAdmin();
   const [billing, setBilling] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,7 +134,7 @@ export default function BillingPageClient() {
               ))}
             </div>
 
-            {!billing.isPremium && (
+            {!billing.isPremium && !payHidden && (
               <div
                 className="mb-8 p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 style={{ borderColor: `${brand.accent}44`, background: brand.accentMuted }}

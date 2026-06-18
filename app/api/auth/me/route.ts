@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth-server';
+import { enrichAuthUser, getCurrentUser } from '@/lib/auth-server';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getCurrentUser(req);
-    if (!user) {
+    const raw = await getCurrentUser(req);
+    if (!raw) {
       return NextResponse.json({ user: null }, { status: 401 });
     }
+    const user = await enrichAuthUser(raw);
     return NextResponse.json({ user });
   } catch (err) {
     console.error('Me error:', err);
