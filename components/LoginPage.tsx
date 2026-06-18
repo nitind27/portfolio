@@ -487,10 +487,11 @@ function AuthCardHeader({
         </button>
       )}
 
+      <div className={`absolute top-3.5 z-10 ${showClose && onClose ? 'left-3.5' : 'right-3.5'}`}>
+        <ThemeToggle variant="icon" />
+      </div>
+
       <div className="flex flex-col items-center text-center pr-0">
-        <div className="w-full flex justify-end mb-1 -mt-1">
-          <ThemeToggle variant="compact" />
-        </div>
         <BrandLogo size="sm" pad className="mb-3" />
         <h2 id="auth-modal-title" className="text-xl font-bold text-white leading-tight">
           {adminOnly ? 'Sign in' : mode === 'login' ? 'Welcome back' : 'Create your account'}
