@@ -1,13 +1,13 @@
 import JSZip from 'jszip';
 import { Portfolio } from './types';
-import { AssetBundler } from './export-assets';
+import { createServerAssetBundler } from './export-assets-server';
 import { generateExportCSS } from './export-css';
 import { generateExportHTML } from './export-html';
 import { generateExportJS } from './export-js';
 
 /** Build a static HTML zip buffer for Hostinger deploy (index.html at root). */
 export async function buildStaticSiteZip(portfolio: Portfolio): Promise<Buffer> {
-  const bundler = new AssetBundler();
+  const bundler = createServerAssetBundler();
   const processed = await bundler.processPortfolio(structuredClone(portfolio));
   const zip = new JSZip();
   zip.file('index.html', generateExportHTML(processed));

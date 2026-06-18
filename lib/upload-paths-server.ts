@@ -3,8 +3,8 @@ import { join } from 'path';
 
 /** Writable upload dirs — check legacy public/uploads first, then project-root uploads */
 export const UPLOAD_STORAGE_ROOTS = [
-  join(process.cwd(), 'public', 'uploads'),
-  join(process.cwd(), 'uploads'),
+  join(/* turbopackIgnore: true */ process.cwd(), 'public', 'uploads'),
+  join(/* turbopackIgnore: true */ process.cwd(), 'uploads'),
 ];
 
 export async function findUploadFile(relativePath: string): Promise<string | null> {
@@ -22,5 +22,5 @@ export async function findUploadFile(relativePath: string): Promise<string | nul
 }
 
 export function getPrimaryUploadRoot() {
-  return join(process.cwd(), 'uploads');
+  return join(/* turbopackIgnore: true */ process.cwd(), 'uploads');
 }

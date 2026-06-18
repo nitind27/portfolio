@@ -1,5 +1,3 @@
-import { readFile } from 'fs/promises';
-import { extname } from 'path';
 import { Portfolio } from './types';
 import { uploadApiPath } from './upload-paths';
 
@@ -13,6 +11,8 @@ const MIME_EXT: Record<string, string> = {
   'image/bmp': 'bmp',
   'image/avif': 'avif',
 };
+
+export type UploadBytesLoader = (relativePath: string) => Promise<{ bytes: Uint8Array; ext: string } | null>;
 
 export function escapeHtml(s: string): string {
   return String(s ?? '')
@@ -63,15 +63,7 @@ function shouldBundle(url: string): boolean {
   return extractUploadRelativePath(url) !== null;
 }
 
-async function loadUploadBytes(relativePath: string): Promise<{ bytes: Uint8Array; ext: string } | null> {
-  if (typeof window === 'undefined') {
-    const { findUploadFile } = await import('./upload-paths-server');
-    const full = await findUploadFile(relativePath);
-    if (!full) return null;
-    const buf = await readFile(full);
-    const ext = extname(full).slice(1).toLowerCase() || 'png';
-    return { bytes: new Uint8Array(buf), ext };
-  }
+export async function loadUploadBytesFromApi(relativePath: string): Promise<{ bytes: Uint8Array; ext: string } | null> {
   try {
     const res = await fetch(uploadApiPath(relativePath), { credentials: 'include' });
     if (!res.ok) return null;
@@ -87,6 +79,11 @@ export class AssetBundler {
   private counter = 0;
   private cache = new Map<string, string>();
   readonly files = new Map<string, Uint8Array>();
+  private readonly loadUploadBytes: UploadBytesLoader;
+
+  constructor(loadUploadBytes: UploadBytesLoader = loadUploadBytesFromApi) {
+    this.loadUploadBytes = loadUploadBytes;
+  }
 
   async resolve(url: string): Promise<string> {
     if (!url) return '';
@@ -99,7 +96,7 @@ export class AssetBundler {
 
     const uploadRel = extractUploadRelativePath(url);
     if (uploadRel) {
-      const loaded = await loadUploadBytes(uploadRel);
+      const loaded = await this.loadUploadBytes(uploadRel);
       if (!loaded) return url;
       bytes = loaded.bytes;
       ext = loaded.ext;

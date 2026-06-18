@@ -1,5 +1,5 @@
 import { Portfolio } from './types';
-import { AssetBundler } from './export-assets';
+import { createServerAssetBundler } from './export-assets-server';
 import { generateExportCSS } from './export-css';
 import { generateExportHTML } from './export-html';
 import { generateExportJS } from './export-js';
@@ -20,7 +20,7 @@ function esc(s: string): string {
 }
 
 export async function buildNextjsDeployFiles(portfolio: Portfolio): Promise<VercelDeployFile[]> {
-  const bundler = new AssetBundler();
+  const bundler = createServerAssetBundler();
   const processed = await bundler.processPortfolio(structuredClone(portfolio));
   const css = generateExportCSS(processed);
   const html = generateExportHTML(processed);
@@ -121,7 +121,7 @@ export default config;`,
 }
 
 export async function buildStaticDeployFiles(portfolio: Portfolio): Promise<VercelDeployFile[]> {
-  const bundler = new AssetBundler();
+  const bundler = createServerAssetBundler();
   const processed = await bundler.processPortfolio(structuredClone(portfolio));
   const files: VercelDeployFile[] = [
     { file: 'index.html', data: generateExportHTML(processed) },
