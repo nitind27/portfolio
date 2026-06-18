@@ -14,7 +14,9 @@ import {
   HelpCircle, PlayCircle,
 } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
-import { brand, STORAGE_POLICY_DAYS } from '@/lib/brand';
+import ThemeToggle from '../theme/ThemeToggle';
+import { useBrand } from '../theme/ThemeProvider';
+import { STORAGE_POLICY_DAYS } from '@/lib/brand';
 import { formatDaysRemaining, getDaysRemaining } from '@/lib/project-expiry';
 import PremiumModal from '../PremiumModal';
 import HostingerDeployModal from '../HostingerDeployModal';
@@ -92,6 +94,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
   } = useBuilderStore();
 
   const portfolio = getActivePortfolio();
+  const brand = useBrand();
 
   const [exporting, setExporting] = useState(false);
   const [showExport, setShowExport] = useState(false);
@@ -560,6 +563,8 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
           ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}
         </button>
       )}
+
+      <ThemeToggle variant="icon" />
 
       <button
         onClick={onShowShortcuts}

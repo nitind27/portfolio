@@ -5,8 +5,12 @@ import { APP_NAME, APP_DESCRIPTION, LOGO_SRC, DESKTOP_VIEWPORT_WIDTH } from '@/l
 import MaintenanceGate from '@/components/MaintenanceGate';
 import SiteAnalyticsTracker from '@/components/SiteAnalyticsTracker';
 import PromoModalProvider from '@/components/PromoModalProvider';
+import { ThemeProvider } from '@/components/theme/ThemeProvider';
+import { getThemeInitScript } from '@/lib/app-theme';
 
 const inter = Inter({ subsets: ['latin'] });
+
+const themeInitScript = getThemeInitScript();
 
 export const metadata: Metadata = {
   title: `${APP_NAME} — Build & Launch Your Website`,
@@ -25,13 +29,18 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning data-theme="dark">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className={inter.className}>
-        <MaintenanceGate>
-          <SiteAnalyticsTracker />
-          <PromoModalProvider />
-          {children}
-        </MaintenanceGate>
+        <ThemeProvider>
+          <MaintenanceGate>
+            <SiteAnalyticsTracker />
+            <PromoModalProvider />
+            {children}
+          </MaintenanceGate>
+        </ThemeProvider>
       </body>
     </html>
   );

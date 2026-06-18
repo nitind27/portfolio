@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Wrench, Clock, Mail, Shield } from 'lucide-react';
 import BrandLogo from './BrandLogo';
-import { APP_NAME, APP_TAGLINE, SUPPORT_EMAIL, brand } from '@/lib/brand';
+import ThemeToggle from './theme/ThemeToggle';
+import { useBrand } from './theme/ThemeProvider';
+import { APP_NAME, APP_TAGLINE, SUPPORT_EMAIL } from '@/lib/brand';
 
 interface PublicStatus {
   maintenanceTitle: string;
@@ -20,6 +22,7 @@ const FALLBACK: PublicStatus = {
 
 export default function MaintenancePage() {
   const [status, setStatus] = useState<PublicStatus>(FALLBACK);
+  const brand = useBrand();
 
   useEffect(() => {
     fetch('/api/site-status')
@@ -37,7 +40,7 @@ export default function MaintenancePage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: brand.bg, color: brand.text }}>
+    <div className="theme-aware min-h-screen flex flex-col relative overflow-hidden" style={{ background: brand.bg, color: brand.text }}>
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -52,8 +55,9 @@ export default function MaintenancePage() {
         style={{ background: brand.accent }}
       />
 
-      <header className="relative z-10 px-6 py-6 flex items-center justify-center max-w-4xl mx-auto w-full">
+      <header className="relative z-10 px-6 py-6 flex items-center justify-between max-w-4xl mx-auto w-full">
         <BrandLogo size="sm" />
+        <ThemeToggle variant="compact" />
       </header>
 
       <main className="relative z-10 flex-1 flex items-center justify-center px-6 py-12">

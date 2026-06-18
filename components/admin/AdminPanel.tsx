@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import BrandLogo from '../BrandLogo';
-import { brand } from '@/lib/brand';
+import ThemeToggle from '@/components/theme/ThemeToggle';
+import { useBrand } from '@/components/theme/ThemeProvider';
 import type { SubscriptionPlan } from '@/lib/plans-types';
 import type { ExtendedAdminStats, AdminPaymentRow } from '@/lib/admin-data';
 import { useBuilderStore } from '@/lib/store';
@@ -69,6 +70,7 @@ interface AdminUser {
 
 export default function AdminPanel() {
   const router = useRouter();
+  const brand = useBrand();
   const { user, logout } = useBuilderStore();
   const [tab, setTab] = useState<Tab>('overview');
   const [loading, setLoading] = useState(true);
@@ -128,7 +130,7 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="admin-panel min-h-screen" style={{ background: '#060b14', color: brand.text }}>
+    <div className="theme-aware admin-panel min-h-screen" style={{ background: brand.bg, color: brand.text }}>
       {/* Sidebar — fixed full height, footer always visible */}
       <aside
         className="fixed left-0 top-0 z-30 hidden md:flex flex-col w-64 h-screen border-r"
@@ -208,12 +210,14 @@ export default function AdminPanel() {
       <main className="md:ml-64 flex flex-col min-h-screen min-w-0 pb-14 md:pb-0">
         {/* Top bar */}
         <header className="sticky top-0 z-20 border-b px-4 md:px-8 py-4 flex items-center justify-between gap-4 backdrop-blur-xl"
-          style={{ background: 'rgba(6,11,20,0.85)', borderColor: brand.border }}>
+          style={{ background: `${brand.surface}dd`, borderColor: brand.border }}>
           <div className="min-w-0">
-            <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-0.5">{currentNav?.group}</p>
-            <h1 className="text-xl font-bold text-white truncate">{currentNav?.label}</h1>
+            <p className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: brand.textDim }}>{currentNav?.group}</p>
+            <h1 className="text-xl font-bold truncate" style={{ color: brand.text }}>{currentNav?.label}</h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <ThemeToggle variant="compact" className="hidden sm:inline-flex" />
+            <ThemeToggle variant="icon" className="sm:hidden" />
             {stats && stats.pendingPayments > 0 && (
               <button onClick={() => setTab('payments')} className="relative p-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20">
                 <Bell className="w-4 h-4" />

@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Lock } from 'lucide-react';
-import { brand } from '@/lib/brand';
+import { useBrand } from '../theme/ThemeProvider';
 
 export interface PanelTabItem<T extends string = string> {
   id: T;
@@ -19,6 +19,7 @@ interface Props<T extends string = string> {
 }
 
 export default function ScrollablePanelTabs<T extends string>({ tabs, activeId, onSelect, className = '' }: Props<T>) {
+  const brand = useBrand();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -126,9 +127,10 @@ export default function ScrollablePanelTabs<T extends string>({ tabs, activeId, 
                 type="button"
                 data-panel-tab={t.id}
                 onClick={() => onSelect(t.id)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap shrink-0 ${
-                  active ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : t.locked ? 'text-gray-600 hover:text-amber-400/90 hover:bg-amber-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap shrink-0"
+                style={active
+                  ? { background: brand.accent, color: brand.onAccent, boxShadow: `0 1px 8px ${brand.accentGlow}` }
+                  : { color: t.locked ? brand.textDim : brand.textMuted }}
               >
                 <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden sm:inline">{t.label}</span>

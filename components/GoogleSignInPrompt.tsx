@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles } from 'lucide-react';
 import BrandLogo from './BrandLogo';
-import { APP_NAME, brand } from '@/lib/brand';
+import { APP_NAME } from '@/lib/brand';
+import { useBrand, useTheme } from '@/components/theme/ThemeProvider';
 
 const GOOGLE_AUTH_ENABLED = Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 const DISMISS_KEY = 'site99_google_prompt_dismissed';
@@ -27,6 +28,8 @@ interface Props {
 }
 
 export default function GoogleSignInPrompt({ forceShow = false, className = '' }: Props) {
+  const brand = useBrand();
+  const { isLight } = useTheme();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -64,7 +67,7 @@ export default function GoogleSignInPrompt({ forceShow = false, className = '' }
           onClick={e => e.stopPropagation()}
         >
           <div
-            className="rounded-2xl border overflow-hidden shadow-2xl shadow-black/50"
+            className="theme-aware rounded-2xl border overflow-hidden shadow-2xl shadow-black/50"
             style={{ borderColor: `${brand.accent}33`, background: brand.surface }}
           >
             {/* Header — matches auth modal */}
@@ -72,7 +75,9 @@ export default function GoogleSignInPrompt({ forceShow = false, className = '' }
               className="relative px-5 pt-4 pb-3 border-b"
               style={{
                 borderColor: brand.border,
-                background: `linear-gradient(145deg, rgba(242,140,40,0.18) 0%, ${brand.navy} 50%, ${brand.surface} 100%)`,
+                background: isLight
+                  ? `linear-gradient(145deg, ${brand.accentMuted} 0%, ${brand.surface} 60%, ${brand.surfaceHover} 100%)`
+                  : `linear-gradient(145deg, rgba(242,140,40,0.18) 0%, ${brand.navy} 50%, ${brand.surface} 100%)`,
               }}
             >
               <button
@@ -105,7 +110,7 @@ export default function GoogleSignInPrompt({ forceShow = false, className = '' }
               <a
                 href="/api/auth/google"
                 className="flex items-center justify-center gap-2.5 w-full py-2.5 px-4 rounded-xl text-sm font-semibold border transition hover:bg-white/[0.06] active:scale-[0.99]"
-                style={{ borderColor: brand.border, background: 'rgba(255,255,255,0.03)', color: brand.text }}
+                style={{ borderColor: brand.border, background: isLight ? 'rgba(15,23,42,0.03)' : 'rgba(255,255,255,0.03)', color: brand.text }}
               >
                 <GoogleG size={18} />
                 Continue with Google

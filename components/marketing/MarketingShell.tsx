@@ -5,7 +5,9 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
-import { APP_NAME, brand } from '@/lib/brand';
+import ThemeToggle from '@/components/theme/ThemeToggle';
+import { useBrand } from '@/components/theme/ThemeProvider';
+import { APP_NAME } from '@/lib/brand';
 
 const MAIN_LINKS = [
   { href: '/', label: 'Home' },
@@ -33,9 +35,10 @@ interface Props {
 export default function MarketingShell({ children, title, subtitle, narrow }: Props) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const brand = useBrand();
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: brand.bg, color: brand.text }}>
+    <div className="theme-aware min-h-screen flex flex-col" style={{ background: brand.bg, color: brand.text }}>
       <header
         className="sticky top-0 z-50 border-b backdrop-blur-md"
         style={{ background: `${brand.bg}ee`, borderColor: brand.border }}
@@ -62,6 +65,7 @@ export default function MarketingShell({ children, title, subtitle, narrow }: Pr
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
+            <ThemeToggle variant="compact" />
             <Link
               href="/ask"
               className="px-3 py-1.5 rounded-lg text-sm font-medium border transition"
@@ -89,6 +93,9 @@ export default function MarketingShell({ children, title, subtitle, narrow }: Pr
 
         {mobileOpen && (
           <div className="md:hidden border-t px-5 py-4 space-y-1" style={{ borderColor: brand.border, background: brand.surface }}>
+            <div className="pb-2 mb-2 border-b" style={{ borderColor: brand.border }}>
+              <ThemeToggle variant="full" className="w-full" />
+            </div>
             {[...MAIN_LINKS, ...LEGAL_LINKS].map(link => (
               <Link
                 key={link.href}

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Gift, Sparkles } from 'lucide-react';
-import { brand } from '@/lib/brand';
+import { useBrand } from '@/components/theme/ThemeProvider';
 import { trackAnalytics } from '@/lib/analytics-client';
 import { useBuilderStore } from '@/lib/store';
 import type { PublicPromoModal } from '@/lib/promo-client';
@@ -16,6 +16,7 @@ function dismissKey(campaignKey: string) {
 export default function PromoModalProvider() {
   const router = useRouter();
   const pathname = usePathname();
+  const brand = useBrand();
   const { isAuthenticated, initAuth } = useBuilderStore();
   const [modal, setModal] = useState<PublicPromoModal | null>(null);
   const [showToLoggedIn, setShowToLoggedIn] = useState(false);
@@ -79,7 +80,7 @@ export default function PromoModalProvider() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 20 }}
             transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-            className="relative w-full max-w-md rounded-2xl border overflow-hidden shadow-2xl"
+            className="theme-aware relative w-full max-w-md rounded-2xl border overflow-hidden shadow-2xl"
             style={{ background: brand.surface, borderColor: brand.border }}
             onClick={e => e.stopPropagation()}
           >

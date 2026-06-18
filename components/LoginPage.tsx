@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useBuilderStore } from '@/lib/store';
 import { Mail, Lock, User, Phone, Loader2, Eye, EyeOff, X, ShieldCheck } from 'lucide-react';
 import BrandLogo from './BrandLogo';
-import { brand, STORAGE_POLICY_DAYS } from '@/lib/brand';
+import ThemeToggle from './theme/ThemeToggle';
+import { useBrand, useTheme } from './theme/ThemeProvider';
+import { STORAGE_POLICY_DAYS } from '@/lib/brand';
 
 export type AuthMode = 'login' | 'register';
 
@@ -14,6 +16,7 @@ const EMAIL_KEY = 'site99_saved_email';
 const GOOGLE_AUTH_ENABLED = Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 
 function GoogleSignInButton() {
+  const brand = useBrand();
   if (!GOOGLE_AUTH_ENABLED) return null;
 
   return (
@@ -41,7 +44,7 @@ function GoogleSignInButton() {
 }
 
 const INPUT_CLS =
-  'w-full bg-[#0a1628] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition';
+  'w-full bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[var(--brand-text)] placeholder:text-[var(--brand-text-dim)] focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition';
 
 function PasswordInput({
   value,
@@ -95,6 +98,7 @@ interface AuthFormProps {
 
 function AuthForm({ mode, setMode, onClose, compact, formId, onSubmitState, initialError, showGoogleInline = false, adminOnly = false }: AuthFormProps) {
   const { login, register, isAuthenticated } = useBuilderStore();
+  const brand = useBrand();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -422,6 +426,7 @@ interface LoginPageProps {
 export default function LoginPage({ variant = 'page', onClose, initialMode = 'login' }: LoginPageProps) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const formId = useId();
+  const brand = useBrand();
 
   useEffect(() => {
     setMode(initialMode);
@@ -432,11 +437,11 @@ export default function LoginPage({ variant = 'page', onClose, initialMode = 'lo
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: brand.bg }}>
+    <div className="theme-aware min-h-screen flex items-center justify-center p-4" style={{ background: brand.bg }}>
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[420px] rounded-2xl border overflow-hidden shadow-2xl"
+        className="theme-aware w-full max-w-[420px] rounded-2xl border overflow-hidden shadow-2xl"
         style={{ borderColor: brand.border, background: brand.surface }}
       >
         <AuthCardHeader mode={mode} onClose={undefined} showClose={false} />
@@ -459,12 +464,16 @@ function AuthCardHeader({
   showClose?: boolean;
   adminOnly?: boolean;
 }) {
+  const brand = useBrand();
+  const { isLight } = useTheme();
   return (
     <div
       className="relative px-6 pt-5 pb-4 border-b shrink-0"
       style={{
         borderColor: brand.border,
-        background: `linear-gradient(145deg, rgba(242,140,40,0.18) 0%, ${brand.navy} 45%, ${brand.surface} 100%)`,
+        background: isLight
+          ? `linear-gradient(145deg, ${brand.accentMuted} 0%, ${brand.surface} 60%, ${brand.surfaceHover} 100%)`
+          : `linear-gradient(145deg, rgba(242,140,40,0.18) 0%, ${brand.navy} 45%, ${brand.surface} 100%)`,
       }}
     >
       {showClose && onClose && (
@@ -479,6 +488,9 @@ function AuthCardHeader({
       )}
 
       <div className="flex flex-col items-center text-center pr-0">
+        <div className="w-full flex justify-end mb-1 -mt-1">
+          <ThemeToggle variant="compact" />
+        </div>
         <BrandLogo size="sm" pad className="mb-3" />
         <h2 id="auth-modal-title" className="text-xl font-bold text-white leading-tight">
           {adminOnly ? 'Sign in' : mode === 'login' ? 'Welcome back' : 'Create your account'}
@@ -504,6 +516,8 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ open, onClose, initialMode = 'login', initialError = '', adminOnly = false }: AuthModalProps) {
+  const brand = useBrand();
+  const { isLight } = useTheme();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [submitState, setSubmitState] = useState({ loading: false, error: '' });
   const formId = useId();
@@ -562,7 +576,7 @@ export function AuthModal({ open, onClose, initialMode = 'login', initialError =
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 16 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-[420px] rounded-2xl border overflow-hidden shadow-2xl shadow-black/50"
+            className="theme-aware relative w-full max-w-[420px] rounded-2xl border overflow-hidden shadow-2xl shadow-black/50"
             style={{ borderColor: `${brand.accent}33`, background: brand.surface }}
             onClick={e => e.stopPropagation()}
           >
@@ -586,7 +600,7 @@ export function AuthModal({ open, onClose, initialMode = 'login', initialError =
 
             <div
               className="px-6 pt-3 pb-4 border-t space-y-2.5"
-              style={{ borderColor: brand.border, background: 'rgba(0,0,0,0.15)' }}
+              style={{ borderColor: brand.border, background: isLight ? 'rgba(15,23,42,0.03)' : 'rgba(0,0,0,0.15)' }}
             >
               {submitState.error && (
                 <div className="px-3 py-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 text-xs">
@@ -617,7 +631,7 @@ export function AuthModal({ open, onClose, initialMode = 'login', initialError =
             {!adminOnly && (
               <div
                 className="px-6 py-2.5 border-t text-center"
-                style={{ borderColor: brand.border, background: 'rgba(0,0,0,0.25)' }}
+                style={{ borderColor: brand.border, background: isLight ? 'rgba(15,23,42,0.04)' : 'rgba(0,0,0,0.25)' }}
               >
                 <p className="text-[10px] text-gray-600">
                   By continuing you agree to our{' '}

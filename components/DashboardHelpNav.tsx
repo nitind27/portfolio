@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BookOpen, Bot, Receipt, ChevronDown, HelpCircle, UserCircle, MessageSquare } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { brand } from '@/lib/brand';
+import { useBrand, useTheme } from './theme/ThemeProvider';
 
 const LINKS = [
   {
@@ -60,39 +60,48 @@ function NavPill({
   accent?: boolean;
   active: boolean;
 }) {
+  const brand = useBrand();
+  const { isLight } = useTheme();
+
+  let pillStyle: React.CSSProperties | undefined;
+  let pillClass = 'group flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200';
+
+  if (active && accent) {
+    pillClass += ' shadow-sm';
+    pillStyle = {
+      background: `linear-gradient(135deg, ${brand.accent}, ${brand.accentHover})`,
+      color: brand.onAccent,
+    };
+  } else if (active) {
+    pillStyle = {
+      background: isLight ? brand.accentMuted : 'rgba(255,255,255,0.1)',
+      color: brand.text,
+    };
+  } else if (accent) {
+    pillStyle = {
+      background: brand.accentMuted,
+      border: `1px solid ${brand.accent}33`,
+      color: brand.accent,
+    };
+  } else {
+    pillStyle = { color: brand.textMuted };
+  }
+
   return (
-    <Link
-      href={href}
-      title={label}
-      className={`group flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-        active
-          ? accent
-            ? 'text-white shadow-sm'
-            : 'bg-white/10 text-white'
-          : accent
-            ? 'text-orange-200/90 hover:text-white'
-            : 'text-[#94a3b8] hover:text-white hover:bg-white/[0.06]'
-      }`}
-      style={
-        active && accent
-          ? { background: `linear-gradient(135deg, ${brand.accent}, ${brand.accentHover})` }
-          : accent && !active
-            ? { background: brand.accentMuted, border: `1px solid ${brand.accent}33` }
-            : undefined
-      }
-    >
+    <Link href={href} title={label} className={pillClass} style={pillStyle}>
       <span
-        className={`flex items-center justify-center w-6 h-6 rounded-md shrink-0 transition-colors ${
-          active
+        className="flex items-center justify-center w-6 h-6 rounded-md shrink-0 transition-colors"
+        style={{
+          background: active
             ? accent
-              ? 'bg-white/20'
-              : 'bg-white/10'
+              ? 'rgba(255,255,255,0.2)'
+              : isLight ? 'rgba(15,23,42,0.06)' : 'rgba(255,255,255,0.1)'
             : accent
-              ? 'bg-orange-500/15 group-hover:bg-orange-500/25'
-              : 'bg-white/[0.04] group-hover:bg-white/[0.08]'
-        }`}
+              ? brand.accentMuted
+              : isLight ? 'rgba(15,23,42,0.04)' : 'rgba(255,255,255,0.04)',
+        }}
       >
-        <Icon className="w-3.5 h-3.5" style={accent && !active ? { color: brand.accentLight } : undefined} />
+        <Icon className="w-3.5 h-3.5" style={accent && !active ? { color: brand.accent } : undefined} />
       </span>
       <span className="whitespace-nowrap">
         <span className="hidden lg:inline">{label}</span>
@@ -104,6 +113,7 @@ function NavPill({
 
 export default function DashboardHelpNav() {
   const pathname = usePathname();
+  const brand = useBrand();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -117,10 +127,9 @@ export default function DashboardHelpNav() {
 
   return (
     <>
-      {/* Tablet+ — segmented nav */}
       <nav
         className="hidden sm:flex items-center gap-0.5 p-1 rounded-xl border backdrop-blur-sm"
-        style={{ borderColor: brand.border, background: `${brand.surface}99` }}
+        style={{ borderColor: brand.border, background: `${brand.surface}ee` }}
         aria-label="Help and account links"
       >
         {LINKS.map(link => (
@@ -132,7 +141,6 @@ export default function DashboardHelpNav() {
         ))}
       </nav>
 
-      {/* Mobile — dropdown */}
       <div ref={ref} className="relative sm:hidden">
         <button
           type="button"
@@ -162,20 +170,21 @@ export default function DashboardHelpNav() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className={`flex items-start gap-3 px-3 py-2.5 transition hover:bg-white/[0.05] ${active ? 'bg-white/[0.06]' : ''}`}
+                  className="flex items-start gap-3 px-3 py-2.5 transition"
+                  style={{ background: active ? brand.accentMuted : undefined }}
                 >
                   <span
                     className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
                     style={{
-                      background: 'accent' in link && link.accent ? brand.accentMuted : 'rgba(255,255,255,0.04)',
-                      color: 'accent' in link && link.accent ? brand.accentLight : brand.textMuted,
+                      background: 'accent' in link && link.accent ? brand.accentMuted : brand.surfaceHover,
+                      color: 'accent' in link && link.accent ? brand.accent : brand.textMuted,
                     }}
                   >
                     <Icon className="w-4 h-4" />
                   </span>
                   <span>
-                    <span className="block text-sm font-medium text-white">{link.label}</span>
-                    <span className="block text-[11px] text-gray-500 mt-0.5">{link.hint}</span>
+                    <span className="block text-sm font-medium" style={{ color: brand.text }}>{link.label}</span>
+                    <span className="block text-[11px] mt-0.5" style={{ color: brand.textDim }}>{link.hint}</span>
                   </span>
                 </Link>
               );

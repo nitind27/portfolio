@@ -22,6 +22,7 @@ import { APP_NAME } from '@/lib/brand';
 import { getAboutLayoutPreview, normalizeAboutLayout } from '@/lib/about-layouts';
 import { getFooterNavItems } from '@/lib/footer-nav';
 import type { FooterConfig, FooterNavLayout } from '@/lib/types';
+import { resolvePortfolioTheme, contrastingText } from '@/lib/theme-contrast';
 
 interface Props {
   portfolio: Portfolio;
@@ -31,19 +32,20 @@ interface Props {
 }
 
 function getThemeStyles(theme: ThemeConfig): React.CSSProperties {
+  const resolved = resolvePortfolioTheme(theme);
   const radii: Record<string, string> = { none: '0', sm: '4px', md: '8px', lg: '16px', full: '9999px' };
   const spacing: Record<string, string> = { compact: '3rem', normal: '5rem', relaxed: '8rem' };
   return {
-    '--primary': theme.primaryColor,
-    '--secondary': theme.secondaryColor,
-    '--accent': theme.accentColor,
-    '--bg': theme.backgroundColor,
-    '--text': theme.textColor,
-    '--radius': radii[theme.borderRadius],
-    '--spacing': spacing[theme.spacing],
-    fontFamily: `'${theme.fontFamily}', sans-serif`,
-    background: theme.backgroundColor,
-    color: theme.textColor,
+    '--primary': resolved.primaryColor,
+    '--secondary': resolved.secondaryColor,
+    '--accent': resolved.accentColor,
+    '--bg': resolved.backgroundColor,
+    '--text': resolved.textColor,
+    '--radius': radii[resolved.borderRadius],
+    '--spacing': spacing[resolved.spacing],
+    fontFamily: `'${resolved.fontFamily}', sans-serif`,
+    background: resolved.backgroundColor,
+    color: resolved.textColor,
   } as React.CSSProperties;
 }
 
@@ -454,7 +456,9 @@ function NavLinks({ sections, navbar, theme, linkStyle, linkGap, linkPaddingX, h
   const labels = navbar.customLabels ?? {};
   const fontSize = navbar.linkFontSize;
   const fontWeight = navbar.linkFontWeight;
-  const textColor = navbar.textColor;
+  const textColor = navbar.textColor
+    ? contrastingText(theme.backgroundColor, navbar.textColor)
+    : undefined;
 
   const visibleSections = sections.filter(s => !hidden.has(s.id));
 
@@ -930,7 +934,8 @@ function SiteNavMenu({ sections, name, theme, navbar, social, radius, menuStyle,
 
 // ── Main export ──────────────────────────────────────────────────────────────
 export default function PortfolioPreview({ portfolio, deviceView = 'desktop', activeSectionId, onSectionSelect }: Props) {
-  const { sections, theme, popup } = portfolio;
+  const { sections, popup } = portfolio;
+  const theme = resolvePortfolioTheme(portfolio.theme);
   const social = portfolio.social || {};
   const visibleSections = sections.filter(s => s.visible).sort((a, b) => a.order - b.order);
 

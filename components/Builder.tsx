@@ -10,6 +10,7 @@ import { useDesktopLayout } from './builder/useDesktopLayout';
 import KeyboardShortcutsModal from './builder/KeyboardShortcutsModal';
 import OnboardingTour from './builder/OnboardingTour';
 import BuilderHelpFab from './builder/BuilderHelpFab';
+import { useBrand } from './theme/ThemeProvider';
 import { BUILDER_TOUR_STEPS } from '@/lib/tour-steps';
 import { clampSidebarWidth, loadBuilderLayout, saveBuilderLayout } from '@/lib/builder-layout';
 import { Layers, Eye, Settings2 } from 'lucide-react';
@@ -102,8 +103,10 @@ export default function Builder() {
     setShowTour(true);
   };
 
+  const brand = useBrand();
+
   return (
-    <div className="h-screen bg-[#0a0a0a] text-white flex flex-col overflow-hidden">
+    <div className="theme-aware builder-shell h-screen flex flex-col overflow-hidden" style={{ background: brand.bg, color: brand.text }}>
       <BuilderTopbar
         rightTab={rightTab}
         setRightTab={setRightTab}
@@ -134,7 +137,7 @@ export default function Builder() {
       </div>
 
       {/* Mobile bottom navigation */}
-      <nav className="lg:hidden border-t border-white/10 bg-[#0d0d0d] flex shrink-0 safe-area-pb">
+      <nav className="lg:hidden border-t flex shrink-0 safe-area-pb" style={{ borderColor: brand.border, background: brand.surface }}>
         {([
           { id: 'sections' as const, icon: Layers, label: 'Sections' },
           { id: 'preview' as const, icon: Eye, label: 'Preview' },
@@ -143,9 +146,8 @@ export default function Builder() {
           <button
             key={id}
             onClick={() => setMobilePanel(id)}
-            className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition ${
-              mobilePanel === id ? 'text-blue-400' : 'text-gray-500'
-            }`}
+            className="flex-1 flex flex-col items-center gap-0.5 py-2.5 transition"
+            style={{ color: mobilePanel === id ? brand.accent : brand.textDim }}
           >
             <Icon className="w-5 h-5" />
             <span className="text-[10px] font-medium">{label}</span>

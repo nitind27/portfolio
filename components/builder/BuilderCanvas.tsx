@@ -7,6 +7,7 @@ import SectionEditor from './SectionEditor';
 import { Eye } from 'lucide-react';
 import type { RightTab } from '../Builder';
 import { previewSiteUrl } from '@/lib/brand';
+import { useBrand, useTheme } from '../theme/ThemeProvider';
 
 const DEVICE_WIDTHS: Record<string, number | string> = {
   desktop: '100%',
@@ -19,6 +20,8 @@ export default function BuilderCanvas({ rightTab, onSectionSelect }: { rightTab:
     getActivePortfolio, deviceView, previewMode, activeSection, canvasZoom, setCanvasZoom,
   } = useBuilderStore();
   const portfolio = getActivePortfolio();
+  const brand = useBrand();
+  const { isLight } = useTheme();
   const isNarrow = deviceView !== 'desktop';
   const devicePx = typeof DEVICE_WIDTHS[deviceView] === 'number' ? DEVICE_WIDTHS[deviceView] as number : null;
   const previewContentRef = useRef<HTMLDivElement>(null);
@@ -48,7 +51,7 @@ export default function BuilderCanvas({ rightTab, onSectionSelect }: { rightTab:
   if (!portfolio) return null;
 
   return (
-    <main data-tour="canvas-preview" className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#060606]">
+    <main data-tour="canvas-preview" className="flex-1 flex flex-col min-h-0 overflow-hidden" style={{ background: isLight ? brand.bg : '#060606' }}>
       {editorOpen && (
         <div className="hidden lg:flex items-center justify-between gap-2 px-4 py-2 bg-blue-600/10 border-b border-blue-500/20 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
@@ -63,7 +66,12 @@ export default function BuilderCanvas({ rightTab, onSectionSelect }: { rightTab:
 
       <div
         className="flex-1 min-h-0 overflow-auto"
-        style={{ backgroundImage: 'radial-gradient(circle, #ffffff08 1px, transparent 1px)', backgroundSize: '24px 24px' }}
+        style={{
+          backgroundImage: isLight
+            ? 'radial-gradient(circle, rgba(15,23,42,0.06) 1px, transparent 1px)'
+            : 'radial-gradient(circle, #ffffff08 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+        }}
       >
         <div className="flex justify-center items-start p-3 sm:p-6 min-h-full">
           <div className="transition-all duration-300 w-full shrink-0" style={{ maxWidth: DEVICE_WIDTHS[deviceView] }}>
@@ -71,8 +79,10 @@ export default function BuilderCanvas({ rightTab, onSectionSelect }: { rightTab:
               className="origin-top transition-transform duration-200 mx-auto"
               style={{ transform: `scale(${canvasZoom / 100})`, transformOrigin: 'top center', width: devicePx ? devicePx : '100%' }}
             >
-              <div className={`bg-[#111] rounded-2xl overflow-hidden border border-white/10 shadow-2xl ${isNarrow ? 'mx-auto' : ''}`}>
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-[#1a1a1a] border-b border-white/10 select-none">
+              <div className={`rounded-2xl overflow-hidden border shadow-2xl ${isNarrow ? 'mx-auto' : ''}`}
+                style={{ background: isLight ? brand.surface : '#111', borderColor: brand.border }}>
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b select-none"
+                  style={{ background: isLight ? brand.surfaceHover : '#1a1a1a', borderColor: brand.border }}>
                   <div className="flex gap-1.5">
                     <div className="w-3 h-3 rounded-full bg-red-500/70" />
                     <div className="w-3 h-3 rounded-full bg-yellow-500/70" />

@@ -9,6 +9,7 @@ import { PortfolioSection, SectionType } from '@/lib/types';
 import { GripVertical, Eye, EyeOff, Trash2, Plus, Search, ChevronDown, ChevronRight, Lock } from 'lucide-react';
 import { fetchPlansConfig, sectionLocked, type PlansConfigResponse } from '@/lib/plans-client';
 import PremiumModal from '../PremiumModal';
+import { useBrand, useTheme } from '../theme/ThemeProvider';
 
 const SECTION_ICONS: Record<string, string> = {
   hero: '🏠', about: '👤', skills: '⚡', experience: '💼', projects: '🚀',
@@ -33,14 +34,22 @@ interface Props {
 function SortableSection({ section, onSectionSelect }: { section: PortfolioSection; onSectionSelect: (id: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
   const { toggleSectionVisibility, removeSection, activeSection, setMobilePanel } = useBuilderStore();
+  const brand = useBrand();
+  const { isLight } = useTheme();
   const isActive = activeSection === section.id;
 
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-      className={`group flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-all ${
-        isActive ? 'bg-blue-600/20 border border-blue-500/40' : 'hover:bg-white/5 border border-transparent'
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        background: isActive ? `${brand.accent}22` : undefined,
+        borderColor: isActive ? `${brand.accent}66` : 'transparent',
+      }}
+      className={`group flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-all border ${
+        !isActive ? (isLight ? 'hover:bg-black/[0.03]' : 'hover:bg-white/5') : ''
       } ${!section.visible ? 'opacity-40' : ''}`}
       onClick={() => {
         onSectionSelect(section.id);
@@ -51,7 +60,7 @@ function SortableSection({ section, onSectionSelect }: { section: PortfolioSecti
         <GripVertical className="w-3.5 h-3.5" />
       </button>
       <span className="text-sm shrink-0">{SECTION_ICONS[section.type] || '📄'}</span>
-      <span className="flex-1 text-xs font-medium truncate text-gray-300">{section.title}</span>
+      <span className="flex-1 text-xs font-medium truncate" style={{ color: brand.text }}>{section.title}</span>
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition shrink-0">
         <button onClick={e => { e.stopPropagation(); toggleSectionVisibility(section.id); }}
           className={`p-1 rounded transition ${section.visible ? 'hover:text-blue-400' : 'text-gray-600 hover:text-gray-400'}`}>
@@ -96,6 +105,8 @@ function SectionAddButton({
 
 export default function BuilderSidebar({ onSectionSelect }: Props) {
   const { getActivePortfolio, reorderSections, addSection } = useBuilderStore();
+  const brand = useBrand();
+  const { isLight } = useTheme();
   const portfolio = getActivePortfolio();
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState('');
@@ -146,20 +157,25 @@ export default function BuilderSidebar({ onSectionSelect }: Props) {
 
   return (
     <>
-      <aside data-tour="sections-panel" className="w-full h-full border-r border-white/10 bg-[#0d0d0d] flex flex-col overflow-hidden min-w-0">
-        {/* Header */}
-        <div className="p-2.5 border-b border-white/10 space-y-2">
+      <aside data-tour="sections-panel" className="w-full h-full border-r flex flex-col overflow-hidden min-w-0"
+        style={{ borderColor: brand.border, background: brand.surface }}>
+        <div className="p-2.5 border-b space-y-2" style={{ borderColor: brand.border }}>
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Sections</p>
-            <span className="text-xs text-gray-600">{sections.length}</span>
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: brand.textDim }}>Sections</p>
+            <span className="text-xs" style={{ color: brand.textDim }}>{sections.length}</span>
           </div>
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-600" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3" style={{ color: brand.textDim }} />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search sections..."
-              className="w-full bg-white/5 border border-white/10 rounded-lg pl-6 pr-2 py-1 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50"
+              className="w-full border rounded-lg pl-6 pr-2 py-1 text-xs focus:outline-none focus:border-blue-500/50"
+              style={{
+                background: isLight ? 'rgba(15,23,42,0.03)' : 'rgba(255,255,255,0.05)',
+                borderColor: brand.border,
+                color: brand.text,
+              }}
             />
           </div>
         </div>
@@ -177,7 +193,7 @@ export default function BuilderSidebar({ onSectionSelect }: Props) {
           )}
         </div>
 
-        <div className="p-2 border-t border-white/10">
+        <div className="p-2 border-t" style={{ borderColor: brand.border }}>
           <button onClick={() => setShowAdd(!showAdd)}
             className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 text-xs font-medium transition">
             <Plus className="w-3.5 h-3.5" />

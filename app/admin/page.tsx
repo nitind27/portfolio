@@ -7,10 +7,11 @@ import { useBuilderStore } from '@/lib/store';
 import AdminPanel from '@/components/admin/AdminPanel';
 import BrandLogo from '@/components/BrandLogo';
 import { AuthModal } from '@/components/LoginPage';
-import { brand } from '@/lib/brand';
+import { useBrand } from '@/components/theme/ThemeProvider';
 
 export default function AdminPage() {
   const router = useRouter();
+  const brand = useBrand();
   const { isAuthenticated, authLoading, initAuth, user } = useBuilderStore();
   const [authOpen, setAuthOpen] = useState(true);
   const [maintenanceOn, setMaintenanceOn] = useState(false);
@@ -33,7 +34,7 @@ export default function AdminPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: brand.bg }}>
+      <div className="theme-aware min-h-screen flex items-center justify-center" style={{ background: brand.bg }}>
         <Loader2 className="w-8 h-8 animate-spin" style={{ color: brand.accent }} />
       </div>
     );
@@ -41,7 +42,7 @@ export default function AdminPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: brand.bg }}>
+      <div className="theme-aware min-h-screen flex flex-col items-center justify-center p-6" style={{ background: brand.bg }}>
         <BrandLogo size="md" />
         <p className="text-sm text-gray-400 mt-6 mb-1">Sign in</p>
         <p className="text-xs text-gray-600 mb-6 text-center max-w-sm">

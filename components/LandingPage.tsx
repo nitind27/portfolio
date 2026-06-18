@@ -11,7 +11,9 @@ import { AuthModal, type AuthMode } from './LoginPage';
 import GoogleSignInPrompt from './GoogleSignInPrompt';
 import { usePromoStatus } from '@/lib/promo-client';
 import BrandLogo from './BrandLogo';
-import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION, APP_DOMAIN, STORAGE_POLICY_DAYS, brand } from '@/lib/brand';
+import ThemeToggle from './theme/ThemeToggle';
+import { useBrand } from './theme/ThemeProvider';
+import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION, APP_DOMAIN, STORAGE_POLICY_DAYS } from '@/lib/brand';
 import { TEMPLATES } from '@/lib/templates';
 
 const PREMIUM_PRICE = process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99;
@@ -69,6 +71,7 @@ const FAQS = [
 ];
 
 function PrimaryBtn({ children, onClick, className = '' }: { children: React.ReactNode; onClick: () => void; className?: string }) {
+  const brand = useBrand();
   return (
     <button
       type="button"
@@ -89,6 +92,7 @@ function GhostBtn({ children, onClick, href }: { children: React.ReactNode; onCl
 }
 
 function BuilderMockup() {
+  const brand = useBrand();
   return (
     <div className="relative">
       {/* Glow behind mockup */}
@@ -193,6 +197,7 @@ export default function LandingPage({
   const [authMode, setAuthMode] = useState<AuthMode>(initialAuthMode);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const promo = usePromoStatus();
+  const brand = useBrand();
 
   useEffect(() => {
     if (initialAuthOpen) {
@@ -214,7 +219,7 @@ export default function LandingPage({
   );
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: brand.bg, color: brand.text }}>
+    <div className="theme-aware min-h-screen overflow-x-hidden" style={{ background: brand.bg, color: brand.text }}>
       {/* ── Background layers ── */}
       <div className="fixed inset-0 pointer-events-none">
         <div
@@ -257,6 +262,8 @@ export default function LandingPage({
             ))}
           </nav>
           <div className="flex items-center gap-2 shrink-0">
+            <ThemeToggle variant="compact" className="hidden sm:inline-flex" />
+            <ThemeToggle variant="icon" className="sm:hidden" />
             <button
               type="button"
               onClick={() => openAuth('login')}
@@ -475,7 +482,7 @@ export default function LandingPage({
               className="relative p-8 rounded-2xl border ring-1 ring-green-500/40"
               style={{ background: `linear-gradient(160deg, rgba(34,197,94,0.12), ${brand.surface})`, borderColor: 'rgba(34,197,94,0.3)' }}
             >
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white bg-green-600">
+              <span className="badge-on-color absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white bg-green-600">
                 All free
               </span>
               <h3 className="text-lg font-semibold text-white">Full Premium Access</h3>
@@ -527,7 +534,7 @@ export default function LandingPage({
               }}
             >
               {plan.highlight && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white" style={{ background: brand.accent }}>
+                <span className="badge-on-color absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white" style={{ background: brand.accent }}>
                   Most popular
                 </span>
               )}

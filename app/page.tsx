@@ -6,7 +6,6 @@ import { useBuilderStore } from '@/lib/store';
 import LandingPage from '@/components/LandingPage';
 import Dashboard from '@/components/Dashboard';
 import { Loader2 } from 'lucide-react';
-import { brand } from '@/lib/brand';
 import type { AuthMode } from '@/components/LoginPage';
 import { useRedirectIfAdmin } from '@/lib/use-redirect-admin';
 
@@ -24,8 +23,8 @@ function HomeContent() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: brand.bg }}>
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: brand.accent }} />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
       </div>
     );
   }
@@ -33,8 +32,8 @@ function HomeContent() {
   if (isAuthenticated) {
     if (redirectingAdmin) {
       return (
-        <div className="min-h-screen flex items-center justify-center" style={{ background: brand.bg }}>
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: brand.accent }} />
+        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
         </div>
       );
     }
@@ -54,8 +53,8 @@ export default function Home() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center" style={{ background: brand.bg }}>
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: brand.accent }} />
+        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
         </div>
       }
     >

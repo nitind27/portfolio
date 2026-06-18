@@ -11,6 +11,7 @@ import PopupCard from '../shared/PopupCard';
 import TemplatesGallery from '../shared/TemplatesGallery';
 import SectionEditor from './SectionEditor';
 import BuilderHelpPanel from './BuilderHelpPanel';
+import { useBrand } from '../theme/ThemeProvider';
 
 interface Props { tab: RightTab; setTab: (t: RightTab) => void; onShowTour?: () => void; }
 
@@ -19,6 +20,7 @@ export default function BuilderRightPanel({ tab, setTab, onShowTour }: Props) {
     getActivePortfolio, updateTheme, switchTemplate, updateSEO, updateSMTP, updatePopup,
     updateNavbar, updateFooter, updateSocial, activeSection, previewMode,
   } = useBuilderStore();
+  const brand = useBrand();
   const portfolio = getActivePortfolio();
   if (!portfolio) return null;
 
@@ -27,7 +29,8 @@ export default function BuilderRightPanel({ tab, setTab, onShowTour }: Props) {
   return (
     <aside
       data-tour="settings-panel"
-      className="w-full h-full border-l border-white/10 bg-[#0d0d0d] overflow-hidden flex flex-col min-w-0"
+      className="w-full h-full border-l overflow-hidden flex flex-col min-w-0"
+      style={{ borderColor: brand.border, background: brand.surface }}
     >
       {showSectionEditor ? (
         <SectionEditor key={activeSection} sectionId={activeSection!} variant="sidebar" />

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { PortfolioSection, SocialLinks, ThemeConfig } from '@/lib/types';
+import { PortfolioSection, SocialLinks, ThemeConfig, type HeroLayoutId } from '@/lib/types';
 import {
   getHeroContent,
   getHeroAlignStyles,
@@ -14,7 +14,7 @@ import {
 import { getElementMotionVariants, getMotionVariants, getSectionHoverProps } from '@/lib/section-animation';
 import { useSectionViewport } from './preview-motion';
 import { getHeroBackground, resolveHeroBackground } from '@/lib/hero-background';
-import type { HeroLayoutId } from '@/lib/types';
+import { isLightBackground } from '@/lib/theme-contrast';
 
 const SOCIAL_LABELS: Record<string, string> = {
   github: 'GH', linkedin: 'in', twitter: 'X', instagram: 'IG',
@@ -149,6 +149,8 @@ export function HeroSection({
   const order = hero.blockOrder || ['badge', 'headline', 'subheadline', 'description', 'cta', 'social'];
 
   const renderContent = (lightText = false) => {
+    const mutedOpacity = lightText ? 0.85 : (isLightBackground(theme.backgroundColor) ? 0.75 : 0.7);
+    const descOpacity = lightText ? 0.7 : (isLightBackground(theme.backgroundColor) ? 0.72 : 0.6);
     let blockIndex = 0;
     const blocks: Record<HeroBlockId, React.ReactNode | null> = {
       badge: (
@@ -164,10 +166,10 @@ export function HeroSection({
         }}>{headline}</h1>
       ),
       subheadline: sub ? (
-        <p style={{ fontSize: lightText ? '1.2rem' : '1.15rem', opacity: lightText ? 0.85 : 0.7, marginBottom: '0.75rem' }}>{sub}</p>
+        <p style={{ fontSize: lightText ? '1.2rem' : '1.15rem', opacity: mutedOpacity, marginBottom: '0.75rem' }}>{sub}</p>
       ) : null,
       description: desc ? (
-        <p style={{ opacity: lightText ? 0.7 : 0.6, marginBottom: lightText ? '2rem' : '1.75rem', lineHeight: 1.75 }}>{desc}</p>
+        <p style={{ opacity: descOpacity, marginBottom: lightText ? '2rem' : '1.75rem', lineHeight: 1.75 }}>{desc}</p>
       ) : null,
       cta: (
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: btnJustify }}>

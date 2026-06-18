@@ -10,7 +10,8 @@
   --color-blue-700: #e07d10;
 }
 
-:root {
+:root,
+[data-theme='dark'] {
   --background: #0a1d37;
   --foreground: #f1f5f9;
   --accent: #f28c28;
@@ -18,6 +19,34 @@
   --accent-light: #ffb347;
   --navy: #0a1d37;
   --steel: #2d5a7b;
+  --brand-bg: #0a1d37;
+  --brand-surface: #102a43;
+  --brand-border: rgba(148, 163, 184, 0.12);
+  --brand-text: #f1f5f9;
+  --brand-text-muted: #94a3b8;
+  --brand-text-dim: #64748b;
+  --scrollbar-track: #102a43;
+  --scrollbar-thumb: #2d5a7b;
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --background: #f1f5f9;
+  --foreground: #0f172a;
+  --accent: #e07d10;
+  --accent-hover: #c96a08;
+  --accent-light: #f28c28;
+  --navy: #ffffff;
+  --steel: #cbd5e1;
+  --brand-bg: #f1f5f9;
+  --brand-surface: #ffffff;
+  --brand-border: rgba(15, 23, 42, 0.1);
+  --brand-text: #0f172a;
+  --brand-text-muted: #475569;
+  --brand-text-dim: #64748b;
+  --scrollbar-track: #e2e8f0;
+  --scrollbar-thumb: #94a3b8;
+  color-scheme: light;
 }
 
 * {
@@ -31,10 +60,118 @@ body {
   margin: 0;
 }
 
+/* ── Theme-aware shells: fix hardcoded dark-mode text in light mode ── */
+[data-theme='light'] .theme-aware {
+  color: var(--brand-text);
+}
+
+[data-theme='light'] .theme-aware :where(
+  .text-white,
+  h1, h2, h3, h4, h5, h6,
+  strong.text-gray-300
+) {
+  color: var(--brand-text) !important;
+}
+
+[data-theme='light'] .theme-aware :where(
+  .text-gray-300,
+  .text-gray-400,
+  .text-gray-500,
+  .text-gray-600,
+  .text-\[\#94a3b8\],
+  .text-\[\#64748b\],
+  .text-\[\#c8d0da\],
+  .text-\[\#e8edf2\],
+  .text-\[\#8b9aab\],
+  .text-\[\#5c6b7a\]
+) {
+  color: var(--brand-text-muted) !important;
+}
+
+[data-theme='light'] .theme-aware .hover\:text-white:hover {
+  color: var(--brand-text) !important;
+}
+
+[data-theme='light'] .theme-aware :where(
+  .text-on-accent,
+  .badge-on-color
+) {
+  color: #ffffff !important;
+}
+
+[data-theme='light'] .theme-aware input,
+[data-theme='light'] .theme-aware textarea,
+[data-theme='light'] .theme-aware select {
+  color: var(--brand-text);
+}
+
+[data-theme='light'] .theme-aware input::placeholder,
+[data-theme='light'] .theme-aware textarea::placeholder {
+  color: var(--brand-text-dim);
+  opacity: 1;
+}
+
+[data-theme='light'] .theme-aware :where(
+  .border-white\/5,
+  .border-white\/8,
+  .border-white\/10,
+  .border-white\/15,
+  .border-white\/20,
+  .border-white\/\[0\.06\],
+  .border-white\/\[0\.08\]
+) {
+  border-color: var(--brand-border);
+}
+
+[data-theme='light'] .theme-aware :where(
+  .bg-white\/5,
+  .bg-white\/\[0\.02\],
+  .bg-white\/\[0\.03\],
+  .bg-white\/\[0\.04\],
+  .bg-white\/\[0\.05\],
+  .bg-white\/\[0\.06\],
+  .bg-white\/10,
+  .bg-white\/\[0\.04\]
+) {
+  background-color: rgba(15, 23, 42, 0.04);
+}
+
+[data-theme='light'] .theme-aware .hover\:bg-white\/5:hover,
+[data-theme='light'] .theme-aware .hover\:bg-white\/\[0\.04\]:hover,
+[data-theme='light'] .theme-aware .hover\:bg-white\/\[0\.05\]:hover,
+[data-theme='light'] .theme-aware .hover\:bg-white\/\[0\.06\]:hover,
+[data-theme='light'] .theme-aware .hover\:bg-white\/10:hover {
+  background-color: rgba(15, 23, 42, 0.07);
+}
+
+[data-theme='light'] .theme-aware .bg-\[\#0a1628\] {
+  background-color: var(--brand-surface);
+}
+
+[data-theme='light'] .theme-aware label {
+  color: var(--brand-text-muted);
+}
+
+/* ── Builder shell: light mode panel chrome ── */
+[data-theme='light'] .builder-shell :where(
+  .bg-\[\#0a0a0a\],
+  .bg-\[\#0d0d0d\],
+  .bg-\[\#060606\],
+  .bg-\[\#111\],
+  .bg-\[\#1a1a1a\]
+) {
+  background-color: var(--brand-surface) !important;
+}
+
+[data-theme='light'] .builder-shell .text-blue-300,
+[data-theme='light'] .builder-shell .text-blue-400 {
+  color: #2563eb !important;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #102a43; }
-::-webkit-scrollbar-thumb { background: #2d5a7b; border-radius: 3px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #f28c28; }
 
 /* No scrollbar utility */
@@ -50,8 +187,8 @@ body {
 
 /* Admin panel — native select fallback (legacy) */
 .admin-panel select option {
-  background-color: #102a43;
-  color: #f1f5f9;
+  background-color: var(--brand-surface);
+  color: var(--brand-text);
 }
 
 .admin-panel select:focus {
