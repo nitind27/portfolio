@@ -11,6 +11,7 @@ import {
   fetchVercelTeams, setVercelTeam, deployToVercel,
   type VercelConnectionStatus, type VercelTeam,
 } from '@/lib/vercel-client-side';
+import AdminSelect from '@/components/admin/AdminSelect';
 
 type Step = 'connect' | 'deploy' | 'success';
 
@@ -228,16 +229,15 @@ export default function VercelDeployModal({ open, onClose, portfolio, onDeployed
                 {teams.length > 0 && (
                   <div>
                     <label className="block text-xs text-gray-400 mb-1.5">Deploy to team (optional)</label>
-                    <select
+                    <AdminSelect
                       value={selectedTeam}
-                      onChange={e => setSelectedTeam(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white"
-                    >
-                      <option value="">Personal account</option>
-                      {teams.map(t => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
+                      onChange={setSelectedTeam}
+                      aria-label="Deploy to team"
+                      options={[
+                        { value: '', label: 'Personal account' },
+                        ...teams.map(t => ({ value: t.id, label: t.name })),
+                      ]}
+                    />
                   </div>
                 )}
 
