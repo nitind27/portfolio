@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Search, User, Mail, Phone, Crown, Shield, ChevronRight, X } from 'lucide-react';
+import { Search, User, Mail, Phone, Crown, Shield, ChevronRight, X, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { brand } from '@/lib/brand';
 import { SectionHeader, Badge, adminInput, adminCard, adminCardStyle, AdminSelect } from '../ui';
@@ -221,6 +222,13 @@ export default function UsersTab({ users, plans, onRefresh }: Props) {
                   />
                 </div>
                 <p className="text-[10px] text-gray-600">Joined {new Date(selected.createdAt).toLocaleString('en-IN')}</p>
+                <Link
+                  href={`/admin/user/${selected.id}`}
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold text-white mt-2"
+                  style={{ background: `linear-gradient(135deg, ${brand.accent}, ${brand.accentHover})` }}
+                >
+                  <ExternalLink className="w-4 h-4" /> View full profile & websites
+                </Link>
               </div>
             </motion.div>
           </>

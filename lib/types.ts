@@ -478,7 +478,7 @@ export interface Portfolio {
 }
 
 export interface PortfolioHosting {
-  provider: 'hostinger';
+  provider: 'hostinger' | 'vercel';
   domain: string;
   liveUrl: string;
   status: 'idle' | 'deploying' | 'live' | 'failed';

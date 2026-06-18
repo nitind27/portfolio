@@ -6,6 +6,7 @@ export interface PlanFeatures {
   shareLink: boolean;
   publishOnline: boolean;
   hostingerDeploy: boolean;
+  vercelDeploy: boolean;
   customCss: boolean;
   analytics: boolean;
   smtp: boolean;
@@ -49,6 +50,7 @@ export const PLAN_FEATURE_LABELS: Record<PlanFeatureKey, string> = {
   shareLink: 'Share live link',
   publishOnline: 'Publish online',
   hostingerDeploy: 'Hostinger deploy',
+  vercelDeploy: 'Vercel deploy',
   customCss: 'Custom CSS editor',
   analytics: 'Analytics panel',
   smtp: 'SMTP / contact form',
@@ -70,6 +72,7 @@ export const DEFAULT_FREE_FEATURES: PlanFeatures = {
   shareLink: true,
   publishOnline: true,
   hostingerDeploy: false,
+  vercelDeploy: false,
   customCss: false,
   analytics: false,
   smtp: false,

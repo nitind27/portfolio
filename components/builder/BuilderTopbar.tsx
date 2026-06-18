@@ -10,7 +10,7 @@ import {
   Monitor, Tablet, Smartphone, Eye, EyeOff, Download, ArrowLeft,
   Layers, Palette, Search, Mail, LayoutTemplate, Megaphone, Share2, PanelTop, PanelBottom,
   Undo2, Redo2, ZoomIn, ZoomOut, Keyboard, Globe, BarChart2, Code2,
-  ChevronDown, CheckCircle2, Circle, Copy, Check, ExternalLink, Crown, Lock, Rocket,
+  ChevronDown, CheckCircle2, Circle, Copy, Check, ExternalLink, Crown, Lock, Rocket, Triangle,
   HelpCircle, PlayCircle,
 } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
@@ -20,6 +20,7 @@ import { STORAGE_POLICY_DAYS } from '@/lib/brand';
 import { formatDaysRemaining, getDaysRemaining } from '@/lib/project-expiry';
 import PremiumModal from '../PremiumModal';
 import HostingerDeployModal from '../HostingerDeployModal';
+import VercelDeployModal from '../VercelDeployModal';
 import { fetchPortfolioAccess, bindPortfolioSlot, accessToModalReason, type PremiumModalReason } from '@/lib/portfolio-access-client';
 import { openPreviewInNewTab } from '@/lib/preview-tab';
 import ScrollablePanelTabs from './ScrollablePanelTabs';
@@ -111,6 +112,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
     fetchPlansConfig().then(setPlanConfig);
   }, []);
   const [showHostinger, setShowHostinger] = useState(false);
+  const [showVercel, setShowVercel] = useState(false);
   const [showHelpMenu, setShowHelpMenu] = useState(false);
   const helpRef = useRef<HTMLDivElement>(null);
 
@@ -204,6 +206,28 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
     const allowed = await ensurePortfolioAccess('deploy');
     if (!allowed) return;
     setShowHostinger(true);
+  };
+
+  const handleVercelDeploy = async () => {
+    const allowed = await ensurePortfolioAccess('deploy');
+    if (!allowed) return;
+    if (!featureEnabled(planConfig, 'vercelDeploy')) {
+      setPremiumReason('general');
+      setShowPremium(true);
+      return;
+    }
+    setShowVercel(true);
+  };
+
+  const handleVercelDeployed = (liveUrl: string, projectName: string) => {
+    updatePortfolioHosting(portfolio.id, {
+      provider: 'vercel',
+      domain: projectName,
+      liveUrl,
+      status: 'live',
+      lastDeployedAt: new Date().toISOString(),
+    });
+    if (!portfolio.published) togglePublished(portfolio.id);
   };
 
   const handleHostingerDeployed = (liveUrl: string, domain: string) => {
@@ -374,7 +398,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
 
       {/* ── Share & Export ── */}
       <div data-tour="export-share" className="flex items-center gap-1 shrink-0">
-      {/* Go Live on Hostinger */}
+      {/* Go Live — Hostinger */}
       <button
         onClick={handleGoLive}
         title="Deploy to your Hostinger domain"
@@ -382,7 +406,15 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
         style={{ background: `linear-gradient(135deg, ${brand.accent}, ${brand.accentHover})` }}
       >
         {!isThisPortfolioUnlocked ? <Lock className="w-3.5 h-3.5" /> : <Rocket className="w-3.5 h-3.5" />}
-        <span className="hidden sm:inline">Go Live</span>
+        <span className="hidden sm:inline">Hostinger</span>
+      </button>
+      <button
+        onClick={handleVercelDeploy}
+        title="Deploy to your own Vercel account"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 bg-white text-black hover:bg-gray-100"
+      >
+        {!isThisPortfolioUnlocked ? <Lock className="w-3.5 h-3.5" /> : <Triangle className="w-3.5 h-3.5 fill-black" />}
+        <span className="hidden sm:inline">Vercel</span>
       </button>
       {portfolio.hosting?.status === 'live' && (
         <a
@@ -634,6 +666,12 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
         onClose={() => setShowHostinger(false)}
         portfolio={portfolio}
         onDeployed={handleHostingerDeployed}
+      />
+      <VercelDeployModal
+        open={showVercel}
+        onClose={() => setShowVercel(false)}
+        portfolio={portfolio}
+        onDeployed={handleVercelDeployed}
       />
     </header>
   );

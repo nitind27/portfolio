@@ -9,7 +9,7 @@ import { PLAN_FEATURE_LABELS } from '@/lib/plans-types';
 
 const FEATURE_GROUPS: { title: string; keys: PlanFeatureKey[] }[] = [
   { title: 'Export', keys: ['exportHtml', 'exportReact', 'exportNextjs'] },
-  { title: 'Publish & deploy', keys: ['shareLink', 'publishOnline', 'hostingerDeploy'] },
+  { title: 'Publish & deploy', keys: ['shareLink', 'publishOnline', 'hostingerDeploy', 'vercelDeploy'] },
   { title: 'Builder tools', keys: ['customCss', 'analytics', 'smtp', 'popupBuilder', 'premiumLayouts'] },
   { title: 'Premium sections', keys: ['sectionBlog', 'sectionTeam', 'sectionPricing', 'sectionFaq', 'sectionTestimonials'] },
   { title: 'Limits', keys: ['unlockedPortfolios', 'storageDays'] },

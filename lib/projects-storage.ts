@@ -5,6 +5,15 @@ const LEGACY_KEY = 'portfolio-builder-store';
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingSave: (() => Promise<void>) | null = null;
 let skipNextSync = false;
+let adminSaveContext: { userId: number } | null = null;
+
+export function setAdminSaveContext(ctx: { userId: number } | null) {
+  adminSaveContext = ctx;
+}
+
+export function getAdminSaveContext() {
+  return adminSaveContext;
+}
 
 export function markSkipProjectSync() {
   skipNextSync = true;
@@ -71,6 +80,20 @@ export async function fetchProjectsFromServer(): Promise<PersistedSlice | null> 
 }
 
 export async function saveProjectsToServer(slice: PersistedSlice, options?: { merge?: boolean }): Promise<Portfolio[] | null> {
+  if (adminSaveContext && slice.portfolios.length > 0) {
+    const portfolio = slice.portfolios[0];
+    const res = await fetch(`/api/admin/users/${adminSaveContext.userId}/projects/${portfolio.id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ portfolio }),
+    });
+    if (res.status === 401 || res.status === 403) return null;
+    if (!res.ok) throw new Error('Failed to save project');
+    const data = await res.json();
+    return data.portfolio ? [data.portfolio as Portfolio] : null;
+  }
+
   const res = await fetch('/api/projects', {
     method: 'PUT',
     credentials: 'include',

@@ -5,7 +5,7 @@ import { getUserFeatures } from './plans-server';
 import { isProjectExpiredWithPolicy, getDaysRemaining } from './project-expiry';
 
 function paidSlotFeatures(features: PlanFeatures): boolean {
-  return canExport(features) || features.hostingerDeploy;
+  return canExport(features) || features.hostingerDeploy || features.vercelDeploy;
 }
 
 function withinShareWindow(createdAt: string | undefined, storageDays: number): boolean {

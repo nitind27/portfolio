@@ -15,6 +15,7 @@ export const PREMIUM_PLAN_FEATURES: PlanFeatures = {
   shareLink: true,
   publishOnline: true,
   hostingerDeploy: true,
+  vercelDeploy: true,
   customCss: true,
   analytics: true,
   smtp: true,
