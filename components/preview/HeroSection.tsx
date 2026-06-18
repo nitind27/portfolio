@@ -15,6 +15,7 @@ import { getElementMotionVariants, getMotionVariants, getSectionHoverProps } fro
 import { useSectionViewport } from './preview-motion';
 import { getHeroBackground, resolveHeroBackground } from '@/lib/hero-background';
 import { isLightBackground } from '@/lib/theme-contrast';
+import { handleHashNavClick } from '@/lib/preview-nav';
 
 const SOCIAL_LABELS: Record<string, string> = {
   github: 'GH', linkedin: 'in', twitter: 'X', instagram: 'IG',
@@ -90,6 +91,8 @@ interface HeroSectionProps {
   triggerLoad: boolean;
   fv: (id: string) => string;
   fa: (id: string) => string[];
+  sections?: PortfolioSection[];
+  onSectionSelect?: (id: string) => void;
 }
 
 function HeroAnimatedBlock({
@@ -123,7 +126,7 @@ function HeroAnimatedBlock({
 export function HeroSection({
   section, theme, pad, radius, isMobile, social,
   sectionVariants, sectionHover, triggerLoad,
-  fv, fa,
+  fv, fa, sections, onSectionSelect,
 }: HeroSectionProps) {
   const sectionViewport = useSectionViewport(section, theme);
   const hero = getHeroContent(section);
@@ -147,6 +150,10 @@ export function HeroSection({
   const contentStyle = getHeroAlignStyles(hero, isMobile);
   const outerStyle = getHeroOuterAlignStyles(hero, isMobile);
   const order = hero.blockOrder || ['badge', 'headline', 'subheadline', 'description', 'cta', 'social'];
+
+  const onCtaClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    handleHashNavClick(e, href, sections, onSectionSelect);
+  };
 
   const renderContent = (lightText = false) => {
     const mutedOpacity = lightText ? 0.85 : (isLightBackground(theme.backgroundColor) ? 0.75 : 0.7);
@@ -173,12 +180,12 @@ export function HeroSection({
       ) : null,
       cta: (
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: btnJustify }}>
-          <a href={ctaLink} style={{
+          <a href={ctaLink} onClick={e => onCtaClick(e, ctaLink)} style={{
             display: 'inline-block', background: theme.primaryColor, color: '#fff',
             padding: '0.75rem 2rem', borderRadius: radius, fontWeight: 600, textDecoration: 'none', fontSize: '0.95rem',
           }}>{ctaText}</a>
           {ctaSecText && (
-            <a href={ctaSecLink} style={{
+            <a href={ctaSecLink} onClick={e => onCtaClick(e, ctaSecLink)} style={{
               display: 'inline-block',
               border: lightText ? '2px solid rgba(255,255,255,0.6)' : `2px solid ${theme.primaryColor}`,
               color: lightText ? '#fff' : theme.primaryColor,

@@ -135,5 +135,7 @@ export async function buildStaticDeployFiles(portfolio: Portfolio): Promise<Verc
 }
 
 export function deployProjectName(portfolio: Portfolio): string {
-  return `site99-${slugName(portfolio.name)}`.slice(0, 52);
+  const idPart = portfolio.id.replace(/-/g, '').slice(0, 14);
+  const label = slugName(portfolio.slug || portfolio.name).slice(0, 28);
+  return `site99-${label}-${idPart}`.slice(0, 52);
 }

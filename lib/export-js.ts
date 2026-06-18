@@ -6,17 +6,26 @@ export function generateExportJS(portfolio: Portfolio): string {
   const popupDelay = Math.max(0, (popup?.delay ?? 2)) * 1000;
   const popupShowOnce = popup?.showOnce ?? false;
   const popupKey = JSON.stringify(`popup_${popup?.title || 'default'}`);
+  const sectionAliasJson = JSON.stringify(
+    Object.fromEntries(
+      portfolio.sections.flatMap(s => [[s.type, s.id], [s.id, s.id]] as const),
+    ),
+  );
 
   return `/* Portfolio interactions */
 (function () {
   'use strict';
+
+  var sectionAliases = ${sectionAliasJson};
 
   // Smooth scroll
   document.querySelectorAll('a[href^="#"]').forEach(function (a) {
     a.addEventListener('click', function (e) {
       var href = a.getAttribute('href');
       if (!href || href === '#') return;
-      var target = document.querySelector(href);
+      var raw = href.slice(1);
+      var resolved = sectionAliases[raw] || raw;
+      var target = document.getElementById(resolved);
       if (!target) return;
       e.preventDefault();
       var y = target.getBoundingClientRect().top + window.scrollY - 80;

@@ -20,6 +20,13 @@ import { useResponsiveDeviceView } from './useResponsiveDeviceView';
 import { getMotionVariants, getSectionHoverProps, resolveTriggerLoad, getSectionHeadingAnim } from '@/lib/section-animation';
 import { PreviewScrollRootProvider, useInViewViewport } from './preview-motion';
 import { APP_NAME } from '@/lib/brand';
+import {
+  NAVBAR_SCROLL_OFFSET,
+  getNavbarScrollTarget,
+  scrollPreviewToTop,
+  goToPreviewSection,
+  handleHashNavClick,
+} from '@/lib/preview-nav';
 import { getAboutLayoutPreview, normalizeAboutLayout } from '@/lib/about-layouts';
 import { getFooterNavItems } from '@/lib/footer-nav';
 import type { FooterConfig, FooterNavLayout } from '@/lib/types';
@@ -184,59 +191,6 @@ function Slideshow({ images, height = 480, theme }: { images: string[]; height?:
   );
 }
 
-const NAVBAR_SCROLL_OFFSET = 80;
-
-function getPreviewScrollRoot(): HTMLElement | null {
-  return document.querySelector('[data-preview-scroll-root]') as HTMLElement | null;
-}
-
-function getNavbarScrollTarget(): HTMLElement | Window {
-  const previewRoot = getPreviewScrollRoot();
-  if (previewRoot) return previewRoot;
-  const top = document.getElementById('portfolio-top');
-  if (!top) return window;
-  let el: HTMLElement | null = top.parentElement;
-  while (el) {
-    const s = getComputedStyle(el);
-    if (/auto|scroll/.test(s.overflowY) && el.scrollHeight > el.clientHeight + 2) return el;
-    el = el.parentElement;
-  }
-  return window;
-}
-
-function scrollToPreviewSection(sectionId: string, offset = NAVBAR_SCROLL_OFFSET) {
-  const id = sectionId.replace(/^#/, '');
-  const target = document.getElementById(id);
-  if (!target) return;
-  const root = getPreviewScrollRoot();
-  if (root) {
-    const rootRect = root.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    root.scrollTo({
-      top: Math.max(0, root.scrollTop + (targetRect.top - rootRect.top) - offset),
-      behavior: 'smooth',
-    });
-    return;
-  }
-  const y = target.getBoundingClientRect().top + window.scrollY - offset;
-  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
-}
-
-function resolveSectionId(href: string, sections: PortfolioSection[]): string {
-  const id = href.replace(/^#/, '');
-  if (sections.some(s => s.id === id)) return id;
-  if (id === 'contact') {
-    const contact = sections.find(s => s.type === 'contact');
-    if (contact) return contact.id;
-  }
-  return id;
-}
-
-function goToPreviewSection(sectionId: string, onSectionSelect?: (id: string) => void) {
-  scrollToPreviewSection(sectionId);
-  onSectionSelect?.(sectionId);
-}
-
 // ── Navbar scroll hook ───────────────────────────────────────────────────────
 function useNavbarScroll(threshold = 40) {
   const [scrolled, setScrolled] = useState(false);
@@ -289,23 +243,6 @@ function getNavbarMotionState(
     default:
       return { ...base, opacity: 1, scale: 1 };
   }
-}
-
-function handleHashNavClick(
-  e: React.MouseEvent<HTMLAnchorElement>,
-  href: string,
-  sections?: PortfolioSection[],
-  onSectionSelect?: (id: string) => void,
-) {
-  if (!href.startsWith('#')) return;
-  e.preventDefault();
-  const raw = href.slice(1);
-  if (raw === 'portfolio-top') {
-    scrollPreviewToTop();
-    return;
-  }
-  const id = sections ? resolveSectionId(href, sections) : raw;
-  goToPreviewSection(id, onSectionSelect);
 }
 
 function getNavBg(navbar: NavbarConfig, theme: ThemeConfig, scrolled: boolean): React.CSSProperties {
@@ -975,7 +912,7 @@ export default function PortfolioPreview({ portfolio, deviceView: simulatedDevic
             goToPreviewSection(section.id, onSectionSelect);
           } : undefined}
         >
-          <SectionRenderer section={section} theme={theme} index={i} social={social} smtp={portfolio.smtp || { host: '', port: 587, secure: false, user: '', password: '', fromName: '', toEmail: '', provider: 'custom' }} isMobile={isNarrow} />
+          <SectionRenderer section={section} theme={theme} index={i} social={social} smtp={portfolio.smtp || { host: '', port: 587, secure: false, user: '', password: '', fromName: '', toEmail: '', provider: 'custom' }} isMobile={isNarrow} sections={visibleSections} onSectionSelect={onSectionSelect ? selectSection : undefined} />
         </div>
       ))}
 
@@ -994,15 +931,6 @@ const SOCIAL_ICONS: Record<string, string> = {
   github: '🐙', linkedin: '💼', twitter: '𝕏', instagram: '📸',
   youtube: '▶️', dribbble: '🏀', behance: '🎨', website: '🌐',
 };
-
-function scrollPreviewToTop() {
-  const root = getPreviewScrollRoot();
-  if (root) {
-    root.scrollTo({ top: 0, behavior: 'smooth' });
-    return;
-  }
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
 
 function sectionField(sections: PortfolioSection[], type: string, fieldId: string): string {
   const sec = sections.find(s => s.type === type);
@@ -1413,8 +1341,10 @@ function SiteFooter({ portfolio, sections, theme, social, isMobile, navbar }: {
 }
 
 // ── Section renderer ─────────────────────────────────────────────────────────
-function SectionRenderer({ section, theme, index, social, smtp, isMobile }: {
+function SectionRenderer({ section, theme, index, social, smtp, isMobile, sections, onSectionSelect }: {
   section: PortfolioSection; theme: ThemeConfig; index: number; social: SocialLinks; smtp: SMTPConfig; isMobile: boolean;
+  sections?: PortfolioSection[];
+  onSectionSelect?: (id: string) => void;
 }) {
   const sectionVariants = getMotionVariants(section, theme);
   const sectionHover = getSectionHoverProps(section);
@@ -1454,6 +1384,8 @@ function SectionRenderer({ section, theme, index, social, smtp, isMobile }: {
         triggerLoad={!!triggerLoad}
         fv={fv}
         fa={fa}
+        sections={sections}
+        onSectionSelect={onSectionSelect}
       />
     );
   }

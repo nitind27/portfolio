@@ -8,8 +8,8 @@ import {
 import type { Portfolio } from '@/lib/types';
 import {
   fetchVercelStatus, connectVercelToken, disconnectVercel, startVercelOAuth,
-  fetchVercelTeams, setVercelTeam, deployToVercel,
-  type VercelConnectionStatus, type VercelTeam,
+  fetchVercelTeams, setVercelTeam, deployToVercel, fetchVercelDeploymentStatus,
+  type VercelConnectionStatus, type VercelTeam, type VercelDeploymentRecord,
 } from '@/lib/vercel-client-side';
 import AdminSelect from '@/components/admin/AdminSelect';
 
@@ -34,13 +34,12 @@ export default function VercelDeployModal({ open, onClose, portfolio, onDeployed
   const [error, setError] = useState('');
   const [liveUrl, setLiveUrl] = useState('');
   const [projectName, setProjectName] = useState('');
+  const [existingDeployment, setExistingDeployment] = useState<VercelDeploymentRecord | null>(null);
 
   const reset = useCallback(() => {
     setStep('connect');
     setAccessToken('');
     setError('');
-    setLiveUrl('');
-    setProjectName('');
     setSelectedTeam('');
   }, []);
 
@@ -55,8 +54,14 @@ export default function VercelDeployModal({ open, onClose, portfolio, onDeployed
 
   const loadStatus = useCallback(async () => {
     try {
-      const { connection: conn } = await fetchVercelStatus();
+      const [{ connection: conn }, { deployment }] = await Promise.all([
+        fetchVercelStatus(),
+        fetchVercelDeploymentStatus(portfolio.id),
+      ]);
       setConnection(conn);
+      setExistingDeployment(deployment);
+      if (deployment?.liveUrl) setLiveUrl(deployment.liveUrl);
+      if (deployment?.projectName) setProjectName(deployment.projectName);
       if (conn.connected) {
         setStep('deploy');
         if (conn.teamId) setSelectedTeam(conn.teamId);
@@ -65,7 +70,7 @@ export default function VercelDeployModal({ open, onClose, portfolio, onDeployed
     } catch {
       setConnection({ connected: false });
     }
-  }, [loadTeams]);
+  }, [loadTeams, portfolio.id]);
 
   useEffect(() => {
     if (!open) return;
@@ -259,8 +264,30 @@ export default function VercelDeployModal({ open, onClose, portfolio, onDeployed
                   </div>
                 </div>
 
+                {existingDeployment?.liveUrl && existingDeployment.status === 'live' && (
+                  <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 space-y-2">
+                    <p className="text-xs text-blue-300 font-medium">Already deployed — updates go to the same Vercel project</p>
+                    <p className="text-[10px] text-gray-500">Project: {existingDeployment.projectName}</p>
+                    <a
+                      href={existingDeployment.liveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300"
+                    >
+                      {existingDeployment.liveUrl} <ExternalLink className="w-3 h-3" />
+                    </a>
+                    {existingDeployment.updatedAt && (
+                      <p className="text-[10px] text-gray-600">
+                        Last updated {new Date(existingDeployment.updatedAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <p className="text-[10px] text-gray-600 leading-relaxed">
-                  Build may take 1–3 minutes on Vercel. You can track progress in your Vercel dashboard.
+                  {existingDeployment?.liveUrl
+                    ? 'Click below to push your latest changes to the same live site (no new project).'
+                    : 'Build may take 1–3 minutes on Vercel. You can track progress in your Vercel dashboard.'}
                 </p>
 
                 <button
@@ -270,7 +297,9 @@ export default function VercelDeployModal({ open, onClose, portfolio, onDeployed
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-100 disabled:opacity-50 transition"
                 >
                   {deploying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
-                  {deploying ? 'Deploying to your Vercel…' : 'Deploy now'}
+                  {deploying
+                    ? (existingDeployment?.liveUrl ? 'Updating your site…' : 'Deploying to your Vercel…')
+                    : (existingDeployment?.liveUrl ? 'Update live site' : 'Deploy now')}
                 </button>
               </motion.div>
             )}
@@ -281,7 +310,9 @@ export default function VercelDeployModal({ open, onClose, portfolio, onDeployed
                   <Check className="w-7 h-7 text-green-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Live on your Vercel!</h3>
+                  <h3 className="text-lg font-bold text-white">
+                    {existingDeployment?.liveUrl ? 'Site updated!' : 'Live on your Vercel!'}
+                  </h3>
                   <p className="text-xs text-gray-500 mt-1">Project: {projectName}</p>
                 </div>
                 {liveUrl && (

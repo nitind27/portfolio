@@ -210,7 +210,8 @@ export async function deployPortfolioToVercel(
 
   const conn = await getVercelConnection(userId);
   const teamId = options?.teamId ?? conn.teamId ?? undefined;
-  const projectName = deployProjectName(portfolio);
+  const existing = await getLatestVercelDeployment(userId, portfolio.id);
+  const projectName = existing?.projectName || deployProjectName(portfolio);
   const format = options?.format || 'nextjs';
 
   await recordDeployment(userId, portfolio.id, projectName, { status: 'uploading' });
