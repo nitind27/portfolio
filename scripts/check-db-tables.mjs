@@ -25,6 +25,7 @@ const checks = [
   'site_analytics_events',
   'promo_grants',
   'system_settings',
+  'email_otps',
 ];
 
 for (const table of checks) {
@@ -45,5 +46,10 @@ const [analyticsCount] = await conn.execute('SELECT COUNT(*) AS c FROM site_anal
 if (analyticsCount?.[0]) {
   console.log(`site_analytics_events rows: ${analyticsCount[0].c}`);
 }
+
+try {
+  const [otpCount] = await conn.execute('SELECT COUNT(*) AS c FROM email_otps');
+  if (otpCount?.[0]) console.log(`email_otps rows: ${otpCount[0].c}`);
+} catch { /* table may not exist yet */ }
 
 await conn.end();
