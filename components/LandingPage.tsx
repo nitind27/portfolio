@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import {
   ArrowRight, Globe, LayoutTemplate, Rocket, Shield, Sparkles,
   Clock, Palette, Zap, ChevronRight, Monitor, Smartphone, Download,
-  Layers, MousePointer2, Wand2, Star, Check, HelpCircle,
+  Layers, MousePointer2, Wand2, Star, Check, HelpCircle, Menu, X,
 } from 'lucide-react';
 import { AuthModal, type AuthMode } from './LoginPage';
 import GoogleSignInPrompt from './GoogleSignInPrompt';
@@ -196,6 +196,7 @@ export default function LandingPage({
   const [showAuth, setShowAuth] = useState(initialAuthOpen);
   const [authMode, setAuthMode] = useState<AuthMode>(initialAuthMode);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const promo = usePromoStatus();
   const brand = useBrand();
 
@@ -248,7 +249,7 @@ export default function LandingPage({
         style={{ backgroundColor: headerBg }}
         className="sticky top-0 z-50 border-b border-white/[0.06] backdrop-blur-xl"
       >
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 py-3 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
           <BrandLogo size="sm" />
           <nav className="hidden lg:flex items-center gap-1">
             {NAV_LINKS.map(link => (
@@ -267,15 +268,45 @@ export default function LandingPage({
             <button
               type="button"
               onClick={() => openAuth('login')}
-              className="text-sm text-[#94a3b8] hover:text-white transition px-3 py-2 hidden sm:block"
+              className="text-sm text-[#94a3b8] hover:text-white transition px-2 sm:px-3 py-2 hidden sm:block"
             >
               Sign in
             </button>
-            <PrimaryBtn onClick={() => openAuth('register')} className="!px-4 !py-2.5 !text-sm">
-              Start free
+            <PrimaryBtn onClick={() => openAuth('register')} className="!px-3 sm:!px-4 !py-2.5 !text-sm">
+              <span className="sm:hidden">Start</span>
+              <span className="hidden sm:inline">Start free</span>
             </PrimaryBtn>
+            <button
+              type="button"
+              className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5"
+              onClick={() => setMobileNavOpen(v => !v)}
+              aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
+            >
+              {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+        {mobileNavOpen && (
+          <div className="lg:hidden border-t border-white/[0.06] px-4 py-3 space-y-1" style={{ background: `${brand.surface}ee` }}>
+            {NAV_LINKS.map(link => (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileNavOpen(false)}
+                className="block px-3 py-2.5 rounded-lg text-sm text-[#94a3b8] hover:text-white hover:bg-white/[0.04]"
+              >
+                {link.label}
+              </a>
+            ))}
+            <button
+              type="button"
+              onClick={() => { setMobileNavOpen(false); openAuth('login'); }}
+              className="block w-full text-left px-3 py-2.5 rounded-lg text-sm text-[#94a3b8] hover:text-white hover:bg-white/[0.04]"
+            >
+              Sign in
+            </button>
+          </div>
+        )}
       </motion.header>
 
       {/* ── Hero ── */}

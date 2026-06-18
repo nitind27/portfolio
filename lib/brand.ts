@@ -26,9 +26,12 @@ export const APP_DESCRIPTION = 'Create professional websites, portfolios, and on
 export const STORAGE_POLICY_DAYS = 7;
 export const STORAGE_POLICY_TEXT = `Projects stay in your account for ${STORAGE_POLICY_DAYS} days on the free plan. You can publish and share a live link during that time — anyone with the link can view it. Upgrade to export, deploy, and keep projects longer.`;
 
-/** Fixed layout width — mobile browsers scale the full desktop site to fit */
+/** Fixed layout width — builder canvas desktop preview only */
 export const DESKTOP_VIEWPORT_WIDTH = 1280;
 export const DESKTOP_VIEWPORT_CONTENT = `width=${DESKTOP_VIEWPORT_WIDTH}`;
+
+/** Responsive viewport for live site, exports & shared links */
+export const RESPONSIVE_VIEWPORT_CONTENT = 'width=device-width, initial-scale=1';
 
 export function previewSiteUrl(slug: string) {
   return `${slug}.${APP_DOMAIN}`;

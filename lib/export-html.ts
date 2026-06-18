@@ -1,4 +1,4 @@
-import { APP_NAME, DESKTOP_VIEWPORT_CONTENT } from './brand';
+import { APP_NAME, RESPONSIVE_VIEWPORT_CONTENT } from './brand';
 import { Portfolio, PortfolioSection, SocialLinks, NavbarConfig, FooterConfig } from './types';
 import { getFooterNavItems } from './footer-nav';
 import { escapeHtml } from './export-assets';
@@ -203,7 +203,7 @@ export function generateExportHTML(portfolio: Portfolio): string {
 <html lang="${escapeHtml(portfolio.language || 'en')}">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="${DESKTOP_VIEWPORT_CONTENT}">
+  <meta name="viewport" content="${RESPONSIVE_VIEWPORT_CONTENT}">
   <title>${escapeHtml(seo.title || portfolio.name)}</title>
   <meta name="description" content="${escapeHtml(seo.description || '')}">
   <meta name="keywords" content="${escapeHtml(seo.keywords || '')}">

@@ -58,6 +58,21 @@ body {
   color: var(--foreground);
   font-family: 'Inter', sans-serif;
   margin: 0;
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+html {
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  height: auto;
 }
 
 /* ── Theme-aware shells: fix hardcoded dark-mode text in light mode ── */

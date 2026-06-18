@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { DESKTOP_VIEWPORT_CONTENT } from './brand';
+import { RESPONSIVE_VIEWPORT_CONTENT } from './brand';
 import { EXPORT_NEXT_VERSION, EXPORT_REACT_VERSION } from './export-versions';
 import { Portfolio, ExportFormat } from './types';
 import { AssetBundler } from './export-assets';
@@ -38,7 +38,7 @@ export async function exportPortfolio(portfolio: Portfolio, format: ExportFormat
 <html lang="${processed.language || 'en'}">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="${DESKTOP_VIEWPORT_CONTENT}">
+  <meta name="viewport" content="${RESPONSIVE_VIEWPORT_CONTENT}">
   <title>${processed.seo.title || processed.name}</title>
   <link rel="stylesheet" href="/src/styles.css">
 </head>

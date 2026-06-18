@@ -24,13 +24,14 @@ export function generateExportCSS(portfolio: Portfolio): string {
   --nav-offset: 80px;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body {
   font-family: var(--font);
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
   overflow-x: clip;
+  max-width: 100%;
 }
 img { max-width: 100%; display: block; }
 a { color: inherit; }
@@ -488,7 +489,13 @@ section[id] { scroll-margin-top: var(--nav-offset); }
 .field-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.45; margin-bottom: 0.65rem; }
 .field-link { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.65rem 1.15rem; border-radius: var(--radius); text-decoration: none; background: var(--primary); color: #fff; font-weight: 600; font-size: 0.88rem; }
 
-/* Responsive */
+/* Responsive — tablet & phone */
+@media (max-width: 1024px) {
+  .nav-links, .nav-cta { display: none !important; }
+  .menu-btn { display: flex !important; }
+  .navbar-row { gap: 0.65rem; }
+}
+
 @media (max-width: 768px) {
   .section-shell { padding: var(--m-pad) clamp(0.85rem, 4vw, 1rem); }
   .nav-links, .nav-cta { display: none; }

@@ -86,7 +86,7 @@ export default function Dashboard() {
   return (
     <div className="theme-aware min-h-screen" style={{ background: brand.bg, color: brand.text }}>
       {/* Header */}
-      <header className="border-b px-6 py-3 flex items-center justify-between sticky top-0 z-10 backdrop-blur-md" style={{ background: `${brand.bg}ee`, borderColor: brand.border }}>
+      <header className="border-b px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-10 backdrop-blur-md" style={{ background: `${brand.bg}ee`, borderColor: brand.border }}>
         <div className="flex items-center gap-4">
           <BrandLogo size="sm" />
           <p className="text-xs hidden sm:block border-l pl-4" style={{ borderColor: brand.border, color: brand.textDim }}>
@@ -136,7 +136,7 @@ export default function Dashboard() {
 
       <PremiumModal open={showPremium} onClose={() => setShowPremium(false)} reason="general" />
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Storage policy banner */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}

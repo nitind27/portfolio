@@ -16,6 +16,7 @@ import {
 import { HeroSection } from './HeroSection';
 import { DynamicFieldsGrid } from './DynamicFields';
 import { getSectionPad, isNarrowDeviceView, isMobileDeviceView } from '@/lib/responsive';
+import { useResponsiveDeviceView } from './useResponsiveDeviceView';
 import { getMotionVariants, getSectionHoverProps, resolveTriggerLoad, getSectionHeadingAnim } from '@/lib/section-animation';
 import { PreviewScrollRootProvider, useInViewViewport } from './preview-motion';
 import { APP_NAME } from '@/lib/brand';
@@ -520,7 +521,7 @@ function PortfolioNavbar({ portfolio, sections, theme, social, navbar, isMobile,
 }) {
   const scrollBehavior = navbar.scrollBehavior ?? 'none';
   const scrollAnimation = navbar.scrollAnimation ?? 'smooth';
-  const hasScrollEffect = !isMobile && scrollBehavior !== 'none';
+  const hasScrollEffect = !isNarrow && scrollBehavior !== 'none';
   const scrolled = useNavbarScroll(hasScrollEffect ? 40 : 10);
   const radii: Record<string, string> = { none: '0', sm: '4px', md: '8px', lg: '16px', full: '9999px' };
   const radius = radii[theme.borderRadius] || '8px';
@@ -529,12 +530,12 @@ function PortfolioNavbar({ portfolio, sections, theme, social, navbar, isMobile,
   const isMinimal = navbar.layout === 'minimal';
   const baseNavHeight = isMinimal ? 52 : isCentered ? 72 : 64;
   const desktopMenu = navbar.desktopMenu ?? 'links';
-  const alwaysFloating = !isMobile && desktopMenu === 'floating';
+  const alwaysFloating = !isNarrow && desktopMenu === 'floating';
   const scrollFloating = hasScrollEffect && scrollBehavior === 'float-on-scroll' && scrolled;
   const isFloating = alwaysFloating || scrollFloating;
   const isCompact = hasScrollEffect && scrollBehavior === 'compact-on-scroll' && scrolled;
-  const useDesktopMenuBtn = !isMobile && desktopMenu === 'menu';
-  const showInlineLinks = !isMobile && (desktopMenu === 'links' || desktopMenu === 'floating');
+  const useDesktopMenuBtn = !isNarrow && desktopMenu === 'menu';
+  const showInlineLinks = !isNarrow && (desktopMenu === 'links' || desktopMenu === 'floating');
   const navHeight = isCompact ? Math.max(46, baseNavHeight - 14) : baseNavHeight;
   const motionState = getNavbarMotionState(scrollAnimation, isFloating, scrolled, hasScrollEffect);
 
@@ -564,24 +565,24 @@ function PortfolioNavbar({ portfolio, sections, theme, social, navbar, isMobile,
       >
       <div style={{
         maxWidth: isFloating ? '100%' : 1200, margin: '0 auto', padding: isNarrow ? '0 1rem' : '0 1.5rem',
-        display: 'flex', flexDirection: isCentered && !isMobile ? 'column' : 'row',
+        display: 'flex', flexDirection: isCentered && !isNarrow ? 'column' : 'row',
         alignItems: 'center', justifyContent: 'space-between',
         minHeight: navHeight,
         transition: 'min-height 0.35s ease',
-        gap: isCentered && !isMobile ? '0.65rem' : !isMobile ? `${Math.max(8, Math.round((navbar.linkGap ?? 14) * 0.6))}px` : '0.65rem',
+        gap: isCentered && !isNarrow ? '0.65rem' : !isNarrow ? `${Math.max(8, Math.round((navbar.linkGap ?? 14) * 0.6))}px` : '0.65rem',
         position: 'relative',
         width: '100%',
       }}>
         {/* Brand */}
         <div style={{
           display: 'flex', alignItems: 'center',
-          flex: isMobile ? 1 : undefined,
-          flexShrink: isMobile ? 1 : 0,
-          minWidth: isMobile ? 0 : undefined,
-          width: isCentered && !isMobile ? '100%' : 'auto',
-          justifyContent: isCentered && !isMobile ? 'center' : 'flex-start',
-          marginRight: !isMobile && !isCentered ? '0.5rem' : 0,
-          overflow: isMobile ? 'hidden' : undefined,
+          flex: isNarrow ? 1 : undefined,
+          flexShrink: isNarrow ? 1 : 0,
+          minWidth: isNarrow ? 0 : undefined,
+          width: isCentered && !isNarrow ? '100%' : 'auto',
+          justifyContent: isCentered && !isNarrow ? 'center' : 'flex-start',
+          marginRight: !isNarrow && !isCentered ? '0.5rem' : 0,
+          overflow: isNarrow ? 'hidden' : undefined,
         }}>
           <NavBrand name={brandName} tagline={navbar.tagline} logo={navbar.logoImage}
             showLogo={navbar.showLogo} showTagline={navbar.showTagline && !isMinimal && !isNarrow && !isCompact} theme={theme} radius={radius}
@@ -627,7 +628,7 @@ function PortfolioNavbar({ portfolio, sections, theme, social, navbar, isMobile,
           </div>
         )}
 
-        {isMobile && (
+        {isNarrow && (
           <SiteNavMenu sections={sections} name={brandName} theme={theme} navbar={navbar} social={social} radius={radius}
             menuStyle={navbar.mobileMenu ?? 'drawer-right'} menuIcon={navbar.menuIcon ?? 'dots'} onSectionSelect={onSectionSelect} />
         )}
@@ -933,12 +934,13 @@ function SiteNavMenu({ sections, name, theme, navbar, social, radius, menuStyle,
 }
 
 // ── Main export ──────────────────────────────────────────────────────────────
-export default function PortfolioPreview({ portfolio, deviceView = 'desktop', activeSectionId, onSectionSelect }: Props) {
+export default function PortfolioPreview({ portfolio, deviceView: simulatedDeviceView, activeSectionId, onSectionSelect }: Props) {
   const { sections, popup } = portfolio;
   const theme = resolvePortfolioTheme(portfolio.theme);
   const social = portfolio.social || {};
   const visibleSections = sections.filter(s => s.visible).sort((a, b) => a.order - b.order);
 
+  const deviceView = useResponsiveDeviceView(simulatedDeviceView);
   const isNarrow = isNarrowDeviceView(deviceView);
   const isMobileNav = isMobileDeviceView(deviceView);
 

@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { APP_NAME, APP_DESCRIPTION, LOGO_SRC, DESKTOP_VIEWPORT_WIDTH } from '@/lib/brand';
+import { APP_NAME, APP_DESCRIPTION, LOGO_SRC } from '@/lib/brand';
 import MaintenanceGate from '@/components/MaintenanceGate';
 import SiteAnalyticsTracker from '@/components/SiteAnalyticsTracker';
 import PromoModalProvider from '@/components/PromoModalProvider';
-import MobileDesktopNotice from '@/components/MobileDesktopNotice';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { getThemeInitScript } from '@/lib/app-theme';
 
@@ -22,10 +21,11 @@ export const metadata: Metadata = {
   },
 };
 
-/** Always render desktop layout; phone browsers zoom out to fit. */
+/** Phone & tablet: real responsive layout (desktop unchanged at lg+ breakpoints). */
 export const viewport: Viewport = {
-  width: DESKTOP_VIEWPORT_WIDTH,
+  width: 'device-width',
   initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -39,7 +39,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <MaintenanceGate>
             <SiteAnalyticsTracker />
             <PromoModalProvider />
-            <MobileDesktopNotice />
             {children}
           </MaintenanceGate>
         </ThemeProvider>

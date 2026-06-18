@@ -106,7 +106,7 @@ export default function PublicPortfolioPage() {
           Shared preview · {state.daysRemaining} day{state.daysRemaining === 1 ? '' : 's'} remaining on free plan
         </div>
       )}
-      <PortfolioPreview portfolio={state.portfolio} deviceView="desktop" />
+      <PortfolioPreview portfolio={state.portfolio} />
     </div>
   );
 }

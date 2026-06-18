@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useBuilderStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
 import PortfolioPreview from '../preview/PortfolioPreview';
@@ -7,6 +7,7 @@ import SectionEditor from './SectionEditor';
 import { Eye } from 'lucide-react';
 import type { RightTab } from '../Builder';
 import { previewSiteUrl } from '@/lib/brand';
+import { clampDeviceViewToWidth } from '@/lib/responsive';
 import { useBrand, useTheme } from '../theme/ThemeProvider';
 
 const DEVICE_WIDTHS: Record<string, number | string> = {
@@ -25,8 +26,25 @@ export default function BuilderCanvas({ rightTab, onSectionSelect }: { rightTab:
   const isNarrow = deviceView !== 'desktop';
   const devicePx = typeof DEVICE_WIDTHS[deviceView] === 'number' ? DEVICE_WIDTHS[deviceView] as number : null;
   const previewContentRef = useRef<HTMLDivElement>(null);
+  const [previewWidth, setPreviewWidth] = useState(0);
+
+  const previewDeviceView = useMemo(
+    () => (previewWidth > 0 ? clampDeviceViewToWidth(deviceView, previewWidth) : deviceView),
+    [deviceView, previewWidth],
+  );
 
   const editorOpen = Boolean(activeSection && !previewMode && rightTab === 'sections');
+
+  useEffect(() => {
+    const el = previewContentRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      setPreviewWidth(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [portfolio?.id]);
 
   useEffect(() => {
     if (!devicePx) return;
@@ -65,7 +83,7 @@ export default function BuilderCanvas({ rightTab, onSectionSelect }: { rightTab:
       )}
 
       <div
-        className="flex-1 min-h-0 overflow-auto"
+        className={`flex-1 min-h-0 ${editorOpen ? 'flex flex-col lg:block' : 'overflow-auto'}`}
         style={{
           backgroundImage: isLight
             ? 'radial-gradient(circle, rgba(15,23,42,0.06) 1px, transparent 1px)'
@@ -73,62 +91,68 @@ export default function BuilderCanvas({ rightTab, onSectionSelect }: { rightTab:
           backgroundSize: '24px 24px',
         }}
       >
-        <div className="flex justify-center items-start p-3 sm:p-6 min-h-full">
-          <div className="transition-all duration-300 w-full shrink-0" style={{ maxWidth: DEVICE_WIDTHS[deviceView] }}>
-            <div
-              className="origin-top transition-transform duration-200 mx-auto"
-              style={{ transform: `scale(${canvasZoom / 100})`, transformOrigin: 'top center', width: devicePx ? devicePx : '100%' }}
-            >
-              <div className={`rounded-2xl overflow-hidden border shadow-2xl ${isNarrow ? 'mx-auto' : ''}`}
-                style={{ background: isLight ? brand.surface : '#111', borderColor: brand.border }}>
-                <div className="flex items-center gap-2 px-4 py-2.5 border-b select-none"
-                  style={{ background: isLight ? brand.surfaceHover : '#1a1a1a', borderColor: brand.border }}>
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-500/70" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
-                    <div className="w-3 h-3 rounded-full bg-green-500/70" />
+        <div className={`${editorOpen ? 'flex-1 min-h-0 overflow-auto lg:min-h-full lg:overflow-auto' : ''}`}>
+          <div className="flex justify-center items-start p-2 sm:p-6 min-h-full">
+            <div className="transition-all duration-300 w-full shrink-0" style={{ maxWidth: DEVICE_WIDTHS[deviceView] }}>
+              <div
+                className="origin-top transition-transform duration-200 mx-auto"
+                style={{ transform: `scale(${canvasZoom / 100})`, transformOrigin: 'top center', width: devicePx ? devicePx : '100%' }}
+              >
+                <div className={`rounded-2xl overflow-hidden border shadow-2xl ${isNarrow ? 'mx-auto' : ''}`}
+                  style={{ background: isLight ? brand.surface : '#111', borderColor: brand.border }}>
+                  <div className="flex items-center gap-2 px-3 sm:px-4 py-2 border-b select-none"
+                    style={{ background: isLight ? brand.surfaceHover : '#1a1a1a', borderColor: brand.border }}>
+                    <div className="flex gap-1.5 shrink-0">
+                      <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500/70" />
+                      <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500/70" />
+                      <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500/70" />
+                    </div>
+                    <div className="flex-1 bg-white/5 rounded-md px-2 sm:px-3 py-1 text-[10px] sm:text-xs text-gray-500 text-center truncate min-w-0">
+                      {previewSiteUrl(portfolio.slug)}
+                    </div>
                   </div>
-                  <div className="flex-1 bg-white/5 rounded-md px-3 py-1 text-xs text-gray-500 text-center truncate">
-                    {previewSiteUrl(portfolio.slug)}
-                  </div>
-                </div>
 
-                <div
-                  ref={previewContentRef}
-                  data-preview-scroll-root
-                  className={`relative overflow-y-auto overflow-x-hidden w-full ${
-                    editorOpen ? 'max-h-[46vh] lg:max-h-[calc(100vh-7.5rem)]' : ''
-                  }`}
-                  style={editorOpen ? undefined : {
-                    maxHeight: `calc(${100 / (canvasZoom / 100)}vh - ${deviceView === 'mobile' ? '140px' : '100px'})`,
-                  }}
-                >
-                  <PortfolioPreview
-                    portfolio={portfolio}
-                    deviceView={deviceView}
-                    activeSectionId={activeSection}
-                    onSectionSelect={previewMode ? undefined : onSectionSelect}
-                  />
+                  <div
+                    ref={previewContentRef}
+                    data-preview-scroll-root
+                    className={`relative overflow-y-auto overflow-x-hidden w-full ${
+                      editorOpen ? 'max-h-none lg:max-h-[calc(100vh-7.5rem)]' : ''
+                    }`}
+                    style={editorOpen ? undefined : {
+                      maxHeight: `calc(${100 / (canvasZoom / 100)}vh - ${previewDeviceView === 'mobile' ? '140px' : '100px'})`,
+                    }}
+                  >
+                    <PortfolioPreview
+                      portfolio={portfolio}
+                      deviceView={previewDeviceView}
+                      activeSectionId={activeSection}
+                      onSectionSelect={previewMode ? undefined : onSectionSelect}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <AnimatePresence>
-        {editorOpen && (
-          <motion.div
-            key="section-editor-mobile"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            className="lg:hidden shrink-0 border-t border-blue-500/20 bg-[#080808] overflow-y-auto max-h-[45vh]"
-          >
-            <SectionEditor key={activeSection} sectionId={activeSection!} variant="sidebar" />
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <AnimatePresence>
+          {editorOpen && (
+            <motion.div
+              key="section-editor-mobile"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              className="lg:hidden flex-1 min-h-0 border-t border-blue-500/20 bg-[#080808] overflow-y-auto"
+            >
+              <div className="flex items-center gap-2 px-3 py-2 bg-blue-600/10 border-b border-blue-500/20 shrink-0">
+                <Eye className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span className="text-[11px] text-blue-300">Editing section — tap Preview to see full site</span>
+              </div>
+              <SectionEditor key={activeSection} sectionId={activeSection!} variant="sidebar" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </main>
   );
 }
