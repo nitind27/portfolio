@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { DESKTOP_VIEWPORT_CONTENT } from './brand';
+import { EXPORT_NEXT_VERSION, EXPORT_REACT_VERSION } from './export-versions';
 import { Portfolio, ExportFormat } from './types';
 import { AssetBundler } from './export-assets';
 import { generateExportCSS } from './export-css';
@@ -74,7 +75,7 @@ export async function exportPortfolio(portfolio: Portfolio, format: ExportFormat
     zip.file('package.json', JSON.stringify({
       name: slug, version: '1.0.0',
       scripts: { dev: 'next dev', build: 'next build', start: 'next start' },
-      dependencies: { next: '^15.0.0', react: '^18.0.0', 'react-dom': '^18.0.0' },
+      dependencies: { next: EXPORT_NEXT_VERSION, react: EXPORT_REACT_VERSION, 'react-dom': EXPORT_REACT_VERSION },
       devDependencies: { typescript: '^5.0.0', '@types/react': '^18.0.0', '@types/node': '^20.0.0' },
     }, null, 2));
     zip.file('next.config.ts', `import type { NextConfig } from 'next';\nconst config: NextConfig = {};\nexport default config;`);

@@ -3,6 +3,7 @@ import { AssetBundler } from './export-assets';
 import { generateExportCSS } from './export-css';
 import { generateExportHTML } from './export-html';
 import { generateExportJS } from './export-js';
+import { EXPORT_NEXT_VERSION, EXPORT_REACT_VERSION } from './export-versions';
 
 export interface VercelDeployFile {
   file: string;
@@ -63,8 +64,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         version: '1.0.0',
         private: true,
         scripts: { dev: 'next dev', build: 'next build', start: 'next start' },
-        dependencies: { next: '15.1.0', react: '^19.0.0', 'react-dom': '^19.0.0' },
-        devDependencies: { typescript: '^5.0.0', '@types/react': '^19.0.0', '@types/node': '^20.0.0' },
+        dependencies: {
+          next: EXPORT_NEXT_VERSION,
+          react: EXPORT_REACT_VERSION,
+          'react-dom': EXPORT_REACT_VERSION,
+        },
+        devDependencies: {
+          typescript: '^5.0.0',
+          '@types/react': '^19.0.0',
+          '@types/node': '^20.0.0',
+        },
       }, null, 2),
     },
     {

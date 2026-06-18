@@ -171,6 +171,7 @@ export default function VercelDeployModal({ open, onClose, portfolio, onDeployed
                     <a href="https://vercel.com/account/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-white underline">
                       Vercel → Settings → Tokens
                     </a>.
+                    Deployments appear only in <strong className="text-gray-300">your</strong> Vercel account — not site99&apos;s.
                   </p>
                 </div>
 
