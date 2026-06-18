@@ -21,9 +21,11 @@ interface Props<T extends string = string> {
 export default function ScrollablePanelTabs<T extends string>({ tabs, activeId, onSelect, className = '' }: Props<T>) {
   const brand = useBrand();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const moreWrapRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  const [highlightMore, setHighlightMore] = useState(false);
+  const [overflowTabs, setOverflowTabs] = useState<PanelTabItem<T>[]>([]);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const updateScrollState = useCallback(() => {
     const el = scrollRef.current;
@@ -32,39 +34,32 @@ export default function ScrollablePanelTabs<T extends string>({ tabs, activeId, 
     const hasOverflow = scrollWidth > clientWidth + 4;
     setCanScrollLeft(hasOverflow && scrollLeft > 6);
     setCanScrollRight(hasOverflow && scrollLeft < scrollWidth - clientWidth - 6);
-    if (scrollLeft > 12) setHighlightMore(false);
-  }, []);
+
+    const visibleRight = scrollLeft + clientWidth - 1;
+    const hidden: PanelTabItem<T>[] = [];
+    for (const tab of tabs) {
+      const btn = el.querySelector(`[data-panel-tab="${tab.id}"]`) as HTMLElement | null;
+      if (!btn) continue;
+      const tabRight = btn.offsetLeft + btn.offsetWidth;
+      if (tabRight > visibleRight + 0.5) hidden.push(tab);
+    }
+    setOverflowTabs(hidden);
+  }, [tabs]);
 
   useEffect(() => {
     updateScrollState();
     const el = scrollRef.current;
     if (!el) return;
 
-    const onScroll = () => {
-      updateScrollState();
-      if (el.scrollLeft > 12) setHighlightMore(false);
-    };
-
-    el.addEventListener('scroll', onScroll, { passive: true });
+    el.addEventListener('scroll', updateScrollState, { passive: true });
     const ro = new ResizeObserver(updateScrollState);
     ro.observe(el);
 
     return () => {
-      el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('scroll', updateScrollState);
       ro.disconnect();
     };
   }, [updateScrollState, tabs.length]);
-
-  useEffect(() => {
-    try {
-      if (sessionStorage.getItem('panel-tabs-scroll-hint') === '1') return;
-    } catch { /* ignore */ }
-    const t = setTimeout(() => {
-      const el = scrollRef.current;
-      if (el && el.scrollWidth > el.clientWidth + 4) setHighlightMore(true);
-    }, 500);
-    return () => clearTimeout(t);
-  }, [tabs.length]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -73,15 +68,32 @@ export default function ScrollablePanelTabs<T extends string>({ tabs, activeId, 
     btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   }, [activeId]);
 
-  const dismissHint = () => {
-    setHighlightMore(false);
-    try { sessionStorage.setItem('panel-tabs-scroll-hint', '1'); } catch { /* ignore */ }
-  };
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onPointer = (e: MouseEvent) => {
+      if (!moreWrapRef.current?.contains(e.target as Node)) setMoreOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMoreOpen(false);
+    };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [moreOpen]);
 
   const scrollBy = (dir: -1 | 1) => {
-    dismissHint();
     scrollRef.current?.scrollBy({ left: dir * 140, behavior: 'smooth' });
   };
+
+  const pickTab = (id: T) => {
+    onSelect(id);
+    setMoreOpen(false);
+  };
+
+  const showMoreMenu = overflowTabs.length > 0;
 
   return (
     <div
@@ -100,7 +112,7 @@ export default function ScrollablePanelTabs<T extends string>({ tabs, activeId, 
       )}
 
       <div className="relative flex-1 min-w-0">
-        {canScrollRight && (
+        {canScrollRight && !moreOpen && (
           <div
             className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 z-10"
             style={{ background: `linear-gradient(to left, ${brand.navy} 40%, transparent)` }}
@@ -141,21 +153,51 @@ export default function ScrollablePanelTabs<T extends string>({ tabs, activeId, 
         </div>
       </div>
 
-      {canScrollRight && (
-        <button
-          type="button"
-          onClick={() => scrollBy(1)}
-          title="Templates, Popup, SEO, Social, SMTP & more"
-          className={`shrink-0 flex items-center gap-0.5 h-7 pl-2 pr-1.5 rounded-lg text-[10px] font-semibold border transition ${
-            highlightMore
-              ? 'bg-blue-600 text-white border-blue-400/50 shadow-md shadow-blue-500/30 ring-2 ring-blue-400/40'
-              : 'bg-white/8 text-gray-300 border-white/12 hover:bg-blue-600/20 hover:text-blue-200 hover:border-blue-500/30'
-          }`}
-          aria-label="Show more settings tabs"
-        >
-          <span>More</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
+      {showMoreMenu && (
+        <div ref={moreWrapRef} className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => setMoreOpen(o => !o)}
+            aria-expanded={moreOpen}
+            aria-haspopup="menu"
+            title="More settings"
+            className={`flex items-center gap-0.5 h-7 pl-2 pr-1.5 rounded-lg text-[10px] font-semibold border transition ${
+              moreOpen
+                ? 'bg-blue-600 text-white border-blue-400/50 shadow-md shadow-blue-500/30'
+                : 'bg-white/8 text-gray-300 border-white/12 hover:bg-blue-600/20 hover:text-blue-200 hover:border-blue-500/30'
+            }`}
+          >
+            <span>More</span>
+            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${moreOpen ? 'rotate-90' : ''}`} />
+          </button>
+
+          {moreOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-full mt-1.5 z-[200] min-w-[11rem] max-h-[min(70vh,320px)] overflow-y-auto rounded-xl border border-white/10 bg-[#141414] py-1 shadow-2xl shadow-black/50"
+            >
+              {overflowTabs.map(t => {
+                const Icon = t.icon;
+                const active = activeId === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => pickTab(t.id)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-left text-xs transition ${
+                      active ? 'bg-blue-600/20 text-blue-200' : 'text-gray-300 hover:bg-white/8 hover:text-white'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="flex-1 truncate">{t.label}</span>
+                    {t.locked && <Lock className="w-3 h-3 shrink-0 text-amber-500/80" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

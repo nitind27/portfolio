@@ -1,4 +1,7 @@
+import { readFile } from 'fs/promises';
+import { extname } from 'path';
 import { Portfolio } from './types';
+import { uploadApiPath } from './upload-paths';
 
 const MIME_EXT: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -37,9 +40,47 @@ function parseDataUrl(dataUrl: string): { ext: string; bytes: Uint8Array } | nul
   return { ext, bytes };
 }
 
+/** Relative path under uploads/ from stored portfolio URLs. */
+export function extractUploadRelativePath(url: string): string | null {
+  const trimmed = url.trim();
+  let path = trimmed;
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    try {
+      path = new URL(path).pathname;
+    } catch {
+      return null;
+    }
+  }
+  if (path.startsWith('/api/uploads/')) return path.slice('/api/uploads/'.length);
+  if (path.startsWith('/uploads/')) return path.slice('/uploads/'.length);
+  if (path.startsWith('uploads/')) return path.slice('uploads/'.length);
+  return null;
+}
+
 function shouldBundle(url: string): boolean {
   if (!url || typeof url !== 'string') return false;
-  return url.startsWith('data:image') || url.startsWith('blob:');
+  if (url.startsWith('data:image') || url.startsWith('blob:')) return true;
+  return extractUploadRelativePath(url) !== null;
+}
+
+async function loadUploadBytes(relativePath: string): Promise<{ bytes: Uint8Array; ext: string } | null> {
+  if (typeof window === 'undefined') {
+    const { findUploadFile } = await import('./upload-paths-server');
+    const full = await findUploadFile(relativePath);
+    if (!full) return null;
+    const buf = await readFile(full);
+    const ext = extname(full).slice(1).toLowerCase() || 'png';
+    return { bytes: new Uint8Array(buf), ext };
+  }
+  try {
+    const res = await fetch(uploadApiPath(relativePath), { credentials: 'include' });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const ext = MIME_EXT[blob.type] || blob.type.split('/')[1] || 'png';
+    return { bytes: new Uint8Array(await blob.arrayBuffer()), ext };
+  } catch {
+    return null;
+  }
 }
 
 export class AssetBundler {
@@ -56,7 +97,13 @@ export class AssetBundler {
     let bytes: Uint8Array;
     let ext = 'png';
 
-    if (url.startsWith('data:')) {
+    const uploadRel = extractUploadRelativePath(url);
+    if (uploadRel) {
+      const loaded = await loadUploadBytes(uploadRel);
+      if (!loaded) return url;
+      bytes = loaded.bytes;
+      ext = loaded.ext;
+    } else if (url.startsWith('data:')) {
       const parsed = parseDataUrl(url);
       if (!parsed) return url;
       bytes = parsed.bytes;
