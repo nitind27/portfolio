@@ -13,6 +13,8 @@ export interface TrackEventInput {
   eventType: AnalyticsEventType;
   sessionId?: string;
   userId?: number | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
   path?: string;
   query?: string;
   referrer?: string;
@@ -26,11 +28,25 @@ export interface AnalyticsEventRow {
   userId: number | null;
   userName: string | null;
   userEmail: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
   path: string | null;
   query: string | null;
   referrer: string | null;
   metadata: Record<string, unknown> | null;
   createdAt: string;
+}
+
+export interface VisitorTodayRow {
+  sessionId: string | null;
+  ipAddress: string | null;
+  userId: number | null;
+  userName: string | null;
+  userEmail: string | null;
+  firstSeen: string;
+  lastSeen: string;
+  pageViews: number;
+  searches: number;
 }
 
 export interface AnalyticsSummary {
@@ -46,6 +62,8 @@ export interface AnalyticsSummary {
   topSearches: { query: string; count: number }[];
   recentSearches: AnalyticsEventRow[];
   recentEvents: AnalyticsEventRow[];
+  todayVisitors: VisitorTodayRow[];
+  topPagesToday: { path: string; count: number }[];
   searchEngineReferrers: { source: string; count: number }[];
 }
 
@@ -60,6 +78,8 @@ export async function ensureAnalyticsSchema() {
       event_type VARCHAR(40) NOT NULL,
       session_id VARCHAR(64) NULL,
       user_id INT UNSIGNED NULL,
+      ip_address VARCHAR(64) NULL,
+      user_agent VARCHAR(500) NULL,
       path VARCHAR(500) NULL,
       query VARCHAR(500) NULL,
       referrer VARCHAR(1000) NULL,
@@ -69,9 +89,16 @@ export async function ensureAnalyticsSchema() {
       INDEX idx_created_at (created_at),
       INDEX idx_session (session_id),
       INDEX idx_user (user_id),
+      INDEX idx_ip (ip_address),
       INDEX idx_query (query(100))
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `).catch(() => {});
+
+  // Backfill older installs (safe to ignore errors).
+  await pool.execute(`ALTER TABLE site_analytics_events ADD COLUMN ip_address VARCHAR(64) NULL`).catch(() => {});
+  await pool.execute(`ALTER TABLE site_analytics_events ADD COLUMN user_agent VARCHAR(500) NULL`).catch(() => {});
+  await pool.execute(`ALTER TABLE site_analytics_events ADD INDEX idx_ip (ip_address)`).catch(() => {});
+
   schemaReady = true;
 }
 
@@ -89,6 +116,8 @@ function rowToEvent(r: RowDataPacket): AnalyticsEventRow {
     userId: r.user_id != null ? Number(r.user_id) : null,
     userName: r.user_name ? String(r.user_name) : null,
     userEmail: r.user_email ? String(r.user_email) : null,
+    ipAddress: r.ip_address ? String(r.ip_address) : null,
+    userAgent: r.user_agent ? String(r.user_agent) : null,
     path: r.path ? String(r.path) : null,
     query: r.query ? String(r.query) : null,
     referrer: r.referrer ? String(r.referrer) : null,
@@ -105,12 +134,14 @@ export async function trackSiteEvent(input: TrackEventInput): Promise<void> {
     if (input.eventType === 'search' && !query) return;
 
     await pool.execute(
-      `INSERT INTO site_analytics_events (event_type, session_id, user_id, path, query, referrer, metadata)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO site_analytics_events (event_type, session_id, user_id, ip_address, user_agent, path, query, referrer, metadata)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         input.eventType,
         input.sessionId?.slice(0, 64) || null,
         input.userId ?? null,
+        input.ipAddress?.slice(0, 64) || null,
+        input.userAgent?.slice(0, 500) || null,
         input.path?.slice(0, 500) || null,
         query,
         input.referrer?.slice(0, 1000) || null,
@@ -175,6 +206,36 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
     LIMIT 100
   `);
 
+  const [todayVisitors] = await pool.execute<RowDataPacket[]>(`
+    SELECT
+      e.session_id,
+      e.ip_address,
+      e.user_id,
+      u.name AS user_name,
+      u.email AS user_email,
+      MIN(e.created_at) AS first_seen,
+      MAX(e.created_at) AS last_seen,
+      SUM(e.event_type = 'page_view') AS page_views,
+      SUM(e.event_type = 'search') AS searches
+    FROM site_analytics_events e
+    LEFT JOIN users u ON u.id = e.user_id
+    WHERE DATE(e.created_at) = CURDATE()
+    GROUP BY e.session_id, e.ip_address, e.user_id, u.name, u.email
+    ORDER BY last_seen DESC
+    LIMIT 100
+  `);
+
+  const [topPagesToday] = await pool.execute<RowDataPacket[]>(`
+    SELECT path, COUNT(*) AS c
+    FROM site_analytics_events
+    WHERE event_type = 'page_view'
+      AND DATE(created_at) = CURDATE()
+      AND path IS NOT NULL AND path != ''
+    GROUP BY path
+    ORDER BY c DESC
+    LIMIT 15
+  `);
+
   const [searchRefs] = await pool.execute<RowDataPacket[]>(`
     SELECT referrer, COUNT(*) AS c
     FROM site_analytics_events
@@ -218,6 +279,18 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
     topSearches: topSearches.map(r => ({ query: String(r.query), count: Number(r.c) })),
     recentSearches: recentSearches.map(rowToEvent),
     recentEvents: recentEvents.map(rowToEvent),
+    todayVisitors: todayVisitors.map(r => ({
+      sessionId: r.session_id ? String(r.session_id) : null,
+      ipAddress: r.ip_address ? String(r.ip_address) : null,
+      userId: r.user_id != null ? Number(r.user_id) : null,
+      userName: r.user_name ? String(r.user_name) : null,
+      userEmail: r.user_email ? String(r.user_email) : null,
+      firstSeen: new Date(r.first_seen as Date).toISOString(),
+      lastSeen: new Date(r.last_seen as Date).toISOString(),
+      pageViews: Number(r.page_views ?? 0),
+      searches: Number(r.searches ?? 0),
+    })),
+    topPagesToday: topPagesToday.map(r => ({ path: String(r.path), count: Number(r.c) })),
     searchEngineReferrers: searchRefs.map(r => ({
       source: String(r.referrer).slice(0, 120),
       count: Number(r.c),

@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
 import AboutPageClient from '@/components/marketing/AboutPageClient';
-import { APP_NAME } from '@/lib/brand';
-import { company } from '@/lib/company';
+import { getMarketingAbout } from '@/lib/marketing-about';
+import { buildMarketingMetadata } from '@/lib/marketing-seo';
 
-export const metadata: Metadata = {
-  title: `About Us — ${APP_NAME}`,
-  description: `${company.description} Learn about ${company.legalName} and our mission.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const content = await getMarketingAbout();
+  return buildMarketingMetadata(content.seo);
+}
 
-export default function AboutPage() {
-  return <AboutPageClient />;
+export default async function AboutPage() {
+  const content = await getMarketingAbout();
+  return <AboutPageClient content={content} />;
 }

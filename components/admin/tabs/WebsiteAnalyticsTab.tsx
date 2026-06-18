@@ -24,7 +24,30 @@ interface AnalyticsData {
     query: string | null;
     userName: string | null;
     userEmail: string | null;
+    ipAddress: string | null;
     path: string | null;
+    createdAt: string;
+  }[];
+  todayVisitors: {
+    sessionId: string | null;
+    ipAddress: string | null;
+    userName: string | null;
+    userEmail: string | null;
+    firstSeen: string;
+    lastSeen: string;
+    pageViews: number;
+    searches: number;
+  }[];
+  topPagesToday: { path: string; count: number }[];
+  recentEvents: {
+    id: number;
+    eventType: string;
+    sessionId: string | null;
+    userName: string | null;
+    userEmail: string | null;
+    ipAddress: string | null;
+    path: string | null;
+    query: string | null;
     createdAt: string;
   }[];
   searchEngineReferrers: { source: string; count: number }[];
@@ -48,6 +71,18 @@ function shortDate(d: string) {
     return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   } catch {
     return d.slice(5);
+  }
+}
+
+function prettyEventType(t: string) {
+  switch (t) {
+    case 'page_view': return 'Page view';
+    case 'search': return 'Search';
+    case 'modal_view': return 'Modal view';
+    case 'modal_cta': return 'Modal click';
+    case 'registration': return 'Registration';
+    case 'promo_claim': return 'Promo claim';
+    default: return t;
   }
 }
 
@@ -174,6 +209,26 @@ export default function WebsiteAnalyticsTab() {
         </div>
 
         <div className={adminCard} style={adminCardStyle}>
+          <h3 className="text-sm font-semibold text-white mb-3">Top pages today</h3>
+          {data.topPagesToday.length === 0 ? (
+            <p className="text-xs text-gray-600 py-6 text-center">No page views recorded today.</p>
+          ) : (
+            <div className="space-y-2">
+              {data.topPagesToday.map((p, i) => (
+                <div key={p.path} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-gray-400 truncate">
+                    <span className="text-gray-600 w-5 inline-block">{i + 1}.</span> <span className="font-mono">{p.path}</span>
+                  </span>
+                  <span className="font-mono text-white shrink-0">{p.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-4">
+        <div className={adminCard} style={adminCardStyle}>
           <h3 className="text-sm font-semibold text-white mb-3">Search engine referrers</h3>
           {data.searchEngineReferrers.length === 0 ? (
             <p className="text-xs text-gray-600 py-6 text-center">No search engine traffic yet.</p>
@@ -187,6 +242,74 @@ export default function WebsiteAnalyticsTab() {
               ))}
             </div>
           )}
+        </div>
+        <div className={adminCard} style={adminCardStyle}>
+          <h3 className="text-sm font-semibold text-white mb-3">Promo engagement</h3>
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-gray-400">Modal views today</span>
+              <span className="font-mono text-white">{data.today.modalViews}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-gray-400">Modal clicks today</span>
+              <span className="font-mono text-white">{data.today.modalClicks}</span>
+            </div>
+            {data.promo && (
+              <>
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10">
+                  <span className="text-gray-400">Free grants used</span>
+                  <span className="font-mono text-white">{data.promo.freeGrantCount} / {data.promo.freeGrantLimit}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-gray-400">Slots remaining</span>
+                  <span className="font-mono text-white">{data.promo.slotsRemaining}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className={adminCard + ' overflow-hidden'} style={adminCardStyle}>
+        <h3 className="text-sm font-semibold text-white mb-3">Today visitors (who came today)</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs min-w-[780px]">
+            <thead>
+              <tr className="border-b border-white/10 text-left text-gray-500">
+                <th className="px-3 py-2">Last seen</th>
+                <th className="px-3 py-2">IP</th>
+                <th className="px-3 py-2">User</th>
+                <th className="px-3 py-2">Page views</th>
+                <th className="px-3 py-2">Searches</th>
+                <th className="px-3 py-2">First seen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.todayVisitors.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-3 py-8 text-center text-gray-600">No visitors recorded today.</td>
+                </tr>
+              ) : data.todayVisitors.map((v, idx) => (
+                <tr key={`${v.sessionId || 'guest'}_${v.ipAddress || idx}`} className="border-b border-white/5 hover:bg-white/[0.02]">
+                  <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">{formatDate(v.lastSeen)}</td>
+                  <td className="px-3 py-2.5 font-mono text-gray-300">{v.ipAddress || '—'}</td>
+                  <td className="px-3 py-2.5">
+                    {v.userEmail ? (
+                      <div>
+                        <p className="text-gray-300">{v.userName || 'User'}</p>
+                        <p className="text-gray-600">{v.userEmail}</p>
+                      </div>
+                    ) : (
+                      <span className="text-gray-600">Guest</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5 font-mono text-white">{v.pageViews}</td>
+                  <td className="px-3 py-2.5 font-mono text-white">{v.searches}</td>
+                  <td className="px-3 py-2.5 text-gray-600 whitespace-nowrap">{formatDate(v.firstSeen)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -210,13 +333,14 @@ export default function WebsiteAnalyticsTab() {
                 <th className="px-3 py-2">Time</th>
                 <th className="px-3 py-2">Search query</th>
                 <th className="px-3 py-2">User</th>
+                <th className="px-3 py-2">IP</th>
                 <th className="px-3 py-2">Page</th>
               </tr>
             </thead>
             <tbody>
               {filteredSearches.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-3 py-8 text-center text-gray-600">No search activity yet.</td>
+                  <td colSpan={5} className="px-3 py-8 text-center text-gray-600">No search activity yet.</td>
                 </tr>
               ) : filteredSearches.map(s => (
                 <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.02]">
@@ -232,7 +356,51 @@ export default function WebsiteAnalyticsTab() {
                       <span className="text-gray-600">Guest</span>
                     )}
                   </td>
+                  <td className="px-3 py-2.5 font-mono text-gray-300">{s.ipAddress || '—'}</td>
                   <td className="px-3 py-2.5 text-gray-500 font-mono">{s.path || '/'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className={adminCard + ' overflow-hidden'} style={adminCardStyle}>
+        <h3 className="text-sm font-semibold text-white mb-3">Recent activity (all events)</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs min-w-[860px]">
+            <thead>
+              <tr className="border-b border-white/10 text-left text-gray-500">
+                <th className="px-3 py-2">Time</th>
+                <th className="px-3 py-2">Event</th>
+                <th className="px-3 py-2">Page</th>
+                <th className="px-3 py-2">Query</th>
+                <th className="px-3 py-2">User</th>
+                <th className="px-3 py-2">IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.recentEvents.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-3 py-8 text-center text-gray-600">No activity yet.</td>
+                </tr>
+              ) : data.recentEvents.map(e => (
+                <tr key={e.id} className="border-b border-white/5 hover:bg-white/[0.02]">
+                  <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">{formatDate(e.createdAt)}</td>
+                  <td className="px-3 py-2.5 text-white">{prettyEventType(e.eventType)}</td>
+                  <td className="px-3 py-2.5 text-gray-500 font-mono">{e.path || '/'}</td>
+                  <td className="px-3 py-2.5 text-gray-300">{e.query || '—'}</td>
+                  <td className="px-3 py-2.5">
+                    {e.userEmail ? (
+                      <div>
+                        <p className="text-gray-300">{e.userName || 'User'}</p>
+                        <p className="text-gray-600">{e.userEmail}</p>
+                      </div>
+                    ) : (
+                      <span className="text-gray-600">Guest</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5 font-mono text-gray-300">{e.ipAddress || '—'}</td>
                 </tr>
               ))}
             </tbody>

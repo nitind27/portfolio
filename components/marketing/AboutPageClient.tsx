@@ -8,33 +8,10 @@ import {
 } from 'lucide-react';
 import MarketingShell from './MarketingShell';
 import CompanyInfoBlock from './CompanyInfoBlock';
-import {
-  APP_NAME, APP_TAGLINE, APP_DESCRIPTION,
-  STORAGE_POLICY_DAYS, brand,
-} from '@/lib/brand';
-import { company } from '@/lib/company';
+import { APP_NAME, brand } from '@/lib/brand';
+import type { MarketingAboutContent } from '@/lib/marketing-about';
 
-const STATS = [
-  { value: '10+', label: 'Section types' },
-  { value: '3', label: 'Export formats' },
-  { value: `${STORAGE_POLICY_DAYS}d`, label: 'Free sharing' },
-  { value: '₹99', label: 'Premium from' },
-];
-
-const VALUES = [
-  { icon: Rocket, title: 'Ship fast', desc: 'From template to live site in minutes — not weeks.' },
-  { icon: Globe, title: 'Launch anywhere', desc: 'Share a link, export code, or deploy to your own domain.' },
-  { icon: Shield, title: 'Own your work', desc: 'Export full HTML, React, or Next.js — no lock-in.' },
-  { icon: Users, title: 'Built for everyone', desc: 'Freelancers, shops, clinics, agencies — no coding required.' },
-];
-
-const OFFERINGS = [
-  'Visual drag-and-drop builder with live preview on desktop & mobile',
-  'Theme, navbar, footer, popup, SEO, social links & SMTP panels',
-  `Free ${STORAGE_POLICY_DAYS}-day public share links for every account`,
-  'Premium export (HTML, React, Next.js) and Hostinger deploy',
-  `Secure one-time payments via ${company.paymentPartner}`,
-];
+const VALUE_ICONS = [Rocket, Globe, Shield, Users];
 
 const fade = {
   initial: { opacity: 0, y: 16 },
@@ -43,13 +20,16 @@ const fade = {
   transition: { duration: 0.45 },
 };
 
-export default function AboutPageClient() {
+interface Props {
+  content: MarketingAboutContent;
+}
+
+export default function AboutPageClient({ content }: Props) {
   return (
     <MarketingShell
       title={`About ${APP_NAME}`}
-      subtitle={APP_TAGLINE}
+      subtitle={content.heroSubtitle}
     >
-      {/* Hero band */}
       <section className="relative overflow-hidden border-b" style={{ borderColor: brand.border }}>
         <div
           className="absolute inset-0 opacity-40"
@@ -64,14 +44,13 @@ export default function AboutPageClient() {
                 className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-5 border"
                 style={{ borderColor: `${brand.accent}44`, background: brand.accentMuted, color: brand.accentLight }}
               >
-                <Sparkles className="w-3.5 h-3.5" /> Est. {company.foundedYear} · {company.country}
+                <Sparkles className="w-3.5 h-3.5" /> {content.heroBadge}
               </p>
               <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight mb-4">
-                We help anyone build a professional website — without writing code.
+                {content.heroTitle}
               </h2>
               <p className="text-gray-400 leading-relaxed text-sm sm:text-base mb-6">
-                {APP_DESCRIPTION} {APP_NAME} ({company.website.replace(/^https?:\/\//, '')}) is a visual platform
-                where creators, freelancers, and businesses design, preview, and launch online.
+                {content.heroBody}
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
@@ -93,7 +72,7 @@ export default function AboutPageClient() {
 
             <motion.div {...fade} transition={{ delay: 0.1, duration: 0.45 }}>
               <div className="grid grid-cols-2 gap-3">
-                {STATS.map(({ value, label }) => (
+                {content.stats.map(({ value, label }) => (
                   <div
                     key={label}
                     className="p-5 rounded-2xl border text-center"
@@ -109,7 +88,6 @@ export default function AboutPageClient() {
         </div>
       </section>
 
-      {/* Mission */}
       <section className="max-w-6xl mx-auto px-5 sm:px-8 py-14 sm:py-16">
         <div className="grid md:grid-cols-2 gap-8">
           <motion.div
@@ -119,12 +97,10 @@ export default function AboutPageClient() {
           >
             <div className="flex items-center gap-3 mb-4">
               <Target className="w-5 h-5" style={{ color: brand.accent }} />
-              <h3 className="text-lg font-bold text-white">Our mission</h3>
+              <h3 className="text-lg font-bold text-white">{content.missionTitle}</h3>
             </div>
-            <p className="text-sm text-gray-400 leading-relaxed">
-              {company.tagline} We believe every business deserves a beautiful, fast website —
-              whether you&apos;re a freelancer, restaurant, clinic, or startup. {APP_NAME} removes the technical barrier
-              so you can focus on your story, not on code.
+            <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-line">
+              {content.missionBody}
             </p>
           </motion.div>
           <motion.div
@@ -134,34 +110,28 @@ export default function AboutPageClient() {
           >
             <div className="flex items-center gap-3 mb-4">
               <Heart className="w-5 h-5" style={{ color: brand.accent }} />
-              <h3 className="text-lg font-bold text-white">What we do</h3>
+              <h3 className="text-lg font-bold text-white">{content.whatWeDoTitle}</h3>
             </div>
-            <p className="text-sm text-gray-400 leading-relaxed mb-4">
-              {company.legalName} operates a {company.serviceCategory.toLowerCase()}.
-              Users create portfolios and business websites using our section-based editor,
-              publish shareable links, and upgrade to export production-ready code or deploy to hosting.
-            </p>
-            <p className="text-xs text-gray-500">
-              Category: {company.serviceCategory}
+            <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-line">
+              {content.whatWeDoBody}
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* Offerings */}
       <section
         className="border-y py-14 sm:py-16"
         style={{ borderColor: brand.border, background: `${brand.surface}66` }}
       >
         <div className="max-w-6xl mx-auto px-5 sm:px-8">
           <motion.div className="text-center mb-10" {...fade}>
-            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">What {APP_NAME} offers</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">{content.offeringsTitle}</h2>
             <p className="text-sm text-gray-500 max-w-xl mx-auto">
               Everything you need to go from idea to live website — in one platform.
             </p>
           </motion.div>
           <ul className="grid sm:grid-cols-2 gap-3 max-w-3xl mx-auto">
-            {OFFERINGS.map(text => (
+            {content.offerings.map(text => (
               <motion.li
                 key={text}
                 className="flex items-start gap-3 p-4 rounded-xl border"
@@ -176,26 +146,27 @@ export default function AboutPageClient() {
         </div>
       </section>
 
-      {/* Values */}
       <section className="max-w-6xl mx-auto px-5 sm:px-8 py-14 sm:py-16">
-        <h2 className="text-xl font-bold text-white mb-6 text-center">Our values</h2>
+        <h2 className="text-xl font-bold text-white mb-6 text-center">{content.valuesTitle}</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {VALUES.map(({ icon: Icon, title, desc }) => (
-            <motion.div
-              key={title}
-              className="p-5 rounded-2xl border"
-              style={{ background: brand.surface, borderColor: brand.border }}
-              {...fade}
-            >
-              <Icon className="w-5 h-5 mb-3" style={{ color: brand.accent }} />
-              <h3 className="font-semibold text-white text-sm mb-1">{title}</h3>
-              <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
-            </motion.div>
-          ))}
+          {content.values.map(({ title, description }, i) => {
+            const Icon = VALUE_ICONS[i % VALUE_ICONS.length];
+            return (
+              <motion.div
+                key={title}
+                className="p-5 rounded-2xl border"
+                style={{ background: brand.surface, borderColor: brand.border }}
+                {...fade}
+              >
+                <Icon className="w-5 h-5 mb-3" style={{ color: brand.accent }} />
+                <h3 className="font-semibold text-white text-sm mb-1">{title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{description}</p>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 
-      {/* Company info + legal links */}
       <section
         className="border-t py-14 sm:py-16"
         style={{ borderColor: brand.border, background: brand.navy }}

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   LayoutDashboard, CreditCard, LayoutTemplate, Users,
   Loader2, Shield, RefreshCw, Grid3x3, Receipt, Bell, ExternalLink, LogOut, Mail, Settings, MessageSquare, Globe,
-  BarChart3, Gift,
+  BarChart3, Gift, FileText, Newspaper,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import BrandLogo from '../BrandLogo';
@@ -25,8 +25,10 @@ import SupportTab from './tabs/SupportTab';
 import WebsiteSettingsTab from './tabs/WebsiteSettingsTab';
 import WebsiteAnalyticsTab from './tabs/WebsiteAnalyticsTab';
 import PromoCampaignTab from './tabs/PromoCampaignTab';
+import AboutPageTab from './tabs/AboutPageTab';
+import BlogTab from './tabs/BlogTab';
 
-type Tab = 'overview' | 'analytics' | 'promo' | 'plans' | 'features' | 'templates' | 'users' | 'payments' | 'support' | 'website' | 'email' | 'settings';
+type Tab = 'overview' | 'analytics' | 'promo' | 'plans' | 'features' | 'templates' | 'users' | 'payments' | 'support' | 'about' | 'blog' | 'website' | 'email' | 'settings';
 
 const NAV: { id: Tab; label: string; desc: string; icon: typeof LayoutDashboard; group: string }[] = [
   { id: 'overview', label: 'Dashboard', desc: 'Revenue & activity', icon: LayoutDashboard, group: 'Main' },
@@ -38,6 +40,8 @@ const NAV: { id: Tab; label: string; desc: string; icon: typeof LayoutDashboard;
   { id: 'templates', label: 'Templates', desc: 'Access control', icon: LayoutTemplate, group: 'Content' },
   { id: 'users', label: 'Users', desc: 'Accounts & roles', icon: Users, group: 'Content' },
   { id: 'support', label: 'Support', desc: 'Complaints & feedback', icon: MessageSquare, group: 'Content' },
+  { id: 'about', label: 'About page', desc: 'Hero, mission & SEO', icon: FileText, group: 'Content' },
+  { id: 'blog', label: 'Blog', desc: 'Posts & SEO', icon: Newspaper, group: 'Content' },
   { id: 'website', label: 'Website', desc: 'Maintenance mode', icon: Globe, group: 'Settings' },
   { id: 'email', label: 'Email & SMTP', desc: 'Transactional emails', icon: Mail, group: 'Settings' },
   { id: 'settings', label: 'Account', desc: 'Password & profile', icon: Settings, group: 'Settings' },
@@ -274,6 +278,8 @@ export default function AdminPanel() {
               {tab === 'users' && <UsersTab users={users} plans={plans} onRefresh={loadAll} />}
               {tab === 'payments' && <PaymentsTab payments={payments} />}
               {tab === 'support' && <SupportTab />}
+              {tab === 'about' && <AboutPageTab />}
+              {tab === 'blog' && <BlogTab />}
               {tab === 'website' && <WebsiteSettingsTab />}
               {tab === 'email' && <EmailTab />}
               {tab === 'settings' && <SettingsTab />}

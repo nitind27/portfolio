@@ -5,7 +5,7 @@ import MaintenancePage from './MaintenancePage';
 /** Staff login, APIs, support & legal/info pages during maintenance */
 const BYPASS_PREFIXES = [
   '/admin', '/api', '/maintenance', '/support',
-  '/about', '/contact', '/privacy', '/terms',
+  '/about', '/blog', '/contact', '/privacy', '/terms',
 ];
 
 function shouldBypassPath(pathname: string) {
