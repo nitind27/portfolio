@@ -11,13 +11,19 @@
 
 export function getGoogleVerificationHtmlFile(): string | null {
   const name = process.env.GOOGLE_SITE_VERIFICATION_HTML?.trim();
-  if (!name || !/^google[a-z0-9]+\.html$/i.test(name)) return null;
-  return name;
+  if (name && /^google[a-z0-9]+\.html$/i.test(name)) return name;
+  return null;
 }
+
+/** TXT record value for Hostinger DNS (domain property verification) */
+export const GSC_DNS_TXT_VALUE =
+  'google-site-verification=FLrh1qR22UNnkwYLDdv_gBPzFyr0o53LDqrJS';
 
 export function getGoogleVerificationMetaToken(): string | null {
   const token = process.env.GOOGLE_SITE_VERIFICATION?.trim();
-  return token || null;
+  if (token) return token;
+  // Public GSC token — also add matching TXT at Hostinger for domain verification
+  return 'FLrh1qR22UNnkwYLDdv_gBPzFyr0o53LDqrJS';
 }
 
 export function googleVerificationHtmlBody(filename: string): string {

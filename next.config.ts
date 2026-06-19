@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       { source: '/uploads/:path*', destination: '/api/uploads/:path*' },
+      {
+        source: '/:file(google[a-z0-9]+\\.html)',
+        destination: '/api/gsc-verify/:file',
+      },
     ];
   },
   turbopack: {
