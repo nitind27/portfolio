@@ -193,6 +193,46 @@ svg {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Landing template slider — single flex row */
+.landing-template-card {
+  width: 240px;
+}
+@media (min-width: 640px) {
+  .landing-template-card {
+    width: 260px;
+  }
+}
+@media (min-width: 1024px) {
+  .landing-template-card {
+    width: 280px;
+  }
+}
+.landing-templates-slider {
+  overflow: hidden;
+  width: 100%;
+}
+.landing-templates-track {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 1.25rem;
+  width: max-content;
+  padding: 0.5rem 0;
+  animation: marquee-left 55s linear infinite;
+}
+.landing-templates-slider:hover .landing-templates-track {
+  animation-play-state: paused;
+}
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.mask-fade-x {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+
 /* Drag handle */
 .drag-handle { cursor: grab; }
 .drag-handle:active { cursor: grabbing; }

@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import {
   ArrowRight, Globe, LayoutTemplate, Rocket, Shield, Sparkles,
   Clock, Palette, Zap, ChevronRight, Monitor, Smartphone, Download,
-  Layers, MousePointer2, Wand2, Star, Check, HelpCircle, Menu, X,
+  MousePointer2, Wand2, Star, Check, HelpCircle, Menu, X,
 } from 'lucide-react';
 import { AuthModal, type AuthMode } from './LoginPage';
 import GoogleSignInPrompt from './GoogleSignInPrompt';
@@ -15,6 +15,7 @@ import ThemeToggle from './theme/ThemeToggle';
 import { useBrand } from './theme/ThemeProvider';
 import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION, APP_DOMAIN, STORAGE_POLICY_DAYS } from '@/lib/brand';
 import { TEMPLATES } from '@/lib/templates';
+import LandingTemplatesShowcase from '@/components/marketing/LandingTemplatesShowcase';
 
 const PREMIUM_PRICE = process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99;
 const TEMPLATE_COUNT = TEMPLATES.length;
@@ -51,15 +52,6 @@ const FEATURES = [
   { icon: Wand2, title: 'Section library', desc: 'Hero, pricing, FAQ, blog, team, gallery & more.', span: 'lg:col-span-2' },
   { icon: Shield, title: 'Premium unlock', desc: 'Export, share & deploy with one portfolio slot.', span: '' },
   { icon: Zap, title: 'Real-time editing', desc: 'Changes reflect instantly — what you see is what you ship.', span: '' },
-];
-
-const TEMPLATE_PREVIEWS = [
-  { name: 'Agency Pro', colors: ['#f28c28', '#102a43', '#2d5a7b'] },
-  { name: 'Dev Portfolio', colors: ['#6366f1', '#0a0a0a', '#8b5cf6'] },
-  { name: 'SaaS Launch', colors: ['#06b6d4', '#020617', '#0ea5e9'] },
-  { name: 'Creative Studio', colors: ['#e11d48', '#0f0f0f', '#fbbf24'] },
-  { name: 'Business Co', colors: ['#22c55e', '#052e16', '#16a34a'] },
-  { name: 'Shop Front', colors: ['#a855f7', '#1a0a2e', '#ec4899'] },
 ];
 
 const FAQS = [
@@ -413,41 +405,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      {/* ── Templates showcase ── */}
-      <section id="templates" className="relative z-10 py-24 overflow-hidden" style={{ background: brand.surface }}>
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 mb-12">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: brand.accent }}>Templates</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Start with a pro design</h2>
-            <p className="text-[#94a3b8] max-w-xl">{TEMPLATE_COUNT}+ handcrafted templates — switch anytime without losing your content.</p>
-          </motion.div>
-        </div>
-        <div className="flex gap-5 overflow-x-auto pb-4 px-5 sm:px-8 no-scrollbar snap-x snap-mandatory">
-          {TEMPLATE_PREVIEWS.map((t, i) => (
-            <motion.div
-              key={t.name}
-              initial={{ opacity: 0, x: 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.06 }}
-              className="snap-start shrink-0 w-[220px] rounded-2xl border overflow-hidden group cursor-default hover:scale-[1.02] transition-transform duration-300"
-              style={{ borderColor: brand.border, background: brand.bg }}
-            >
-              <div className="h-36 p-3 flex flex-col gap-2">
-                <div className="h-8 rounded-lg" style={{ background: `linear-gradient(135deg, ${t.colors[0]}, ${t.colors[1]})` }} />
-                <div className="flex-1 grid grid-cols-2 gap-1.5">
-                  <div className="rounded-md" style={{ background: t.colors[1] }} />
-                  <div className="rounded-md" style={{ background: t.colors[2] }} />
-                </div>
-              </div>
-              <div className="px-4 py-3 border-t border-white/[0.06] flex items-center justify-between">
-                <span className="text-sm font-medium text-white">{t.name}</span>
-                <Layers className="w-4 h-4 text-[#64748b] group-hover:text-orange-400 transition-colors" />
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+      <LandingTemplatesShowcase templateCount={TEMPLATE_COUNT} onStartFree={() => openAuth('register')} />
 
       {/* ── Features bento ── */}
       <section id="features" className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 py-24">

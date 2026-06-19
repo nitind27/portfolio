@@ -11,7 +11,7 @@ interface PreviewProps {
   className?: string;
 }
 
-function MiniSitePreview({ template, className = '' }: PreviewProps) {
+export function MiniSitePreview({ template, className = '' }: PreviewProps) {
   const theme = template.defaultTheme;
   const variant = inferPreviewVariant(template);
   const { primaryColor, secondaryColor, backgroundColor, textColor, accentColor } = theme;
