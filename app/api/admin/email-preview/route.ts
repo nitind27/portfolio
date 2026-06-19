@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/auth-server';
 import { APP_NAME } from '@/lib/brand';
 import {
   welcomeEmailHtml, paymentSuccessEmailHtml,
-  paymentFailedEmailHtml, testEmailHtml,
+  paymentFailedEmailHtml, testEmailHtml, outreachEmailHtml,
   type EmailTemplateData,
 } from '@/lib/email-templates';
 
@@ -27,12 +27,19 @@ export async function GET(req: NextRequest) {
   }
 
   const type = req.nextUrl.searchParams.get('type') || 'welcome';
+  const customMessage = req.nextUrl.searchParams.get('message') || 'We noticed you started building your website but have not finished yet. We would love to help you complete it!';
 
   let html = '';
   switch (type) {
     case 'payment': html = paymentSuccessEmailHtml(SAMPLE); break;
     case 'failed':  html = paymentFailedEmailHtml(SAMPLE); break;
     case 'test':    html = testEmailHtml(SAMPLE); break;
+    case 'outreach': html = outreachEmailHtml({
+      ...SAMPLE,
+      customMessage,
+      projectName: 'My Portfolio',
+      projectStatus: 'Draft — not published',
+    }); break;
     default:        html = welcomeEmailHtml(SAMPLE); break;
   }
 

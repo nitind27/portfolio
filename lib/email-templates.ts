@@ -14,6 +14,17 @@ export interface EmailTemplateData {
   otp?: string;
   otpDisplay?: string;
   expiresMinutes?: number;
+  projectName?: string;
+  projectStatus?: string;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/\n/g, '<br/>');
 }
 
 const baseStyle = `
@@ -222,4 +233,62 @@ export function otpEmailText(data: EmailTemplateData): string {
     '',
     'If you did not request this, ignore this email.',
   ].join('\n');
+}
+
+export function outreachEmailHtml(data: EmailTemplateData): string {
+  const name = data.userName || 'there';
+  const message = data.customMessage || '';
+  const dashUrl = data.dashboardUrl || '';
+  const projectName = data.projectName || '';
+  const projectStatus = data.projectStatus || '';
+
+  return htmlShell(`
+    <span class="emoji">👋</span>
+    <p class="greeting">Hi ${escapeHtml(name)},</p>
+    ${message
+      ? `<div style="color:#cbd5e1; line-height:1.75; font-size:0.92rem; margin:0 0 1.25rem; white-space:pre-wrap;">${escapeHtml(message)}</div>`
+      : `<p class="text">We noticed you started building your website with ${data.appName || APP_NAME} but haven't finished yet. We'd love to help you complete it!</p>`
+    }
+    ${projectName ? `
+    <div class="card">
+      <div class="card-row"><span class="card-label">Your project</span><span class="card-value">${escapeHtml(projectName)}</span></div>
+      ${projectStatus ? `<div class="card-row"><span class="card-label">Status</span><span class="card-value">${escapeHtml(projectStatus)}</span></div>` : ''}
+    </div>
+    ` : ''}
+    <p class="text" style="font-weight:600; color:#c4b5fd;">We're here to help</p>
+    <p class="text">
+      If you ran into any issue — technical problem, confusion about a step, pricing question, or anything else —
+      simply reply to this email and tell us what happened. Our team will get back to you quickly.
+    </p>
+    <ul style="color:#94a3b8; font-size:0.88rem; line-height:1.9; padding-left:1.25rem; margin:0 0 1rem;">
+      <li>Stuck on a specific step? Tell us which one</li>
+      <li>Feature not working? Describe what you tried</li>
+      <li>Need guidance? We'll walk you through it</li>
+    </ul>
+    ${dashUrl ? `<div style="text-align:center;"><a href="${dashUrl}" class="cta">Continue Building →</a></div>` : ''}
+    <div class="divider"></div>
+    <p class="text" style="font-size:0.82rem;">
+      You registered with <strong style="color:#f1f5f9;">${escapeHtml(data.userEmail || '')}</strong>.
+      Reply to this email if you need any assistance.
+    </p>
+  `, data);
+}
+
+export function outreachEmailText(data: EmailTemplateData): string {
+  const name = data.userName || 'there';
+  const lines = [
+    `Hi ${name},`,
+    '',
+    data.customMessage || `We noticed you haven't finished your website on ${data.appName || APP_NAME} yet. We'd love to help!`,
+    '',
+  ];
+  if (data.projectName) lines.push(`Project: ${data.projectName}`, `Status: ${data.projectStatus || 'Draft'}`, '');
+  lines.push(
+    'If you faced any issue, reply to this email and tell us what happened.',
+    '',
+    data.dashboardUrl ? `Continue building: ${data.dashboardUrl}` : '',
+    '',
+    `— ${data.appName || APP_NAME} Team`,
+  );
+  return lines.filter((l, i, arr) => l !== '' || (i > 0 && arr[i - 1] !== '')).join('\n');
 }

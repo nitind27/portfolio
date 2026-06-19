@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   LayoutDashboard, CreditCard, LayoutTemplate, Users,
   Loader2, Shield, RefreshCw, Grid3x3, Receipt, Bell, ExternalLink, LogOut, Mail, Settings, MessageSquare, Globe,
-  BarChart3, Gift, FileText, Newspaper,
+  BarChart3, Gift, FileText, Newspaper, UserX,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import BrandLogo from '../BrandLogo';
@@ -27,8 +27,9 @@ import WebsiteAnalyticsTab from './tabs/WebsiteAnalyticsTab';
 import PromoCampaignTab from './tabs/PromoCampaignTab';
 import AboutPageTab from './tabs/AboutPageTab';
 import BlogTab from './tabs/BlogTab';
+import OutreachTab from './tabs/OutreachTab';
 
-type Tab = 'overview' | 'analytics' | 'promo' | 'plans' | 'features' | 'templates' | 'users' | 'payments' | 'support' | 'about' | 'blog' | 'website' | 'email' | 'settings';
+type Tab = 'overview' | 'analytics' | 'promo' | 'plans' | 'features' | 'templates' | 'users' | 'outreach' | 'payments' | 'support' | 'about' | 'blog' | 'website' | 'email' | 'settings';
 
 const NAV: { id: Tab; label: string; desc: string; icon: typeof LayoutDashboard; group: string }[] = [
   { id: 'overview', label: 'Dashboard', desc: 'Revenue & activity', icon: LayoutDashboard, group: 'Main' },
@@ -39,6 +40,7 @@ const NAV: { id: Tab; label: string; desc: string; icon: typeof LayoutDashboard;
   { id: 'payments', label: 'Payments', desc: 'Orders & revenue', icon: Receipt, group: 'Billing' },
   { id: 'templates', label: 'Templates', desc: 'Access control', icon: LayoutTemplate, group: 'Content' },
   { id: 'users', label: 'Users', desc: 'Accounts & roles', icon: Users, group: 'Content' },
+  { id: 'outreach', label: 'Incomplete sites', desc: 'Email stuck users', icon: UserX, group: 'Content' },
   { id: 'support', label: 'Support', desc: 'Complaints & feedback', icon: MessageSquare, group: 'Content' },
   { id: 'about', label: 'About page', desc: 'Hero, mission & SEO', icon: FileText, group: 'Content' },
   { id: 'blog', label: 'Blog', desc: 'Posts & SEO', icon: Newspaper, group: 'Content' },
@@ -276,6 +278,7 @@ export default function AdminPanel() {
               {tab === 'features' && <FeaturesMatrixTab plans={plans} onRefresh={loadAll} />}
               {tab === 'templates' && <TemplatesTab templates={templates} plans={plans} onRefresh={loadAll} />}
               {tab === 'users' && <UsersTab users={users} plans={plans} onRefresh={loadAll} />}
+              {tab === 'outreach' && <OutreachTab />}
               {tab === 'payments' && <PaymentsTab payments={payments} />}
               {tab === 'support' && <SupportTab />}
               {tab === 'about' && <AboutPageTab />}

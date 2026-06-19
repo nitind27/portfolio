@@ -15,6 +15,7 @@ import {
   paymentSuccessEmailHtml, paymentSuccessEmailText,
   paymentFailedEmailHtml, testEmailHtml,
   otpEmailHtml, otpEmailText,
+  outreachEmailHtml, outreachEmailText,
   type EmailTemplateData,
 } from './email-templates';
 
@@ -239,6 +240,35 @@ export async function sendOtpEmail(opts: {
     subject: `${opts.otpDisplay.replace(' ', '')} is your ${APP_NAME} verification code`,
     html: otpEmailHtml(data),
     text: otpEmailText(data),
+  });
+}
+
+export async function sendOutreachEmail(opts: {
+  to: string;
+  name: string;
+  subject: string;
+  message: string;
+  projectName?: string;
+  projectStatus?: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const cfg = await getSystemSmtp();
+  const supportEmail = cfg?.fromEmail || cfg?.user || SUPPORT_EMAIL;
+  const data: EmailTemplateData = {
+    userName: opts.name,
+    userEmail: opts.to,
+    customMessage: opts.message,
+    projectName: opts.projectName,
+    projectStatus: opts.projectStatus,
+    dashboardUrl: `${getAppUrl()}/`,
+    supportEmail,
+    appName: APP_NAME,
+  };
+  return sendEmail({
+    to: opts.to,
+    replyTo: supportEmail,
+    subject: opts.subject,
+    html: outreachEmailHtml(data),
+    text: outreachEmailText(data),
   });
 }
 
