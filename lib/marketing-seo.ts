@@ -33,11 +33,15 @@ export function normalizeSeo(
 
 export function buildMarketingMetadata(seo: MarketingSeoFields): Metadata {
   const images = seo.ogImage ? [{ url: seo.ogImage, alt: seo.title }] : undefined;
+  const keywords = seo.keywords
+    ? seo.keywords.split(',').map(k => k.trim()).filter(Boolean)
+    : undefined;
   return {
     title: seo.title,
     description: seo.description,
-    keywords: seo.keywords || undefined,
+    keywords,
     alternates: seo.canonicalUrl ? { canonical: seo.canonicalUrl } : undefined,
+    robots: { index: true, follow: true },
     openGraph: {
       title: seo.title,
       description: seo.description,

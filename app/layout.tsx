@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { APP_NAME, APP_DESCRIPTION, LOGO_SRC } from '@/lib/brand';
+import { LOGO_SRC } from '@/lib/brand';
+import { buildDefaultSiteMetadata } from '@/lib/site-seo';
 import MaintenanceGate from '@/components/MaintenanceGate';
 import SiteAnalyticsTracker from '@/components/SiteAnalyticsTracker';
 import PromoModalProvider from '@/components/PromoModalProvider';
@@ -12,16 +13,8 @@ const inter = Inter({ subsets: ['latin'] });
 
 const themeInitScript = getThemeInitScript();
 
-export const metadata: Metadata = {
-  title: `${APP_NAME} — Build & Launch Your Website`,
-  description: APP_DESCRIPTION,
-  icons: {
-    icon: LOGO_SRC,
-    apple: LOGO_SRC,
-  },
-};
+export const metadata: Metadata = buildDefaultSiteMetadata();
 
-/** Phone & tablet: real responsive layout (desktop unchanged at lg+ breakpoints). */
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -30,8 +23,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning data-theme="dark">
+    <html lang="en-IN" suppressHydrationWarning data-theme="dark">
       <head>
+        <link rel="icon" href={LOGO_SRC} />
+        <link rel="apple-touch-icon" href={LOGO_SRC} />
+        <meta name="theme-color" content="#0a1d37" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className={inter.className}>

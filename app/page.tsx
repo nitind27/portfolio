@@ -1,64 +1,16 @@
-'use client';
+import type { Metadata } from 'next';
+import { buildHomeJsonLd, buildHomeMetadata } from '@/lib/site-seo';
+import { TEMPLATES } from '@/lib/templates';
+import JsonLd from '@/components/seo/JsonLd';
+import HomePageClient from './HomePageClient';
 
-import { Suspense, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useBuilderStore } from '@/lib/store';
-import LandingPage from '@/components/LandingPage';
-import Dashboard from '@/components/Dashboard';
-import { Loader2 } from 'lucide-react';
-import type { AuthMode } from '@/components/LoginPage';
-import { useRedirectIfAdmin } from '@/lib/use-redirect-admin';
+export const metadata: Metadata = buildHomeMetadata();
 
-function HomeContent() {
-  const { isAuthenticated, authLoading, initAuth } = useBuilderStore();
-  const redirectingAdmin = useRedirectIfAdmin();
-  const searchParams = useSearchParams();
-  const wantsLogin = searchParams.get('login') === '1';
-  const wantsRegister = searchParams.get('register') === '1';
-  const authError = searchParams.get('error') || '';
-
-  useEffect(() => {
-    initAuth();
-  }, [initAuth]);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
-      </div>
-    );
-  }
-
-  if (isAuthenticated) {
-    if (redirectingAdmin) {
-      return (
-        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
-        </div>
-      );
-    }
-    return <Dashboard />;
-  }
-
+export default function HomePage() {
   return (
-    <LandingPage
-      initialAuthOpen={wantsLogin || wantsRegister || Boolean(authError)}
-      initialAuthMode={(wantsRegister ? 'register' : 'login') as AuthMode}
-      initialAuthError={authError}
-    />
-  );
-}
-
-export default function Home() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
-        </div>
-      }
-    >
-      <HomeContent />
-    </Suspense>
+    <>
+      <JsonLd data={buildHomeJsonLd(TEMPLATES.length)} />
+      <HomePageClient />
+    </>
   );
 }

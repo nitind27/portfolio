@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import ContactPageClient from '@/components/marketing/ContactPageClient';
-import { APP_NAME } from '@/lib/brand';
+import { buildPageMetadata } from '@/lib/site-seo';
 import { company } from '@/lib/company';
 
-export const metadata: Metadata = {
-  title: `Contact Us — ${APP_NAME}`,
-  description: `Contact the ${APP_NAME} team. Email ${company.email} or send a message through our contact form.`,
-};
+export const metadata: Metadata = buildPageMetadata({
+  title: 'Contact site99 — Online Website Builder Support',
+  description: `Contact the site99 team. Email ${company.email} or send a message — help with your no-code website builder account.`,
+  path: '/contact',
+});
 
 export default function ContactPage() {
   return <ContactPageClient />;

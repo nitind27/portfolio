@@ -14,6 +14,7 @@ import BrandLogo from './BrandLogo';
 import ThemeToggle from './theme/ThemeToggle';
 import { useBrand } from './theme/ThemeProvider';
 import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION, APP_DOMAIN, STORAGE_POLICY_DAYS } from '@/lib/brand';
+import { HOME_FAQS } from '@/lib/site-seo';
 import { TEMPLATES } from '@/lib/templates';
 import LandingTemplatesShowcase from '@/components/marketing/LandingTemplatesShowcase';
 
@@ -54,13 +55,7 @@ const FEATURES = [
   { icon: Zap, title: 'Real-time editing', desc: 'Changes reflect instantly — what you see is what you ship.', span: '' },
 ];
 
-const FAQS = [
-  { q: 'Do I need coding skills?', a: 'No. Everything is visual — drag sections, edit content, pick colors, and preview instantly.' },
-  { q: 'How long are projects stored?', a: `Projects stay in your account for ${STORAGE_POLICY_DAYS} days on the free plan. Export or go premium to keep them permanently.` },
-  { q: 'Can I use my own domain?', a: 'Yes. Connect Hostinger and deploy to your chosen domain with a guided setup flow.' },
-  { q: 'What does premium include?', a: `Export ZIP, long-term share, and one live deploy slot — from ₹${PREMIUM_PRICE} one-time per portfolio. No refunds on premium purchases.` },
-  { q: 'What is the refund policy?', a: 'All premium sales are final. We do not offer refunds once payment is confirmed. See Privacy Policy and Documentation for details.' },
-];
+const FAQS = [...HOME_FAQS];
 
 function PrimaryBtn({ children, onClick, className = '' }: { children: React.ReactNode; onClick: () => void; className?: string }) {
   const brand = useBrand();
@@ -310,19 +305,21 @@ export default function LandingPage({
               style={{ borderColor: `${brand.accent}40`, background: brand.accentMuted, color: brand.accentLight }}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              No code · {TEMPLATE_COUNT}+ templates · Instant preview
+              Free online website builder · No code · {TEMPLATE_COUNT}+ templates
             </div>
 
-            <h1 className="text-4xl sm:text-5xl xl:text-[3.5rem] font-bold leading-[1.08] tracking-tight text-white mb-5">
-              Design stunning sites with{' '}
+            <h1 className="text-4xl sm:text-5xl xl:text-[3.25rem] font-bold leading-[1.1] tracking-tight text-white mb-5">
               <span
                 className="bg-clip-text text-transparent"
                 style={{ backgroundImage: `linear-gradient(135deg, ${brand.accentLight}, ${brand.accent})` }}
               >
                 {APP_NAME}
               </span>
+              {' '}— Online Website Builder Without Code
             </h1>
-            <p className="text-xl sm:text-2xl text-[#94a3b8] font-light mb-4">{APP_TAGLINE}</p>
+            <p className="text-xl sm:text-2xl text-[#94a3b8] font-light mb-4">
+              Build portfolios, business sites &amp; landing pages — {APP_TAGLINE.toLowerCase()}
+            </p>
             <p className="text-[#64748b] text-base leading-relaxed max-w-lg mb-8">
               {APP_DESCRIPTION} Drag sections, customize themes, preview on every device — then export or go live on your domain.
             </p>
@@ -406,6 +403,52 @@ export default function LandingPage({
       </section>
 
       <LandingTemplatesShowcase templateCount={TEMPLATE_COUNT} onStartFree={() => openAuth('register')} />
+
+      {/* ── SEO content (visible, keyword-rich) ── */}
+      <section className="relative z-10 border-y border-white/[0.06]" aria-labelledby="why-site99-heading">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 py-16 lg:py-20">
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: brand.accent }}>
+                Why {APP_NAME}
+              </p>
+              <h2 id="why-site99-heading" className="text-2xl sm:text-3xl font-bold text-white mb-4">
+                Why choose {APP_NAME} as your website builder
+              </h2>
+              <p className="text-[#94a3b8] leading-relaxed mb-4">
+                Looking for <strong className="text-white font-medium">site99</strong>, an{' '}
+                <strong className="text-white font-medium">online website builder</strong>, or a{' '}
+                <strong className="text-white font-medium">website builder without code</strong>?
+                {APP_NAME} helps you create a professional site in minutes — pick a template, edit visually,
+                and publish without HTML, CSS, or JavaScript.
+              </p>
+              <p className="text-[#64748b] text-sm leading-relaxed">
+                Whether you need a portfolio, agency site, SaaS landing page, or small business website — {APP_NAME} is
+                your no-code website maker with {TEMPLATE_COUNT}+ real templates and a drag-and-drop editor.
+              </p>
+            </div>
+            <ul className="grid sm:grid-cols-2 gap-3">
+              {[
+                { title: 'No code required', desc: 'Visual editor — no programming' },
+                { title: 'Online & free to start', desc: 'Build in browser, no install' },
+                { title: `${TEMPLATE_COUNT}+ templates`, desc: 'Portfolio, business, SaaS & more' },
+                { title: 'Mobile responsive', desc: 'Preview on phone, tablet & desktop' },
+                { title: 'Export & deploy', desc: 'HTML, React, Next.js ZIP' },
+                { title: 'Made for India', desc: 'Affordable premium, INR pricing' },
+              ].map(item => (
+                <li
+                  key={item.title}
+                  className="p-4 rounded-xl border"
+                  style={{ background: brand.surface, borderColor: brand.border }}
+                >
+                  <p className="text-sm font-semibold text-white mb-1">{item.title}</p>
+                  <p className="text-xs text-[#64748b]">{item.desc}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
 
       {/* ── Features bento ── */}
       <section id="features" className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 py-24">
