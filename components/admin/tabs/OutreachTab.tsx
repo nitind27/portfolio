@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Search, Mail, Send, Loader2, X, User, Clock, Globe, FileWarning,
-  Eye, History, AlertCircle,
+  Eye, History, ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
 import { SectionHeader, Badge, adminInput, adminCard, adminCardStyle, AdminSelect } from '../ui';
@@ -92,6 +92,19 @@ function statusLabel(s: OutreachUserRow['status'], isPremium?: boolean) {
   if (s === 'no_project') return { label: 'Not started', variant: 'warning' as const };
   if (s === 'draft_only') return { label: 'Draft only', variant: 'info' as const };
   return { label: 'Has drafts', variant: 'default' as const };
+}
+
+function openMailtoCompose(emails: string[], subject: string, body: string) {
+  if (!emails.length) return;
+  if (body.length > 1500) {
+    alert('Message is long — Gmail/Outlook may truncate it. Consider a shorter message or configure SMTP in Email tab for long emails.');
+  }
+  // mailto: needs raw emails in path; encode subject/body via URLSearchParams
+  const to = emails.map(e => e.trim()).filter(Boolean).join(',');
+  const params = new URLSearchParams();
+  if (subject) params.set('subject', subject);
+  if (body) params.set('body', body);
+  window.open(`mailto:${to}?${params.toString()}`, '_blank');
 }
 
 interface Props {
@@ -214,6 +227,19 @@ export default function OutreachTab({ initialUserId, onInitialUserHandled }: Pro
 
   const clearSelection = () => setSelectedIds(new Set());
 
+  const sendViaMailto = (userIds: number[]) => {
+    const targets = userIds
+      .map(id => users.find(u => u.id === id))
+      .filter((u): u is OutreachUserRow => Boolean(u));
+    if (!targets.length) return;
+    if (!subject.trim() || !message.trim()) {
+      setSendResult('Subject and message required');
+      return;
+    }
+    openMailtoCompose(targets.map(u => u.email), subject.trim(), message.trim());
+    setSendResult(`Opened email app for ${targets.length} recipient(s)`);
+  };
+
   const sendToUser = async (userIds: number[]) => {
     if (!userIds.length) return;
     setSending(true);
@@ -247,12 +273,23 @@ export default function OutreachTab({ initialUserId, onInitialUserHandled }: Pro
         desc="Contact any registered user by email — send custom messages, get replies, and track conversation history"
       />
 
-      {!smtpConfigured && (
-        <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-sm flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>
-            SMTP is not configured. Go to <strong>Email & SMTP</strong> tab first, then you can send emails from here.
-          </span>
+      {!smtpConfigured ? (
+        <div className="p-4 rounded-2xl border border-blue-500/30 bg-blue-500/10 text-blue-100 text-sm">
+          <p className="flex items-start gap-2">
+            <Mail className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>
+              <strong>Bina SMTP ke bhi email kar sakte ho.</strong> User select karo, message likho, phir
+              {' '}<strong>&quot;Open in Gmail / Email&quot;</strong> dabao — tumhara Gmail ya Outlook khulega
+              us user ke email ke saath. Jise chaho use mail karo.
+            </span>
+          </p>
+          <p className="text-xs text-blue-200/70 mt-2 ml-6">
+            Optional: <strong>Email & SMTP</strong> tab se setup karo to emails directly app se branded format mein jayengi (history bhi save hogi).
+          </p>
+        </div>
+      ) : (
+        <div className="p-3 rounded-xl border border-green-500/25 bg-green-500/10 text-green-200 text-xs">
+          SMTP configured — use <strong>Send from app</strong> for branded emails, or <strong>Open in Gmail</strong> for your own inbox.
         </div>
       )}
 
@@ -310,13 +347,23 @@ export default function OutreachTab({ initialUserId, onInitialUserHandled }: Pro
           <span className="text-xs text-blue-300">{selectedIds.size} selected</span>
           <button
             type="button"
-            onClick={() => sendToUser([...selectedIds])}
-            disabled={sending || !smtpConfigured}
+            onClick={() => sendViaMailto([...selectedIds])}
+            disabled={!subject.trim() || !message.trim()}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-50"
             style={{ background: brand.accent }}
           >
-            <Send className="w-3.5 h-3.5" /> Send to selected
+            <ExternalLink className="w-3.5 h-3.5" /> Open in Gmail / Email
           </button>
+          {smtpConfigured && (
+            <button
+              type="button"
+              onClick={() => sendToUser([...selectedIds])}
+              disabled={sending}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-white/20 hover:bg-white/5 disabled:opacity-50"
+            >
+              <Send className="w-3.5 h-3.5" /> Send from app
+            </button>
+          )}
           <button type="button" onClick={clearSelection} className="text-xs text-gray-400 hover:text-white">Clear</button>
         </div>
       )}
@@ -483,7 +530,10 @@ export default function OutreachTab({ initialUserId, onInitialUserHandled }: Pro
                     placeholder="Write your message… User will see this in a formatted email with a reply prompt."
                   />
                   <p className="text-[10px] text-gray-600 mt-1">
-                    Branded email to <strong className="text-gray-400">{selected.email}</strong>. User replies come to your SMTP inbox — full two-way contact.
+                    {smtpConfigured
+                      ? <>Branded email to <strong className="text-gray-400">{selected.email}</strong>, or open in your Gmail/Outlook.</>
+                      : <>Use <strong className="text-gray-400">Open in Gmail / Email</strong> — opens your email app with {selected.email} filled in.</>
+                    }
                   </p>
                 </div>
 
@@ -539,14 +589,25 @@ export default function OutreachTab({ initialUserId, onInitialUserHandled }: Pro
               <div className="p-4 border-t border-white/10 flex flex-wrap items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => sendToUser([selected.id])}
-                  disabled={sending || !smtpConfigured || !subject.trim() || !message.trim()}
+                  onClick={() => sendViaMailto([selected.id])}
+                  disabled={!subject.trim() || !message.trim()}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium text-white disabled:opacity-50"
                   style={{ background: `linear-gradient(135deg, ${brand.accent}, ${brand.accentHover})` }}
                 >
-                  {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                  Send to {selected.email}
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open in Gmail / Email
                 </button>
+                {smtpConfigured && (
+                  <button
+                    type="button"
+                    onClick={() => sendToUser([selected.id])}
+                    disabled={sending || !subject.trim() || !message.trim()}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium border border-white/20 hover:bg-white/5 disabled:opacity-50"
+                  >
+                    {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                    Send from app
+                  </button>
+                )}
                 {sendResult && (
                   <span className={`text-xs ${sendResult.includes('failed') || sendResult.includes('Failed') ? 'text-red-400' : 'text-green-400'}`}>
                     {sendResult}
