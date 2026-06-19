@@ -9,6 +9,7 @@ import {
   STORAGE_POLICY_DAYS,
   getPublicWebsiteUrl,
 } from './brand';
+import { getGoogleVerificationMetaToken } from './google-verification';
 export const SITE_KEYWORDS = [
   'site99',
   'site99 online',
@@ -140,6 +141,9 @@ export function buildDefaultSiteMetadata(): Metadata {
       icon: LOGO_SRC,
       apple: LOGO_SRC,
     },
+    ...(getGoogleVerificationMetaToken()
+      ? { verification: { google: getGoogleVerificationMetaToken()! } }
+      : {}),
     other: {
       'geo.region': 'IN',
       'apple-mobile-web-app-title': APP_NAME,
