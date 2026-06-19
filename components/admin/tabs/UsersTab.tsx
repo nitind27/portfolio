@@ -28,9 +28,10 @@ interface Props {
   users: AdminUser[];
   plans: SubscriptionPlan[];
   onRefresh: () => void;
+  onEmailUser?: (userId: number) => void;
 }
 
-export default function UsersTab({ users, plans, onRefresh }: Props) {
+export default function UsersTab({ users, plans, onRefresh, onEmailUser }: Props) {
   const [search, setSearch] = useState('');
   const [planFilter, setPlanFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -222,6 +223,15 @@ export default function UsersTab({ users, plans, onRefresh }: Props) {
                   />
                 </div>
                 <p className="text-[10px] text-gray-600">Joined {new Date(selected.createdAt).toLocaleString('en-IN')}</p>
+                {selected.role === 'user' && onEmailUser && (
+                  <button
+                    type="button"
+                    onClick={() => { onEmailUser(selected.id); setSelected(null); }}
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold text-white border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20"
+                  >
+                    <Mail className="w-4 h-4" /> Email this user
+                  </button>
+                )}
                 <Link
                   href={`/admin/user/${selected.id}`}
                   className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold text-white mt-2"

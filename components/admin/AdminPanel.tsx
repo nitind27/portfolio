@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   LayoutDashboard, CreditCard, LayoutTemplate, Users,
   Loader2, Shield, RefreshCw, Grid3x3, Receipt, Bell, ExternalLink, LogOut, Mail, Settings, MessageSquare, Globe,
-  BarChart3, Gift, FileText, Newspaper, UserX,
+  BarChart3, Gift, FileText, Newspaper,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import BrandLogo from '../BrandLogo';
@@ -40,7 +40,7 @@ const NAV: { id: Tab; label: string; desc: string; icon: typeof LayoutDashboard;
   { id: 'payments', label: 'Payments', desc: 'Orders & revenue', icon: Receipt, group: 'Billing' },
   { id: 'templates', label: 'Templates', desc: 'Access control', icon: LayoutTemplate, group: 'Content' },
   { id: 'users', label: 'Users', desc: 'Accounts & roles', icon: Users, group: 'Content' },
-  { id: 'outreach', label: 'Incomplete sites', desc: 'Email stuck users', icon: UserX, group: 'Content' },
+  { id: 'outreach', label: 'Email users', desc: 'Contact any user', icon: Mail, group: 'Content' },
   { id: 'support', label: 'Support', desc: 'Complaints & feedback', icon: MessageSquare, group: 'Content' },
   { id: 'about', label: 'About page', desc: 'Hero, mission & SEO', icon: FileText, group: 'Content' },
   { id: 'blog', label: 'Blog', desc: 'Posts & SEO', icon: Newspaper, group: 'Content' },
@@ -79,6 +79,7 @@ export default function AdminPanel() {
   const brand = useBrand();
   const { user, logout } = useBuilderStore();
   const [tab, setTab] = useState<Tab>('overview');
+  const [outreachUserId, setOutreachUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState<ExtendedAdminStats | null>(null);
@@ -277,8 +278,20 @@ export default function AdminPanel() {
               {tab === 'plans' && <PlansTab plans={plans} onRefresh={loadAll} />}
               {tab === 'features' && <FeaturesMatrixTab plans={plans} onRefresh={loadAll} />}
               {tab === 'templates' && <TemplatesTab templates={templates} plans={plans} onRefresh={loadAll} />}
-              {tab === 'users' && <UsersTab users={users} plans={plans} onRefresh={loadAll} />}
-              {tab === 'outreach' && <OutreachTab />}
+              {tab === 'users' && (
+                <UsersTab
+                  users={users}
+                  plans={plans}
+                  onRefresh={loadAll}
+                  onEmailUser={(id) => { setOutreachUserId(id); setTab('outreach'); }}
+                />
+              )}
+              {tab === 'outreach' && (
+                <OutreachTab
+                  initialUserId={outreachUserId}
+                  onInitialUserHandled={() => setOutreachUserId(null)}
+                />
+              )}
               {tab === 'payments' && <PaymentsTab payments={payments} />}
               {tab === 'support' && <SupportTab />}
               {tab === 'about' && <AboutPageTab />}

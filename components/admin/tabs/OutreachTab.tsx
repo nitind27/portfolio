@@ -3,26 +3,36 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Search, Mail, Send, Loader2, X, User, Clock, Globe, FileWarning,
-  CheckCircle2, Eye, History, AlertCircle,
+  Eye, History, AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { SectionHeader, Badge, adminInput, adminCard, adminCardStyle, AdminSelect } from '../ui';
 import { brand } from '@/lib/brand';
-import type { IncompleteUserRow, OutreachEmailLog } from '@/lib/outreach-server';
+import type { OutreachUserRow, OutreachEmailLog } from '@/lib/outreach-server';
 
 const TEMPLATES = [
   {
-    id: 'help_complete',
-    label: 'Need help completing?',
-    subject: 'Need help finishing your website?',
-    message: `We noticed you started building your website with us but haven't published it yet.
+    id: 'custom',
+    label: 'Custom message',
+    subject: 'Message from our team',
+    message: `We wanted to reach out personally.
 
-Is there anything blocking you? We'd love to help you finish — just reply to this email and tell us:
-• Which step you got stuck on
-• Any error or issue you faced
-• Or if you need a quick walkthrough
+Write your message here — ask anything, share an update, or offer help.
 
-We're here to help you go live!`,
+The user can reply directly to this email to continue the conversation.`,
+  },
+  {
+    id: 'general_hi',
+    label: 'General check-in (Hindi + English)',
+    subject: 'Kaise hain aap? / How are things going?',
+    message: `Namaste! Hum aapke account ke baare mein check-in kar rahe hain.
+
+Hi! We're checking in to see how things are going with your account.
+
+Agar koi sawal hai, koi problem aayi, ya kuch help chahiye — bas is email ka reply karein.
+If you have any questions, faced any issue, or need help — just reply to this email.
+
+Hum 24-48 ghante mein jawab denge. / We'll respond within 24-48 hours.`,
   },
   {
     id: 'not_started',
@@ -76,26 +86,36 @@ function fmtDate(iso: string | null) {
   });
 }
 
-function statusLabel(s: IncompleteUserRow['status']) {
+function statusLabel(s: OutreachUserRow['status'], isPremium?: boolean) {
+  if (isPremium) return { label: 'Premium', variant: 'warning' as const };
+  if (s === 'published') return { label: 'Live site', variant: 'success' as const };
   if (s === 'no_project') return { label: 'Not started', variant: 'warning' as const };
   if (s === 'draft_only') return { label: 'Draft only', variant: 'info' as const };
   return { label: 'Has drafts', variant: 'default' as const };
 }
 
-export default function OutreachTab() {
-  const [users, setUsers] = useState<IncompleteUserRow[]>([]);
+interface Props {
+  initialUserId?: number | null;
+  onInitialUserHandled?: () => void;
+}
+
+export default function OutreachTab({ initialUserId, onInitialUserHandled }: Props) {
+  const [users, setUsers] = useState<OutreachUserRow[]>([]);
   const [stats, setStats] = useState<{
+    totalUsers: number;
     totalIncomplete: number;
     noProject: number;
     draftOnly: number;
+    published: number;
+    premium: number;
     notContacted: number;
     contactedThisWeek: number;
   } | null>(null);
   const [smtpConfigured, setSmtpConfigured] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [selected, setSelected] = useState<IncompleteUserRow | null>(null);
+  const [filter, setFilter] = useState('all_users');
+  const [selected, setSelected] = useState<OutreachUserRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [subject, setSubject] = useState(TEMPLATES[0].subject);
   const [message, setMessage] = useState(TEMPLATES[0].message);
@@ -128,6 +148,15 @@ export default function OutreachTab() {
   }, [filter, search]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (!initialUserId || !users.length) return;
+    const u = users.find(x => x.id === initialUserId);
+    if (u) {
+      setSelected(u);
+      onInitialUserHandled?.();
+    }
+  }, [initialUserId, users, onInitialUserHandled]);
 
   const loadHistory = useCallback(async (userId: number) => {
     setLoadingHistory(true);
@@ -214,8 +243,8 @@ export default function OutreachTab() {
   return (
     <div className="space-y-5">
       <SectionHeader
-        title="Incomplete websites"
-        desc="Users who registered but haven't finished their website — email them to find out what issue they faced"
+        title="Email users"
+        desc="Contact any registered user by email — send custom messages, get replies, and track conversation history"
       />
 
       {!smtpConfigured && (
@@ -228,13 +257,15 @@ export default function OutreachTab() {
       )}
 
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {[
+            { label: 'All users', value: stats.totalUsers, color: 'text-white', border: 'border-white/10 bg-white/[0.03]' },
             { label: 'Incomplete', value: stats.totalIncomplete, color: 'text-amber-400', border: 'border-amber-500/20 bg-amber-500/5' },
+            { label: 'Live sites', value: stats.published, color: 'text-green-400', border: 'border-green-500/20 bg-green-500/5' },
+            { label: 'Premium', value: stats.premium, color: 'text-yellow-400', border: 'border-yellow-500/20 bg-yellow-500/5' },
             { label: 'Not started', value: stats.noProject, color: 'text-orange-400', border: 'border-orange-500/20 bg-orange-500/5' },
-            { label: 'Draft only', value: stats.draftOnly, color: 'text-blue-400', border: 'border-blue-500/20 bg-blue-500/5' },
-            { label: 'Not emailed', value: stats.notContacted, color: 'text-red-400', border: 'border-red-500/20 bg-red-500/5' },
-            { label: 'Emailed this week', value: stats.contactedThisWeek, color: 'text-green-400', border: 'border-green-500/20 bg-green-500/5' },
+            { label: 'Never emailed', value: stats.notContacted, color: 'text-red-400', border: 'border-red-500/20 bg-red-500/5' },
+            { label: 'Emailed this week', value: stats.contactedThisWeek, color: 'text-blue-400', border: 'border-blue-500/20 bg-blue-500/5' },
           ].map(s => (
             <div key={s.label} className={`p-3 rounded-xl border ${s.border}`}>
               <p className={`text-lg font-bold tabular-nums ${s.color}`}>{s.value}</p>
@@ -260,10 +291,13 @@ export default function OutreachTab() {
           className="w-44"
           aria-label="Filter users"
           options={[
-            { value: 'all', label: 'All incomplete' },
+            { value: 'all_users', label: 'All users' },
+            { value: 'not_contacted', label: 'Never emailed' },
+            { value: 'incomplete', label: 'Incomplete sites' },
+            { value: 'published', label: 'Live / published' },
+            { value: 'premium', label: 'Premium users' },
             { value: 'no_project', label: 'Not started' },
             { value: 'draft', label: 'Has drafts' },
-            { value: 'not_contacted', label: 'Not emailed yet' },
           ]}
         />
         <button onClick={load} disabled={loading} className="px-3 py-2 rounded-xl text-xs border border-white/10 hover:bg-white/5">
@@ -298,13 +332,13 @@ export default function OutreachTab() {
             <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-gray-500" /></div>
           ) : users.length === 0 ? (
             <div className="text-center py-16 px-4">
-              <CheckCircle2 className="w-10 h-10 text-green-600 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No incomplete users found</p>
+              <User className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">No users match this filter</p>
             </div>
           ) : (
             <div className="max-h-[calc(100vh-380px)] overflow-y-auto divide-y divide-white/5">
               {users.map(u => {
-                const meta = statusLabel(u.status);
+                const meta = statusLabel(u.status, u.isPremium);
                 const active = selected?.id === u.id;
                 return (
                   <div
@@ -325,10 +359,19 @@ export default function OutreachTab() {
                         <Badge variant={meta.variant}>{meta.label}</Badge>
                       </div>
                       <p className="text-xs text-blue-400 truncate">{u.email}</p>
+                      {u.planName && (
+                        <p className="text-[10px] text-gray-500 mt-0.5">{u.planName}</p>
+                      )}
                       {u.draftNames.length > 0 && (
                         <p className="text-[10px] text-gray-500 mt-1 truncate">
                           <FileWarning className="w-3 h-3 inline mr-0.5" />
                           {u.draftNames.join(', ')}
+                        </p>
+                      )}
+                      {u.publishedNames.length > 0 && (
+                        <p className="text-[10px] text-green-500/70 mt-1 truncate">
+                          <Globe className="w-3 h-3 inline mr-0.5" />
+                          {u.publishedNames.join(', ')}
                         </p>
                       )}
                       <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-600">
@@ -366,9 +409,10 @@ export default function OutreachTab() {
                     <h3 className="text-lg font-bold text-white">{selected.name}</h3>
                     <a href={`mailto:${selected.email}`} className="text-sm text-blue-400 hover:underline">{selected.email}</a>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <Badge variant={statusLabel(selected.status).variant}>
-                        {statusLabel(selected.status).label}
+                      <Badge variant={statusLabel(selected.status, selected.isPremium).variant}>
+                        {statusLabel(selected.status, selected.isPremium).label}
                       </Badge>
+                      {selected.planName && <span className="text-[10px] text-gray-500">{selected.planName}</span>}
                       {selected.phone && <span className="text-[10px] text-gray-500">{selected.phone}</span>}
                       <Link href={`/admin/user/${selected.id}`} className="text-[10px] text-orange-400 hover:underline">
                         View profile →
@@ -439,7 +483,7 @@ export default function OutreachTab() {
                     placeholder="Write your message… User will see this in a formatted email with a reply prompt."
                   />
                   <p className="text-[10px] text-gray-600 mt-1">
-                    Email goes to <strong className="text-gray-400">{selected.email}</strong> in branded HTML format. User can reply to ask for help.
+                    Branded email to <strong className="text-gray-400">{selected.email}</strong>. User replies come to your SMTP inbox — full two-way contact.
                   </p>
                 </div>
 

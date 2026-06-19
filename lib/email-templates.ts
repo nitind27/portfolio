@@ -247,7 +247,7 @@ export function outreachEmailHtml(data: EmailTemplateData): string {
     <p class="greeting">Hi ${escapeHtml(name)},</p>
     ${message
       ? `<div style="color:#cbd5e1; line-height:1.75; font-size:0.92rem; margin:0 0 1.25rem; white-space:pre-wrap;">${escapeHtml(message)}</div>`
-      : `<p class="text">We noticed you started building your website with ${data.appName || APP_NAME} but haven't finished yet. We'd love to help you complete it!</p>`
+      : `<p class="text">We wanted to reach out from ${data.appName || APP_NAME}. Feel free to reply to this email anytime.</p>`
     }
     ${projectName ? `
     <div class="card">
@@ -255,21 +255,16 @@ export function outreachEmailHtml(data: EmailTemplateData): string {
       ${projectStatus ? `<div class="card-row"><span class="card-label">Status</span><span class="card-value">${escapeHtml(projectStatus)}</span></div>` : ''}
     </div>
     ` : ''}
-    <p class="text" style="font-weight:600; color:#c4b5fd;">We're here to help</p>
+    <p class="text" style="font-weight:600; color:#c4b5fd;">We're here for you</p>
     <p class="text">
-      If you ran into any issue — technical problem, confusion about a step, pricing question, or anything else —
-      simply reply to this email and tell us what happened. Our team will get back to you quickly.
+      Have a question, feedback, or need help with anything? Simply <strong style="color:#f1f5f9;">reply to this email</strong>
+      and our team will get back to you. You can write in English or Hindi — whatever is comfortable for you.
     </p>
-    <ul style="color:#94a3b8; font-size:0.88rem; line-height:1.9; padding-left:1.25rem; margin:0 0 1rem;">
-      <li>Stuck on a specific step? Tell us which one</li>
-      <li>Feature not working? Describe what you tried</li>
-      <li>Need guidance? We'll walk you through it</li>
-    </ul>
-    ${dashUrl ? `<div style="text-align:center;"><a href="${dashUrl}" class="cta">Continue Building →</a></div>` : ''}
+    ${dashUrl ? `<div style="text-align:center;"><a href="${dashUrl}" class="cta">Open Dashboard →</a></div>` : ''}
     <div class="divider"></div>
     <p class="text" style="font-size:0.82rem;">
-      You registered with <strong style="color:#f1f5f9;">${escapeHtml(data.userEmail || '')}</strong>.
-      Reply to this email if you need any assistance.
+      This message was sent to <strong style="color:#f1f5f9;">${escapeHtml(data.userEmail || '')}</strong>.
+      Reply directly to continue the conversation.
     </p>
   `, data);
 }
@@ -279,14 +274,14 @@ export function outreachEmailText(data: EmailTemplateData): string {
   const lines = [
     `Hi ${name},`,
     '',
-    data.customMessage || `We noticed you haven't finished your website on ${data.appName || APP_NAME} yet. We'd love to help!`,
+    data.customMessage || `Message from ${data.appName || APP_NAME} team.`,
     '',
   ];
-  if (data.projectName) lines.push(`Project: ${data.projectName}`, `Status: ${data.projectStatus || 'Draft'}`, '');
+  if (data.projectName) lines.push(`Project: ${data.projectName}`, `Status: ${data.projectStatus || ''}`, '');
   lines.push(
-    'If you faced any issue, reply to this email and tell us what happened.',
+    'Reply to this email if you have any questions or need help.',
     '',
-    data.dashboardUrl ? `Continue building: ${data.dashboardUrl}` : '',
+    data.dashboardUrl ? `Dashboard: ${data.dashboardUrl}` : '',
     '',
     `— ${data.appName || APP_NAME} Team`,
   );

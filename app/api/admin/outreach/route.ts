@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, adminErrorResponse } from '@/lib/admin-server';
 import {
-  getIncompleteWebsiteUsers,
+  getOutreachUsers,
   getOutreachStats,
   getUserOutreachHistory,
   logOutreachEmail,
+  type OutreachFilter,
 } from '@/lib/outreach-server';
 import { isSmtpConfigured, sendOutreachEmail } from '@/lib/system-email';
 import { getPool } from '@/lib/db';
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
   try {
     await requireAdmin(req);
     const { searchParams } = req.nextUrl;
-    const filter = (searchParams.get('filter') || 'all') as 'all' | 'no_project' | 'draft' | 'not_contacted';
+    const filter = (searchParams.get('filter') || 'all_users') as OutreachFilter;
     const search = searchParams.get('search') || '';
     const userId = searchParams.get('userId');
 
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     }
 
     const [users, stats, smtpOk] = await Promise.all([
-      getIncompleteWebsiteUsers({ filter, search, limit: 300 }),
+      getOutreachUsers({ filter, search, limit: 500 }),
       getOutreachStats(),
       isSmtpConfigured(),
     ]);
@@ -74,7 +75,8 @@ export async function POST(req: NextRequest) {
     for (const userId of userIds) {
       const [rows] = await pool.execute<RowDataPacket[]>(
         `SELECT u.id, u.name, u.email,
-          (SELECT up.name FROM user_projects up WHERE up.user_id = u.id AND up.published = 0 ORDER BY up.updated_at DESC LIMIT 1) AS draft_name,
+          (SELECT up.name FROM user_projects up WHERE up.user_id = u.id ORDER BY up.updated_at DESC LIMIT 1) AS latest_project,
+          (SELECT up.published FROM user_projects up WHERE up.user_id = u.id ORDER BY up.updated_at DESC LIMIT 1) AS latest_published,
           (SELECT COUNT(*) FROM user_projects up WHERE up.user_id = u.id) AS project_count
          FROM users u WHERE u.id = ? AND u.role = 'user' LIMIT 1`,
         [userId],
@@ -87,20 +89,23 @@ export async function POST(req: NextRequest) {
 
       const email = String(row.email);
       const name = String(row.name);
-      const draftName = row.draft_name ? String(row.draft_name) : undefined;
       const projectCount = Number(row.project_count || 0);
-      const projectStatus = projectCount === 0
-        ? 'Not started'
-        : draftName
-          ? 'Draft — not published'
-          : 'In progress';
+      const latestProject = row.latest_project ? String(row.latest_project) : undefined;
+      const latestPublished = row.latest_published != null ? Boolean(row.latest_published) : false;
+
+      let projectName: string | undefined;
+      let projectStatus: string | undefined;
+      if (projectCount > 0 && latestProject) {
+        projectName = latestProject;
+        projectStatus = latestPublished ? 'Live / Published' : 'Draft — not published';
+      }
 
       const result = await sendOutreachEmail({
         to: email,
         name,
         subject,
         message,
-        projectName: draftName,
+        projectName,
         projectStatus,
       });
 
