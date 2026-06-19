@@ -24,9 +24,17 @@ export function googleVerificationHtmlBody(filename: string): string {
   return `google-site-verification: ${filename}`;
 }
 
-/** True when pathname is the configured GSC HTML verification file */
+/** Matches GSC HTML file paths like /googleabc123.html → filename */
+export function parseGoogleVerificationPath(pathname: string): string | null {
+  const match = pathname.match(/^\/(google[a-z0-9]+\.html)\/?$/i);
+  return match ? match[1] : null;
+}
+
+/** True when pathname is the configured GSC HTML verification file (env override) */
 export function isGoogleVerificationPath(pathname: string): boolean {
-  const file = getGoogleVerificationHtmlFile();
-  if (!file) return false;
-  return pathname === `/${file}` || pathname === `/${file}/`;
+  const fromPath = parseGoogleVerificationPath(pathname);
+  if (!fromPath) return false;
+  const configured = getGoogleVerificationHtmlFile();
+  if (configured) return pathname === `/${configured}` || pathname === `/${configured}/`;
+  return true;
 }
