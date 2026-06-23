@@ -4,6 +4,10 @@ import type { NextConfig } from "next";
 const projectRoot = path.resolve(__dirname);
 
 const nextConfig: NextConfig = {
+  compress: true,
+  images: {
+    formats: ['image/avif', 'image/webp'],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',

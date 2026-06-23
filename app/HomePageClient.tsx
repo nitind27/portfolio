@@ -21,16 +21,8 @@ function HomeContent() {
     initAuth();
   }, [initAuth]);
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
-      </div>
-    );
-  }
-
   if (isAuthenticated) {
-    if (redirectingAdmin) {
+    if (authLoading || redirectingAdmin) {
       return (
         <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
           <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
@@ -40,6 +32,7 @@ function HomeContent() {
     return <Dashboard />;
   }
 
+  // Guests (and auth check in progress): always render landing — SSR-friendly for SEO crawlers
   return (
     <LandingPage
       initialAuthOpen={wantsLogin || wantsRegister || Boolean(authError)}
@@ -53,9 +46,7 @@ export default function HomePageClient() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
-        </div>
+        <LandingPage initialAuthOpen={false} initialAuthMode="login" initialAuthError="" />
       }
     >
       <HomeContent />

@@ -34,10 +34,10 @@ export const SITE_KEYWORDS = [
 ] as const;
 
 export const HOME_TITLE =
-  'site99 — Free Online Website Builder | No Code Website Maker';
+  'site99 — Free Online Website Builder & No-Code Site Maker for India';
 
 export const HOME_DESCRIPTION =
-  'site99 is a free online website builder — create professional portfolios, business sites, landing pages & online stores without code. 70+ templates, visual editor, instant preview. Start free at site99.online.';
+  'site99 is a free online website builder for portfolios, business sites & landing pages — no code needed. 70+ templates, drag-and-drop editor, live preview. Start free.';
 
 export const HOME_FAQS = [
   {

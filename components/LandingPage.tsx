@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import {
@@ -16,7 +17,19 @@ import { useBrand } from './theme/ThemeProvider';
 import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION, APP_DOMAIN, STORAGE_POLICY_DAYS } from '@/lib/brand';
 import { HOME_FAQS } from '@/lib/site-seo';
 import { TEMPLATES } from '@/lib/templates';
-import LandingTemplatesShowcase from '@/components/marketing/LandingTemplatesShowcase';
+
+const LandingTemplatesShowcase = dynamic(
+  () => import('@/components/marketing/LandingTemplatesShowcase'),
+  {
+    loading: () => (
+      <section id="templates" className="relative z-10 py-24" aria-label="Templates loading">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 h-48 flex items-center justify-center text-sm text-[#64748b]">
+          Loading templates…
+        </div>
+      </section>
+    ),
+  },
+);
 
 const PREMIUM_PRICE = process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99;
 const TEMPLATE_COUNT = TEMPLATES.length;
@@ -320,8 +333,13 @@ export default function LandingPage({
             <p className="text-xl sm:text-2xl text-[#94a3b8] font-light mb-4">
               Build portfolios, business sites &amp; landing pages — {APP_TAGLINE.toLowerCase()}
             </p>
-            <p className="text-[#64748b] text-base leading-relaxed max-w-lg mb-8">
+            <p className="text-[#64748b] text-base leading-relaxed max-w-lg mb-4">
               {APP_DESCRIPTION} Drag sections, customize themes, preview on every device — then export or go live on your domain.
+            </p>
+            <p className="text-[#64748b] text-sm leading-relaxed max-w-lg mb-8">
+              Whether you are a freelancer, agency, startup, or small business in India, {APP_NAME} gives you a
+              professional web presence without hiring a developer. Pick from {TEMPLATE_COUNT}+ responsive templates,
+              edit every section visually, and publish in minutes — no HTML, CSS, or JavaScript required.
             </p>
 
             <div className="flex flex-wrap gap-3 mb-10">
@@ -365,6 +383,35 @@ export default function LandingPage({
               <Star className="w-3.5 h-3.5" style={{ color: brand.accent }} />
               {label}
             </span>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Features bento ── */}
+      <section id="features" className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 py-24">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="mb-14">
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: brand.accent }}>Features</p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Everything to ship faster</h2>
+          <p className="text-[#94a3b8] max-w-xl">Professional tools without the learning curve — built for speed and polish.</p>
+        </motion.div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {FEATURES.map(({ icon: Icon, title, desc, span }, i) => (
+            <motion.div
+              key={title}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+              custom={i}
+              className={`p-6 rounded-2xl border hover:border-orange-500/25 transition-all duration-300 group ${span}`}
+              style={{ background: brand.surface, borderColor: brand.border }}
+            >
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform" style={{ background: brand.accentMuted }}>
+                <Icon className="w-5 h-5" style={{ color: brand.accent }} />
+              </div>
+              <h3 className="font-semibold text-white mb-1.5">{title}</h3>
+              <p className="text-sm text-[#94a3b8] leading-relaxed">{desc}</p>
+            </motion.div>
           ))}
         </div>
       </section>
@@ -422,9 +469,14 @@ export default function LandingPage({
                 {APP_NAME} helps you create a professional site in minutes — pick a template, edit visually,
                 and publish without HTML, CSS, or JavaScript.
               </p>
-              <p className="text-[#64748b] text-sm leading-relaxed">
+              <p className="text-[#64748b] text-sm leading-relaxed mb-4">
                 Whether you need a portfolio, agency site, SaaS landing page, or small business website — {APP_NAME} is
                 your no-code website maker with {TEMPLATE_COUNT}+ real templates and a drag-and-drop editor.
+              </p>
+              <p className="text-[#64748b] text-sm leading-relaxed">
+                Unlike generic page builders, {APP_NAME} is built for speed: choose a layout preset, swap sections,
+                tune colors and typography, preview on mobile and desktop, then export as HTML, React, or Next.js — or
+                deploy to your own domain with guided hosting setup.
               </p>
             </div>
             <ul className="grid sm:grid-cols-2 gap-3">
@@ -441,41 +493,12 @@ export default function LandingPage({
                   className="p-4 rounded-xl border"
                   style={{ background: brand.surface, borderColor: brand.border }}
                 >
-                  <p className="text-sm font-semibold text-white mb-1">{item.title}</p>
+                  <h3 className="text-sm font-semibold text-white mb-1">{item.title}</h3>
                   <p className="text-xs text-[#64748b]">{item.desc}</p>
                 </li>
               ))}
             </ul>
           </div>
-        </div>
-      </section>
-
-      {/* ── Features bento ── */}
-      <section id="features" className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 py-24">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0} className="mb-14">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: brand.accent }}>Features</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Everything to ship faster</h2>
-          <p className="text-[#94a3b8] max-w-xl">Professional tools without the learning curve — built for speed and polish.</p>
-        </motion.div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {FEATURES.map(({ icon: Icon, title, desc, span }, i) => (
-            <motion.div
-              key={title}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeUp}
-              custom={i}
-              className={`p-6 rounded-2xl border hover:border-orange-500/25 transition-all duration-300 group ${span}`}
-              style={{ background: brand.surface, borderColor: brand.border }}
-            >
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform" style={{ background: brand.accentMuted }}>
-                <Icon className="w-5 h-5" style={{ color: brand.accent }} />
-              </div>
-              <h3 className="font-semibold text-white mb-1.5">{title}</h3>
-              <p className="text-sm text-[#94a3b8] leading-relaxed">{desc}</p>
-            </motion.div>
-          ))}
         </div>
       </section>
 
@@ -619,9 +642,10 @@ export default function LandingPage({
                 type="button"
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
+                aria-expanded={openFaq === i}
               >
-                <span className="font-medium text-white text-sm">{item.q}</span>
-                <HelpCircle className={`w-4 h-4 shrink-0 transition-transform ${openFaq === i ? 'rotate-180' : ''}`} style={{ color: brand.accent }} />
+                <h3 className="font-medium text-white text-sm m-0">{item.q}</h3>
+                <HelpCircle className={`w-4 h-4 shrink-0 transition-transform ${openFaq === i ? 'rotate-180' : ''}`} style={{ color: brand.accent }} aria-hidden />
               </button>
               {openFaq === i && (
                 <motion.p
@@ -667,15 +691,10 @@ export default function LandingPage({
         <div className="max-w-7xl mx-auto px-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
           <BrandLogo size="xs" />
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-[#64748b]">
-            {NAV_LINKS.map(l => (
-              <a key={l.href} href={l.href} className="hover:text-white transition">{l.label}</a>
-            ))}
-            <a href="/docs" className="hover:text-white transition">Docs</a>
-            <a href="/ask" className="hover:text-white transition">Ask AI</a>
             <a href="/about" className="hover:text-white transition">About</a>
             <a href="/blog" className="hover:text-white transition">Blog</a>
+            <a href="/docs" className="hover:text-white transition">Docs</a>
             <a href="/contact" className="hover:text-white transition">Contact</a>
-            <a href="/support" className="hover:text-white transition">Support</a>
             <a href="/privacy" className="hover:text-white transition">Privacy</a>
             <a href="/terms" className="hover:text-white transition">Terms</a>
           </div>

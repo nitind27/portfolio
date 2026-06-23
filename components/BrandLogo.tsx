@@ -33,7 +33,7 @@ export default function BrandLogo({ size = 'md', className = '', pad = true }: P
     >
       <Image
         src={LOGO_SRC}
-        alt={APP_NAME}
+        alt={`${APP_NAME} — free online website builder logo`}
         width={px}
         height={px}
         className="object-contain"

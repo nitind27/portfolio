@@ -45,7 +45,7 @@ function TemplateShowcaseCard({ template }: { template: Template }) {
       className="landing-template-card shrink-0 flex flex-col rounded-2xl border overflow-hidden group transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-black/40"
       style={{ background: 'var(--surface, #111827)', borderColor: 'rgba(255,255,255,0.08)' }}
     >
-      <div className="p-3 pb-2">
+      <div className="p-3 pb-2" role="img" aria-label={`${template.name} website template preview`}>
         <MiniSitePreview template={template} className="shadow-md group-hover:shadow-xl transition-shadow" />
       </div>
       <div className="px-4 pb-4 pt-1 space-y-2 flex-1 flex flex-col">
