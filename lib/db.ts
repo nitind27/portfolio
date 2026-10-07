@@ -32,6 +32,7 @@ export interface DbUser {
   is_premium: number;
   premium_purchased_at: Date | null;
   premium_portfolio_id: string | null;
+  premium_slot_ids?: string | null;
   plan_id: number | null;
   created_at: Date;
 }

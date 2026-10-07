@@ -45,6 +45,12 @@ export async function PATCH(req: NextRequest) {
     }
     if (body.showSlotsRemaining !== undefined) updates.showSlotsRemaining = Boolean(body.showSlotsRemaining);
     if (body.showToLoggedIn !== undefined) updates.showToLoggedIn = Boolean(body.showToLoggedIn);
+    if (body.modalImageUrl !== undefined) updates.modalImageUrl = String(body.modalImageUrl);
+    if (body.modalImageWidth !== undefined) updates.modalImageWidth = Number(body.modalImageWidth);
+    if (body.modalImageHeight !== undefined) updates.modalImageHeight = Number(body.modalImageHeight);
+    if (body.modalImageRadius !== undefined) updates.modalImageRadius = Number(body.modalImageRadius);
+    if (body.modalLinkUrl !== undefined) updates.modalLinkUrl = String(body.modalLinkUrl);
+    if (body.modalLandingOnly !== undefined) updates.modalLandingOnly = Boolean(body.modalLandingOnly);
 
     const settings = await savePromoCampaignSettings(updates);
     const grantCount = await getPromoGrantCount();

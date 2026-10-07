@@ -8,6 +8,7 @@ import { ensurePlansReady } from '@/lib/plans-seed';
 import { canExport } from '@/lib/plans-types';
 import { calculateGst } from '@/lib/gst';
 import { isPaidPlanGloballyDisabled } from '@/lib/promo-campaign';
+import { boundPortfolioIds } from '@/lib/portfolio-slots';
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,19 +39,20 @@ export async function POST(req: NextRequest) {
     const userPlan = await getUserPlan(user);
     const hasPaid = canExport(userPlan.features) || userPlan.features.shareLink;
 
+    const boundIds = boundPortfolioIds(user);
+    const slotLimit = userPlan.features.unlockedPortfolios;
+
     if (hasPaid && !repurchase) {
-      if (!user.premiumPortfolioId && userPlan.features.unlockedPortfolios > 0) {
+      if (boundIds.length < slotLimit) {
         return NextResponse.json({
-          error: 'Premium active. Export a portfolio to bind your download slot.',
+          error: `Premium is active. You can still unlock ${slotLimit - boundIds.length} more website${slotLimit - boundIds.length === 1 ? '' : 's'}.`,
           code: 'BIND_FIRST',
         }, { status: 400 });
       }
-      if (user.premiumPortfolioId) {
-        return NextResponse.json({
-          error: 'Your plan slot is bound to another portfolio. Upgrade or repurchase to unlock more.',
-          code: 'NEED_REPURCHASE',
-        }, { status: 400 });
-      }
+      return NextResponse.json({
+        error: `Both included websites are already unlocked. Pay again to add more.`,
+        code: 'NEED_REPURCHASE',
+      }, { status: 400 });
     }
 
     const pricing = calculateGst(plan.price);

@@ -18,6 +18,13 @@ export interface PromoCampaignSettings {
   modalCtaAction: 'register' | 'dashboard';
   showSlotsRemaining: boolean;
   showToLoggedIn: boolean;
+  /** Landing-page image popup */
+  modalImageUrl: string;
+  modalImageWidth: number;
+  modalImageHeight: number;
+  modalImageRadius: number;
+  modalLinkUrl: string;
+  modalLandingOnly: boolean;
 }
 
 const SETTINGS_KEY = 'promo_campaign';
@@ -35,6 +42,12 @@ const DEFAULTS: PromoCampaignSettings = {
   modalCtaAction: 'register',
   showSlotsRemaining: true,
   showToLoggedIn: false,
+  modalImageUrl: '',
+  modalImageWidth: 480,
+  modalImageHeight: 0,
+  modalImageRadius: 16,
+  modalLinkUrl: '',
+  modalLandingOnly: true,
 };
 
 let cache: { data: PromoCampaignSettings; at: number } | null = null;
@@ -76,11 +89,41 @@ function normalize(raw: Partial<PromoCampaignSettings> | null | undefined): Prom
     modalTitle: String(raw?.modalTitle || DEFAULTS.modalTitle).slice(0, 200),
     modalMessage: String(raw?.modalMessage || DEFAULTS.modalMessage).slice(0, 3000),
     modalBadge: String(raw?.modalBadge || DEFAULTS.modalBadge).slice(0, 60),
-    modalCtaText: String(raw?.modalCtaText || DEFAULTS.modalCtaText).slice(0, 80),
+    modalCtaText: raw?.modalCtaText == null
+      ? DEFAULTS.modalCtaText
+      : String(raw.modalCtaText).slice(0, 80),
     modalCtaAction: raw?.modalCtaAction === 'dashboard' ? 'dashboard' : 'register',
     showSlotsRemaining: raw?.showSlotsRemaining !== false,
     showToLoggedIn: Boolean(raw?.showToLoggedIn),
+    modalImageUrl: sanitizePopupImageUrl(raw?.modalImageUrl),
+    modalImageWidth: clampNum(raw?.modalImageWidth, 240, 900, DEFAULTS.modalImageWidth),
+    modalImageHeight: clampNum(raw?.modalImageHeight, 0, 1000, DEFAULTS.modalImageHeight),
+    modalImageRadius: clampNum(raw?.modalImageRadius, 0, 48, DEFAULTS.modalImageRadius),
+    modalLinkUrl: sanitizePopupLink(raw?.modalLinkUrl),
+    modalLandingOnly: raw?.modalLandingOnly !== false,
   };
+}
+
+function clampNum(value: unknown, min: number, max: number, fallback: number) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(n)));
+}
+
+function sanitizePopupImageUrl(value: unknown): string {
+  const url = String(value || '').trim().slice(0, 500);
+  if (!url) return '';
+  if (url.startsWith('/api/uploads/promo/')) return url;
+  if (/^https:\/\//i.test(url)) return url;
+  return '';
+}
+
+function sanitizePopupLink(value: unknown): string {
+  const url = String(value || '').trim().slice(0, 500);
+  if (!url) return '';
+  if (url.startsWith('/') && !url.startsWith('//')) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  return '';
 }
 
 export function invalidatePromoCache() {
@@ -200,6 +243,9 @@ export async function getPublicPromoStatus() {
     settings.freeGrantLimit,
     grantCount,
     settings.modalTitle,
+    settings.modalImageUrl,
+    settings.modalImageWidth,
+    settings.modalImageHeight,
   ].join(':');
 
   let modalTitle = settings.modalTitle;
@@ -240,6 +286,12 @@ export async function getPublicPromoStatus() {
       slotsRemaining: settings.showSlotsRemaining ? slotsRemaining : undefined,
       freeGrantLimit: settings.showSlotsRemaining ? settings.freeGrantLimit : undefined,
       campaignKey,
+      imageUrl: settings.modalImageUrl,
+      imageWidth: settings.modalImageWidth,
+      imageHeight: settings.modalImageHeight,
+      imageRadius: settings.modalImageRadius,
+      linkUrl: settings.modalLinkUrl,
+      landingOnly: settings.modalLandingOnly,
     } : null,
   };
 }

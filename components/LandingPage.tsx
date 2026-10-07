@@ -31,7 +31,7 @@ const LandingTemplatesShowcase = dynamic(
   },
 );
 
-const PREMIUM_PRICE = process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1;
+const PREMIUM_PRICE = process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99;
 const TEMPLATE_COUNT = TEMPLATES.length;
 
 const fadeUp = {
@@ -64,7 +64,7 @@ const FEATURES = [
   { icon: Globe, title: 'Go live on your domain', desc: 'One-click Hostinger deploy with domain picker.', span: 'lg:col-span-2' },
   { icon: Download, title: 'Export anywhere', desc: 'HTML, React & Next.js ZIP — yours to host anywhere.', span: '' },
   { icon: Wand2, title: 'Section library', desc: 'Hero, pricing, FAQ, blog, team, gallery & more.', span: 'lg:col-span-2' },
-  { icon: Shield, title: 'Premium unlock', desc: 'Export, share & deploy with one portfolio slot.', span: '' },
+  { icon: Shield, title: 'Premium unlock', desc: 'Export, share & deploy — 2 websites included.', span: '' },
   { icon: Zap, title: 'Real-time editing', desc: 'Changes reflect instantly — what you see is what you ship.', span: '' },
 ];
 
@@ -568,7 +568,7 @@ export default function LandingPage({
               name: 'Premium',
               price: promo.hidePaidPricing ? 'FREE' : `₹${PREMIUM_PRICE}`,
               priceSub: promo.hidePaidPricing && promo.slotsRemaining > 0 ? `${promo.slotsRemaining} slots left` : undefined,
-              desc: promo.hidePaidPricing ? 'Limited time — full premium free' : 'One portfolio slot — export & deploy',
+              desc: promo.hidePaidPricing ? 'Limited time — full premium free' : '2 websites — export & deploy',
               features: ['Export HTML / React / Next.js', 'Public share link', 'Hostinger deploy', 'Priority support'],
               cta: promo.hidePaidPricing ? 'Claim free premium' : 'Get started',
               highlight: true,

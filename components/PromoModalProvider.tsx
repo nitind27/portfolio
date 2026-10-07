@@ -30,6 +30,7 @@ export default function PromoModalProvider() {
       const res = await fetch('/api/site/promo');
       const data = await res.json();
       if (!data.modal) return;
+      if (data.modal.landingOnly && pathname !== '/') return;
 
       const m = data.modal as PublicPromoModal & { showToLoggedIn?: boolean };
       if (isAuthenticated && !m.showToLoggedIn) return;
@@ -59,6 +60,11 @@ export default function PromoModalProvider() {
   const handleCta = () => {
     trackAnalytics('modal_cta', { metadata: { action: modal?.ctaAction } });
     dismiss();
+    if (modal?.linkUrl) {
+      if (modal.linkUrl.startsWith('/')) router.push(modal.linkUrl);
+      else window.location.href = modal.linkUrl;
+      return;
+    }
     if (!isAuthenticated) {
       router.push('/?register=1');
     }
@@ -80,8 +86,12 @@ export default function PromoModalProvider() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 20 }}
             transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-            className="theme-aware relative w-full max-w-md rounded-2xl border overflow-hidden shadow-2xl"
-            style={{ background: brand.surface, borderColor: brand.border }}
+            className="theme-aware relative w-full rounded-2xl border overflow-hidden shadow-2xl"
+            style={{
+              background: brand.surface,
+              borderColor: brand.border,
+              maxWidth: modal.imageUrl ? Math.min(modal.imageWidth || 480, 900) : 448,
+            }}
             onClick={e => e.stopPropagation()}
           >
             <div className="absolute inset-x-0 top-0 h-1" style={{ background: `linear-gradient(90deg, ${brand.accent}, ${brand.accentHover})` }} />
@@ -95,7 +105,36 @@ export default function PromoModalProvider() {
               <X className="w-4 h-4" />
             </button>
 
-            <div className="p-8 pt-10 text-center">
+            <div className={modal.imageUrl ? 'p-4 pt-8 text-center' : 'p-8 pt-10 text-center'}>
+              {modal.imageUrl && (
+                modal.linkUrl ? (
+                  <a href={modal.linkUrl} onClick={e => { e.preventDefault(); handleCta(); }} className="block mb-4">
+                    <img
+                      src={modal.imageUrl}
+                      alt={modal.title || 'Promotion'}
+                      className="mx-auto w-full"
+                      style={{
+                        maxWidth: modal.imageWidth || 480,
+                        height: modal.imageHeight ? modal.imageHeight : 'auto',
+                        objectFit: 'contain',
+                        borderRadius: modal.imageRadius ?? 16,
+                      }}
+                    />
+                  </a>
+                ) : (
+                  <img
+                    src={modal.imageUrl}
+                    alt={modal.title || 'Promotion'}
+                    className="mx-auto w-full mb-4"
+                    style={{
+                      maxWidth: modal.imageWidth || 480,
+                      height: modal.imageHeight ? modal.imageHeight : 'auto',
+                      objectFit: 'contain',
+                      borderRadius: modal.imageRadius ?? 16,
+                    }}
+                  />
+                )
+              )}
               {modal.badge && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-5"
                   style={{ background: brand.accentMuted, color: brand.accentLight }}>
@@ -104,13 +143,15 @@ export default function PromoModalProvider() {
                 </span>
               )}
 
-              <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
-                style={{ background: `linear-gradient(135deg, ${brand.accent}33, ${brand.accentHover}22)` }}>
-                <Gift className="w-8 h-8" style={{ color: brand.accent }} />
-              </div>
+              {!modal.imageUrl && (
+                <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center"
+                  style={{ background: `linear-gradient(135deg, ${brand.accent}33, ${brand.accentHover}22)` }}>
+                  <Gift className="w-8 h-8" style={{ color: brand.accent }} />
+                </div>
+              )}
 
-              <h2 className="text-xl font-bold text-white mb-3">{modal.title}</h2>
-              <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-line mb-5">{modal.message}</p>
+              {modal.title && <h2 className="text-xl font-bold text-white mb-3">{modal.title}</h2>}
+              {modal.message && <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-line mb-5">{modal.message}</p>}
 
               {modal.showSlotsRemaining && modal.slotsRemaining != null && modal.freeGrantLimit != null && (
                 <div className="mb-6 p-3 rounded-xl border border-white/10 bg-white/[0.03]">
@@ -130,7 +171,7 @@ export default function PromoModalProvider() {
                 </div>
               )}
 
-              {(!isAuthenticated || showToLoggedIn) && (
+              {modal.ctaText && (!isAuthenticated || showToLoggedIn) && (
                 <button
                   type="button"
                   onClick={handleCta}

@@ -80,7 +80,7 @@ async function syncCanonicalPlans(pool: ReturnType<typeof getPool>) {
 
   await pool.execute(
     `INSERT INTO subscription_plans (slug, name, description, price, currency, tier, is_active, is_default, features)
-     VALUES ('pro', 'Premium', 'Export, share, publish and deploy one portfolio slot.', ?, 'INR', 1, 1, 0, ?)
+     VALUES ('pro', 'Premium', 'Export, share, publish and deploy 2 websites.', ?, 'INR', 1, 1, 0, ?)
      ON DUPLICATE KEY UPDATE
        name = 'Premium',
        description = VALUES(description),

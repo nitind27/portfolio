@@ -26,7 +26,7 @@ export const PREMIUM_PLAN_FEATURES: PlanFeatures = {
   sectionFaq: true,
   sectionTestimonials: true,
   premiumLayouts: true,
-  unlockedPortfolios: 1,
+  unlockedPortfolios: 2,
   storageDays: 365,
 };
 
@@ -34,7 +34,7 @@ export const PREMIUM_PLAN_FEATURES: PlanFeatures = {
 export const PRO_PLAN_FEATURES = PREMIUM_PLAN_FEATURES;
 
 export function defaultPremiumPrice() {
-  return Number(process.env.PREMIUM_PRICE || process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1);
+  return Number(process.env.PREMIUM_PRICE || process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99);
 }
 
 /** @deprecated Use defaultPremiumPrice */

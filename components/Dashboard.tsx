@@ -18,6 +18,7 @@ import ProjectExpiryBadge from './ProjectExpiryBadge';
 import BrandLogo from './BrandLogo';
 import ThemeToggle from './theme/ThemeToggle';
 import { useBrand, useTheme } from './theme/ThemeProvider';
+import { boundPortfolioIds } from '@/lib/portfolio-slots';
 import { STORAGE_POLICY_DAYS } from '@/lib/brand';
 import { getDaysRemaining } from '@/lib/project-expiry';
 import { useRedirectIfAdmin } from '@/lib/use-redirect-admin';
@@ -113,7 +114,7 @@ export default function Dashboard() {
                 <button onClick={() => setShowPremium(true)}
                   className="flex items-center gap-1 px-2 py-0.5 rounded-full text-amber-300 border border-amber-500/30 hover:bg-amber-500/10 transition"
                   style={{ background: 'rgba(245,158,11,0.1)' }}>
-                  <Crown className="w-3 h-3" /> Upgrade ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1}
+                  <Crown className="w-3 h-3" /> Upgrade ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}
                 </button>
               ) : (
                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">
@@ -288,7 +289,7 @@ export default function Dashboard() {
                     {/* Badges */}
                     <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
                       <ProjectExpiryBadge createdAt={p.createdAt} compact />
-                      {user?.premiumPortfolioId === p.id && (
+                      {boundPortfolioIds(user).includes(p.id) && (
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
                           <Crown className="w-3 h-3" /> Unlocked
                         </span>
@@ -367,7 +368,7 @@ export default function Dashboard() {
                   </div>
                   <ProjectExpiryBadge createdAt={p.createdAt} compact />
                   <div className="flex items-center gap-1 shrink-0">
-                    {user?.premiumPortfolioId === p.id && (
+                    {boundPortfolioIds(user).includes(p.id) && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 flex items-center gap-1">
                         <Crown className="w-3 h-3" /> Unlocked
                       </span>

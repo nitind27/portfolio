@@ -36,7 +36,7 @@ function getHeaders() {
 }
 
 export function getPremiumPrice() {
-  return Number(process.env.PREMIUM_PRICE || 1);
+  return Number(process.env.PREMIUM_PRICE || 99);
 }
 
 export function getAppUrl() {

@@ -7,6 +7,7 @@ import { useBuilderStore } from '@/lib/store';
 import type { PremiumModalReason } from '@/lib/portfolio-access-client';
 import type { SubscriptionPlan } from '@/lib/plans-types';
 import { canExport } from '@/lib/plans-types';
+import { boundPortfolioIds } from '@/lib/portfolio-slots';
 
 declare global {
   interface Window {
@@ -124,7 +125,34 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
     }
   };
 
-  if (user?.isPremium && reason !== 'unlock_another' && user.premiumPortfolioId) {
+  const boundCount = boundPortfolioIds(user).length;
+  const slotLimit = selectedPlan?.features.unlockedPortfolios || 2;
+
+  if (user?.isPremium && reason !== 'unlock_another' && boundCount > 0 && boundCount < slotLimit) {
+    return (
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={onClose}>
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-[#111] border border-green-500/30 rounded-2xl p-8 max-w-md w-full text-center">
+              <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" />
+              <h2 className="text-xl font-bold text-white mb-2">Website slot still open</h2>
+              <p className="text-gray-400 text-sm mb-2">{boundCount} of {slotLimit} websites unlocked. Open the other project and export — no extra payment.</p>
+              <button onClick={onClose}
+                className="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 rounded-xl transition mt-4">
+                Continue
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  if (user?.isPremium && reason !== 'unlock_another' && boundCount >= slotLimit) {
     return (
       <AnimatePresence>
         {open && (
@@ -136,7 +164,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
               className="bg-[#111] border border-green-500/30 rounded-2xl p-8 max-w-md w-full text-center">
               <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" />
               <h2 className="text-xl font-bold text-white mb-2">Plan Active</h2>
-              <p className="text-gray-400 text-sm mb-2">{user.planName || 'Premium'} plan · {user.premiumPortfolioId ? '1 slot bound' : 'Slot available'}</p>
+              <p className="text-gray-400 text-sm mb-2">{user.planName || 'Premium'} plan · {boundCount} of {slotLimit} websites unlocked</p>
               <button onClick={() => { refreshSession(); onClose(); }}
                 className="w-full bg-green-600 hover:bg-green-500 text-white font-semibold py-3 rounded-xl transition mt-4">
                 Continue
@@ -170,7 +198,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
                   <p className="text-xs text-gray-400">
                     {payHidden
                       ? 'Export, deploy & share — no payment needed'
-                      : `${user?.planName || 'Free'} → ₹${selectedPlan?.price ?? process.env.NEXT_PUBLIC_PREMIUM_PRICE ?? 1} one-time`}
+                      : `${user?.planName || 'Free'} → ₹${selectedPlan?.price ?? process.env.NEXT_PUBLIC_PREMIUM_PRICE ?? 99} one-time`}
                   </p>
                 </div>
               </div>
@@ -200,7 +228,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
                     {canExport(selectedPlan.features) && <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400">Export</span>}
                     {selectedPlan.features.hostingerDeploy && <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">Deploy</span>}
                     {selectedPlan.features.unlockedPortfolios > 0 && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">{selectedPlan.features.unlockedPortfolios} portfolio slot</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">{selectedPlan.features.unlockedPortfolios} websites</span>
                     )}
                   </div>
                 </div>

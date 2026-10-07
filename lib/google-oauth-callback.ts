@@ -60,7 +60,7 @@ export async function handleGoogleOAuthCallback(req: NextRequest) {
 
     const [byGoogle] = await pool.execute<RowDataPacket[]>(
       `SELECT u.id, u.name, u.email, u.phone, u.password_hash, u.role, u.is_premium,
-        u.premium_purchased_at, u.premium_portfolio_id, u.plan_id, u.auth_provider, u.avatar_url,
+        u.premium_purchased_at, u.premium_portfolio_id, u.premium_slot_ids, u.plan_id, u.auth_provider, u.avatar_url,
         sp.slug AS plan_slug, sp.name AS plan_name
        FROM users u
        LEFT JOIN subscription_plans sp ON sp.id = u.plan_id
@@ -74,7 +74,7 @@ export async function handleGoogleOAuthCallback(req: NextRequest) {
     if (!row) {
       const [byEmail] = await pool.execute<RowDataPacket[]>(
         `SELECT u.id, u.name, u.email, u.phone, u.password_hash, u.role, u.is_premium,
-          u.premium_purchased_at, u.premium_portfolio_id, u.plan_id, u.auth_provider, u.avatar_url,
+          u.premium_purchased_at, u.premium_portfolio_id, u.premium_slot_ids, u.plan_id, u.auth_provider, u.avatar_url,
           u.google_id, sp.slug AS plan_slug, sp.name AS plan_name
          FROM users u
          LEFT JOIN subscription_plans sp ON sp.id = u.plan_id

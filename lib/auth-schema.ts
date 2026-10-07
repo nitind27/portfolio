@@ -25,6 +25,7 @@ export async function ensureAuthSchema() {
   await execIgnore(`ALTER TABLE users ADD COLUMN google_id VARCHAR(255) NULL AFTER password_hash`);
   await execIgnore(`ALTER TABLE users ADD COLUMN auth_provider ENUM('local', 'google') NOT NULL DEFAULT 'local' AFTER google_id`);
   await execIgnore(`ALTER TABLE users ADD COLUMN avatar_url VARCHAR(512) NULL AFTER auth_provider`);
+  await execIgnore(`ALTER TABLE users ADD COLUMN premium_slot_ids TEXT NULL`);
   await execIgnore(`ALTER TABLE users ADD UNIQUE KEY uq_users_google_id (google_id)`);
 
   ready = true;

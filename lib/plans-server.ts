@@ -269,13 +269,15 @@ export async function assignUserPlan(userId: number, planId: number) {
 }
 
 export async function activatePlanPurchase(userId: number, planId: number, orderId: string) {
+  const { ensureAuthSchema } = await import('./auth-schema');
+  await ensureAuthSchema();
   const pool = getPool();
   await pool.execute(
     `UPDATE payments SET status = 'paid', paid_at = NOW() WHERE order_id = ? AND user_id = ?`,
     [orderId, userId],
   );
   await pool.execute(
-    `UPDATE users SET plan_id = ?, is_premium = 1, premium_purchased_at = NOW(), premium_portfolio_id = NULL WHERE id = ?`,
+    `UPDATE users SET plan_id = ?, is_premium = 1, premium_purchased_at = NOW(), premium_portfolio_id = NULL, premium_slot_ids = NULL WHERE id = ?`,
     [planId, userId],
   );
 }

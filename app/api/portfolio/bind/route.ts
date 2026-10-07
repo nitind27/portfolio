@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       const msg = e instanceof Error ? e.message : '';
       if (msg === 'SLOT_USED') {
         return NextResponse.json({
-          error: 'Your plan slot is already used on another portfolio. Upgrade to unlock more.',
+          error: 'Both included websites are already unlocked. Pay again to add more.',
           code: 'SLOT_USED',
         }, { status: 403 });
       }

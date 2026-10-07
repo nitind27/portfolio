@@ -545,6 +545,8 @@ export interface AuthUser {
   isPremium: boolean;
   premiumPurchasedAt: string | null;
   premiumPortfolioId: string | null;
+  /** All websites bound to the paid plan. Premium includes 2. */
+  premiumPortfolioIds?: string[];
   planId: number | null;
   planSlug?: string | null;
   planName?: string | null;

@@ -25,7 +25,7 @@ export const DOC_CATEGORIES: DocCategory[] = [
   { id: 'legal', label: 'Legal & policies', icon: '⚖️' },
 ];
 
-const PREMIUM = Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE || process.env.PREMIUM_PRICE || 1);
+const PREMIUM = Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE || process.env.PREMIUM_PRICE || 99);
 const PREMIUM_LABEL = formatPremiumPriceLabel(PREMIUM);
 
 export const SITE_DOCS: DocSection[] = [
@@ -299,7 +299,7 @@ export const SITE_DOCS: DocSection[] = [
     title: 'Premium share & export slot',
     summary: 'Pro unlocks export, long-term share, and Hostinger deploy.',
     keywords: ['premium', 'pro', 'export', 'zip', 'unlock', 'slot'],
-    body: `Pro plan (${PREMIUM_LABEL} one-time) unlocks one portfolio slot:\n• Export HTML, React, Next.js ZIP\n• Share/publish long-term (365 days storage)\n• Hostinger deploy to your domain\n• SMTP, analytics, custom CSS, premium sections\nFirst export or deploy binds the slot to that project. Upgrade again to unlock another portfolio.`,
+    body: `Pro plan (${PREMIUM_LABEL} one-time) unlocks 2 websites:\n• Export HTML, React, Next.js ZIP\n• Share/publish long-term (365 days storage)\n• Hostinger deploy to your domain\n• SMTP, analytics, custom CSS, premium sections\nExport or deploy binds a slot to that project. Both included websites can go live. Pay again only after both slots are used.`,
   },
   {
     id: 'export',
@@ -323,7 +323,7 @@ export const SITE_DOCS: DocSection[] = [
     title: 'Plans overview',
     summary: 'Free and Premium plan comparison.',
     keywords: ['plans', 'pricing', 'free', 'premium', 'pro', 'subscription'],
-    body: `**Free** — Build, preview, ${STORAGE_POLICY_DAYS}-day share link, basic sections\n**Premium (${PREMIUM_LABEL})** — Export, deploy, 1 portfolio slot, premium sections, SMTP, analytics, custom CSS\nView current plan on **Billing** page.`,
+    body: `**Free** — Build, preview, ${STORAGE_POLICY_DAYS}-day share link, basic sections\n**Premium (${PREMIUM_LABEL})** — Export, deploy, 2 websites, premium sections, SMTP, analytics, custom CSS\nView current plan on **Billing** page.`,
   },
   {
     id: 'payment-flow',

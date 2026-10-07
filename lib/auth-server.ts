@@ -15,13 +15,14 @@ const COOKIE_MAX_AGE_REMEMBER = 60 * 60 * 24 * 30; // 30 days
 const COOKIE_MAX_AGE_REGISTER = 60 * 60 * 24 * 7; // 7 days
 
 import type { AuthUser } from './types';
+import { parsePortfolioSlotIds } from './portfolio-slots';
 import { isPaidPlanGloballyDisabled } from './promo-campaign';
 import { getPlanBySlug } from './plans-server';
 
 export type { AuthUser };
 
 const USER_FIELDS = `u.id, u.name, u.email, u.phone, u.role, u.is_premium, u.premium_purchased_at,
-  u.premium_portfolio_id, u.plan_id, u.auth_provider, u.avatar_url, u.password_hash,
+  u.premium_portfolio_id, u.premium_slot_ids, u.plan_id, u.auth_provider, u.avatar_url, u.password_hash,
   sp.slug AS plan_slug, sp.name AS plan_name`;
 
 function getJwtSecret() {
@@ -39,12 +40,14 @@ export async function verifyPassword(password: string, hash: string) {
 }
 
 export function toAuthUser(row: Pick<DbUser, 'id' | 'name' | 'email' | 'phone' | 'role' | 'is_premium' | 'premium_purchased_at' | 'premium_portfolio_id' | 'plan_id'> & {
+  premium_slot_ids?: string | null;
   auth_provider?: DbUser['auth_provider'];
   avatar_url?: DbUser['avatar_url'];
   password_hash?: DbUser['password_hash'];
   plan_slug?: string | null;
   plan_name?: string | null;
 }): AuthUser {
+  const premiumPortfolioIds = parsePortfolioSlotIds(row.premium_slot_ids, row.premium_portfolio_id);
   return {
     id: row.id,
     name: row.name,
@@ -53,7 +56,8 @@ export function toAuthUser(row: Pick<DbUser, 'id' | 'name' | 'email' | 'phone' |
     role: row.role || 'user',
     isPremium: Boolean(row.is_premium),
     premiumPurchasedAt: row.premium_purchased_at ? new Date(row.premium_purchased_at).toISOString() : null,
-    premiumPortfolioId: row.premium_portfolio_id || null,
+    premiumPortfolioId: premiumPortfolioIds[0] || row.premium_portfolio_id || null,
+    premiumPortfolioIds,
     planId: row.plan_id ?? null,
     planSlug: row.plan_slug ?? null,
     planName: row.plan_name ?? null,

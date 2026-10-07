@@ -12,6 +12,12 @@ export interface PublicPromoModal {
   slotsRemaining?: number;
   freeGrantLimit?: number;
   campaignKey: string;
+  imageUrl?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageRadius?: number;
+  linkUrl?: string;
+  landingOnly?: boolean;
 }
 
 export interface PublicPromoStatus {

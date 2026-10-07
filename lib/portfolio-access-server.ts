@@ -3,6 +3,7 @@ import type { PortfolioAccessStatus, AuthUser } from './types';
 import { canExport, type PlanFeatures } from './plans-types';
 import { getUserFeatures } from './plans-server';
 import { isProjectExpiredWithPolicy, getDaysRemaining } from './project-expiry';
+import { parsePortfolioSlotIds } from './portfolio-slots';
 
 function paidSlotFeatures(features: PlanFeatures): boolean {
   return canExport(features) || features.hostingerDeploy || features.vercelDeploy;
@@ -62,20 +63,20 @@ export async function getPortfolioAccess(
     return { status: 'needs_payment', boundPortfolioId: null, features };
   }
 
-  const bound = user.premiumPortfolioId;
+  const boundIds = parsePortfolioSlotIds(user.premiumPortfolioIds, user.premiumPortfolioId);
   const slots = features.unlockedPortfolios || (user.isPremium ? 1 : 0);
 
   if (slots <= 0 && paidSlotFeatures(features)) {
     return { status: 'needs_payment', boundPortfolioId: null, features };
   }
 
-  if (!bound) {
-    return { status: 'bind_on_action', boundPortfolioId: null, features };
+  if (boundIds.includes(portfolioId)) {
+    return { status: 'allowed', boundPortfolioId: portfolioId, features };
   }
-  if (bound === portfolioId) {
-    return { status: 'allowed', boundPortfolioId: bound, features };
+  if (boundIds.length < slots) {
+    return { status: 'bind_on_action', boundPortfolioId: boundIds[0] || null, features };
   }
-  return { status: 'wrong_portfolio', boundPortfolioId: bound, features };
+  return { status: 'wrong_portfolio', boundPortfolioId: boundIds[0] || null, features };
 }
 
 export async function bindPortfolioToUser(userId: number, portfolioId: string) {
@@ -90,20 +91,21 @@ export async function bindPortfolioToUser(userId: number, portfolioId: string) {
   if (!hasPaidFeatures && !user.isPremium) throw new Error('NOT_PREMIUM');
   if (!paidSlotFeatures(features)) throw new Error('FREE_SHARE_ONLY');
 
+  const slots = Math.max(1, features.unlockedPortfolios || 1);
   const [rows] = await pool.execute(
-    'SELECT premium_portfolio_id FROM users WHERE id = ? LIMIT 1',
+    'SELECT premium_portfolio_id, premium_slot_ids FROM users WHERE id = ? LIMIT 1',
     [userId],
   );
-  const row = (rows as { premium_portfolio_id: string | null }[])[0];
-  if (row?.premium_portfolio_id && row.premium_portfolio_id !== portfolioId) {
-    throw new Error('SLOT_USED');
-  }
-  if (!row?.premium_portfolio_id) {
-    await pool.execute(
-      'UPDATE users SET premium_portfolio_id = ? WHERE id = ?',
-      [portfolioId, userId],
-    );
-  }
+  const row = (rows as { premium_portfolio_id: string | null; premium_slot_ids: string | null }[])[0];
+  const bound = parsePortfolioSlotIds(row?.premium_slot_ids, row?.premium_portfolio_id);
+  if (bound.includes(portfolioId)) return;
+  if (bound.length >= slots) throw new Error('SLOT_USED');
+
+  const next = [...bound, portfolioId];
+  await pool.execute(
+    'UPDATE users SET premium_portfolio_id = ?, premium_slot_ids = ? WHERE id = ?',
+    [next[0], JSON.stringify(next), userId],
+  );
 }
 
 export async function userCanUseFeature(user: AuthUser | null, feature: keyof PlanFeatures): Promise<boolean> {

@@ -27,6 +27,7 @@ import ScrollablePanelTabs from './ScrollablePanelTabs';
 import { fetchPlansConfig, featureEnabled, type PlansConfigResponse } from '@/lib/plans-client';
 import type { PlanFeatures } from '@/lib/plans-types';
 import { usePromoStatus, shouldHidePayOptions } from '@/lib/promo-client';
+import { boundPortfolioIds } from '@/lib/portfolio-slots';
 
 interface Props {
   rightTab: RightTab;
@@ -119,16 +120,17 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
   const isPremium = Boolean(user?.isPremium);
   const payHidden = shouldHidePayOptions(promo);
   const hasPremiumAccess = isPremium || payHidden;
-  const isThisPortfolioUnlocked = Boolean(
-    user?.premiumPortfolioId && portfolio?.id === user.premiumPortfolioId,
-  );
-  const hasBoundSlot = Boolean(user?.premiumPortfolioId);
+  const boundIds = boundPortfolioIds(user);
+  const slotLimit = planConfig?.features.unlockedPortfolios ?? 2;
+  const isThisPortfolioUnlocked = Boolean(portfolio && boundIds.includes(portfolio.id));
+  const slotsFull = boundIds.length >= slotLimit;
+  const hasBoundSlot = slotsFull;
 
   const shareDaysLeft = portfolio ? getDaysRemaining(portfolio.createdAt) : 0;
   const canTrialShare = !hasPremiumAccess && shareDaysLeft > 0;
   const canUseShare = isThisPortfolioUnlocked || canTrialShare || (hasPremiumAccess && !hasBoundSlot);
   const shareStatusText = !canUseShare
-    ? (hasBoundSlot ? '🔒 Premium slot used on another portfolio' : shareDaysLeft <= 0 ? `🔒 Free share expired (${STORAGE_POLICY_DAYS}-day limit)` : '🔒 Upgrade to share')
+    ? (hasBoundSlot ? `🔒 Both websites are already unlocked (${boundIds.length}/${slotLimit})` : shareDaysLeft <= 0 ? `🔒 Free share expired (${STORAGE_POLICY_DAYS}-day limit)` : '🔒 Upgrade to share')
     : canTrialShare && !isThisPortfolioUnlocked
       ? `🟢 Free share · ${formatDaysRemaining(portfolio!.createdAt)} · copy link below`
       : portfolio!.published
@@ -557,8 +559,8 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
                   : payHidden
                     ? 'Premium is free — unlock export for this portfolio'
                     : hasBoundSlot
-                      ? `1 portfolio per ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1} · unlock this for ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1}`
-                      : `Premium required · ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1}`}
+                      ? `2 websites included · unlock another for ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}`
+                      : `Premium required · ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99} · 2 websites`}
               </p>
             </div>
             {([
@@ -597,7 +599,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
           className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/25 hover:bg-amber-500/25 transition shrink-0"
         >
           <Crown className="w-3.5 h-3.5" />
-          ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1}
+          ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}
         </button>
       )}
 
