@@ -25,7 +25,7 @@ export const DOC_CATEGORIES: DocCategory[] = [
   { id: 'legal', label: 'Legal & policies', icon: '⚖️' },
 ];
 
-const PREMIUM = Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE || process.env.PREMIUM_PRICE || 99);
+const PREMIUM = Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE || process.env.PREMIUM_PRICE || 1);
 const PREMIUM_LABEL = formatPremiumPriceLabel(PREMIUM);
 
 export const SITE_DOCS: DocSection[] = [

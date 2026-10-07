@@ -113,7 +113,7 @@ export default function Dashboard() {
                 <button onClick={() => setShowPremium(true)}
                   className="flex items-center gap-1 px-2 py-0.5 rounded-full text-amber-300 border border-amber-500/30 hover:bg-amber-500/10 transition"
                   style={{ background: 'rgba(245,158,11,0.1)' }}>
-                  <Crown className="w-3 h-3" /> Upgrade ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}
+                  <Crown className="w-3 h-3" /> Upgrade ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1}
                 </button>
               ) : (
                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">

@@ -170,7 +170,7 @@ export default function PremiumModal({ open, onClose, reason = 'general' }: Prop
                   <p className="text-xs text-gray-400">
                     {payHidden
                       ? 'Export, deploy & share — no payment needed'
-                      : `${user?.planName || 'Free'} → ₹${selectedPlan?.price ?? process.env.NEXT_PUBLIC_PREMIUM_PRICE ?? 99} one-time`}
+                      : `${user?.planName || 'Free'} → ₹${selectedPlan?.price ?? process.env.NEXT_PUBLIC_PREMIUM_PRICE ?? 1} one-time`}
                   </p>
                 </div>
               </div>

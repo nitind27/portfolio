@@ -1,6 +1,7 @@
 import type { RowDataPacket } from 'mysql2';
 import { getPool } from './db';
 import { APP_NAME, APP_DESCRIPTION, APP_TAGLINE, STORAGE_POLICY_DAYS } from './brand';
+import { defaultPremiumPrice } from './default-plans';
 import { company } from './company';
 import { normalizeSeo, type MarketingSeoFields } from './marketing-seo';
 
@@ -61,7 +62,7 @@ export const DEFAULT_ABOUT: MarketingAboutContent = {
     { value: '70+', label: 'Templates' },
     { value: '15+', label: 'Section types' },
     { value: `${STORAGE_POLICY_DAYS}d`, label: 'Free sharing' },
-    { value: '₹99', label: 'Premium from' },
+    { value: `₹${defaultPremiumPrice()}`, label: 'Premium from' },
   ],
   seo: normalizeSeo(null, {
     title: `About Us — ${APP_NAME}`,

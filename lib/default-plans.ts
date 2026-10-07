@@ -34,7 +34,7 @@ export const PREMIUM_PLAN_FEATURES: PlanFeatures = {
 export const PRO_PLAN_FEATURES = PREMIUM_PLAN_FEATURES;
 
 export function defaultPremiumPrice() {
-  return Number(process.env.PREMIUM_PRICE || process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99);
+  return Number(process.env.PREMIUM_PRICE || process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1);
 }
 
 /** @deprecated Use defaultPremiumPrice */

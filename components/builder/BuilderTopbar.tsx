@@ -557,8 +557,8 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
                   : payHidden
                     ? 'Premium is free — unlock export for this portfolio'
                     : hasBoundSlot
-                      ? `1 portfolio per ₹99 · unlock this for ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}`
-                      : `Premium required · ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}`}
+                      ? `1 portfolio per ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1} · unlock this for ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1}`
+                      : `Premium required · ₹${process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1}`}
               </p>
             </div>
             {([
@@ -597,7 +597,7 @@ export default function BuilderTopbar({ rightTab, setRightTab, onShowShortcuts, 
           className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/25 hover:bg-amber-500/25 transition shrink-0"
         >
           <Crown className="w-3.5 h-3.5" />
-          ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}
+          ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1}
         </button>
       )}
 

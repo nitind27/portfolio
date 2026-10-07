@@ -31,7 +31,7 @@ const LandingTemplatesShowcase = dynamic(
   },
 );
 
-const PREMIUM_PRICE = process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99;
+const PREMIUM_PRICE = process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1;
 const TEMPLATE_COUNT = TEMPLATES.length;
 
 const fadeUp = {

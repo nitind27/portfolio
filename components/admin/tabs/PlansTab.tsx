@@ -28,7 +28,7 @@ export default function PlansTab({ plans, onRefresh }: Props) {
     <div className="space-y-6">
       <SectionHeader
         title="Subscription plans"
-        desc="Free tier + Premium (₹99). Edit pricing and feature permissions — users only get what each plan allows."
+        desc="Free tier + Premium. Edit pricing and feature permissions — users only get what each plan allows."
         action={
           <div className="flex rounded-lg border border-white/10 p-0.5">
             {(['cards', 'compare'] as const).map(v => (

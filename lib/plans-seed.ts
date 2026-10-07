@@ -61,7 +61,7 @@ async function ensureSchema(pool: ReturnType<typeof getPool>) {
   await execIgnore(pool, `ALTER TABLE payments ADD COLUMN gst_verified TINYINT(1) NOT NULL DEFAULT 0 AFTER gst_legal_name`);
 }
 
-/** Keep exactly two active tiers: Free + Premium (₹99, slug pro). Retire legacy Business plan. */
+/** Keep exactly two active tiers: Free + Premium (slug pro). Retire legacy Business plan. */
 async function syncCanonicalPlans(pool: ReturnType<typeof getPool>) {
   const premiumPrice = defaultPremiumPrice();
 

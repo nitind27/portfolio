@@ -407,7 +407,7 @@ function AuthForm({ mode, setMode, onClose, compact, formId, onSubmitState, init
             </button>
             {!adminOnly && (
               <p className="text-center text-[10px] text-gray-600 leading-relaxed">
-                Free plan: {STORAGE_POLICY_DAYS}-day build & share · Premium from ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 99}
+                Free plan: {STORAGE_POLICY_DAYS}-day build & share · Premium from ₹{process.env.NEXT_PUBLIC_PREMIUM_PRICE || 1}
               </p>
             )}
           </>
