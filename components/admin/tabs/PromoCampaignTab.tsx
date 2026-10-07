@@ -107,7 +107,9 @@ export default function PromoCampaignTab() {
     <div className="space-y-6 max-w-3xl">
       <SectionHeader
         title="Promo & subscription control"
-        desc="Turn off paid plans, grant free premium to limited users, and show a promo popup to visitors."
+        desc={settings.paidPlanDisabled || settings.freeGrantEnabled
+          ? 'A free-premium switch is ON. Turn it off so checkout stays paid.'
+          : 'Paid checkout is on. No free premium. New users stay on the free builder until they pay ₹99 for 2 websites.'}
       />
 
       {msg && (

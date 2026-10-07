@@ -23,12 +23,15 @@ export default function PlansTab({ plans, onRefresh }: Props) {
   const [view, setView] = useState<'cards' | 'compare'>('cards');
 
   const sorted = [...plans].sort((a, b) => a.tier - b.tier);
+  const premium = sorted.find(p => p.slug === 'pro');
 
   return (
     <div className="space-y-6">
       <SectionHeader
         title="Subscription plans"
-        desc="Free tier + Premium. Edit pricing and feature permissions — users only get what each plan allows."
+        desc={premium
+          ? `Loaded from the database. Premium is ₹${premium.price} and includes ${premium.features.unlockedPortfolios} websites. Free premium is off.`
+          : 'Loaded from the database. Edit pricing and feature permissions — users only get what each plan allows.'}
         action={
           <div className="flex rounded-lg border border-white/10 p-0.5">
             {(['cards', 'compare'] as const).map(v => (
@@ -53,6 +56,9 @@ export default function PlansTab({ plans, onRefresh }: Props) {
                 {p.price > 0 && <span className="text-sm text-gray-500">/ {p.currency}</span>}
               </div>
               <h3 className="text-lg font-bold text-white mt-2">{p.name}</h3>
+              {p.price > 0 && (
+                <p className="text-xs text-amber-300 mt-1">{p.features.unlockedPortfolios} websites included</p>
+              )}
               <p className="text-xs text-gray-500 font-mono">{p.slug} · Tier {p.tier}</p>
               <p className="text-sm text-gray-400 mt-3 line-clamp-2 min-h-[40px]">{p.description || '—'}</p>
               <div className="flex flex-wrap gap-1 mt-4 min-h-[48px]">

@@ -33,7 +33,7 @@ const DEFAULTS: PromoCampaignSettings = {
   paidPlanDisabled: false,
   freeGrantEnabled: false,
   freeGrantLimit: 100,
-  autoGrantOnRegister: true,
+  autoGrantOnRegister: false,
   modalEnabled: false,
   modalTitle: 'Limited time offer',
   modalMessage: 'Register now and get full premium access — export, deploy & share — completely free for the first 100 users!',

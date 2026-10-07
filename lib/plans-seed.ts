@@ -70,11 +70,9 @@ async function syncCanonicalPlans(pool: ReturnType<typeof getPool>) {
      VALUES ('free', 'Free', 'Build & preview in browser. Limited templates and features.', 0, 'INR', 0, 1, 1, ?)
      ON DUPLICATE KEY UPDATE
        name = 'Free',
-       description = VALUES(description),
        tier = 0,
        is_default = 1,
-       is_active = 1,
-       features = VALUES(features)`,
+       is_active = 1`,
     [JSON.stringify(FREE_PLAN_FEATURES)],
   );
 
@@ -88,7 +86,7 @@ async function syncCanonicalPlans(pool: ReturnType<typeof getPool>) {
        tier = 1,
        is_active = 1,
        is_default = 0,
-       features = VALUES(features)`,
+       features = JSON_SET(features, '$.unlockedPortfolios', 2)`,
     [premiumPrice, JSON.stringify(PREMIUM_PLAN_FEATURES)],
   );
 
