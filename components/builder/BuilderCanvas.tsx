@@ -146,7 +146,7 @@ export default function BuilderCanvas({ rightTab, onSectionSelect }: { rightTab:
             >
               <div className="flex items-center gap-2 px-3 py-2 bg-blue-600/10 border-b border-blue-500/20 shrink-0">
                 <Eye className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                <span className="text-[11px] text-blue-300">Editing section — tap Preview to see full site</span>
+                <span className="text-[11px] text-blue-300">Edit the text below. Tap Preview to see the full site.</span>
               </div>
               <SectionEditor key={activeSection} sectionId={activeSection!} variant="sidebar" />
             </motion.div>

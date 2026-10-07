@@ -149,6 +149,23 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
     return false;
   };
 
+  const startRecommended = () => {
+    if (!purpose) return;
+    const cfg = getPurposeConfig(purpose);
+    const list = getTemplatesForPurpose(purpose);
+    const first = list.find(t => !isTemplateLocked(t.id)) || list[0] || TEMPLATES[0];
+    const layout = (first.defaultLayoutPreset as LayoutPresetId) || getDefaultLayoutPresetId(purpose);
+    const name = cfg.title;
+    const options: CreatePortfolioOptions = {
+      sections: [...cfg.recommendedSections],
+      layoutPreset: layout,
+      meta: { purpose, businessName: name, layoutPreset: layout },
+    };
+    const id = createPortfolio(first.id, name, options);
+    setActivePortfolio(id);
+    onClose();
+  };
+
   const handleCreate = () => {
     if (!purpose || !selectedTemplate || !projectName.trim()) return;
     const options: CreatePortfolioOptions = {
@@ -169,9 +186,12 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      onClick={e => e.target === e.currentTarget && onClose()}>
+      className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <motion.div initial={{ scale: 0.94, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-website-title"
+        onClick={e => e.stopPropagation()}
         className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
 
         {/* Header */}
@@ -180,11 +200,11 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <BrandLogo size="xs" />
-                <h2 className="text-xl font-bold">Create New Website</h2>
+                <h2 id="create-website-title" className="text-xl font-bold">Create New Website</h2>
               </div>
-              <p className="text-sm text-gray-500">Tell us what you&apos;re building — we&apos;ll set up the right layout for you.</p>
+              <p className="text-sm text-gray-500">Pick a type, then Start website. Colors, text, and sections can be edited after.</p>
             </div>
-            <button type="button" onClick={onClose} className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition">
+            <button type="button" onClick={onClose} aria-label="Close" className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -204,7 +224,7 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
             {step === 0 && (
               <motion.div key="s0" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}>
                 <h3 className="text-lg font-semibold mb-1">What kind of website do you need?</h3>
-                <p className="text-sm text-gray-500 mb-4">Pick a category, then choose the type that fits your goal. Sections and content adapt to your selection.</p>
+                <p className="text-sm text-gray-500 mb-4">Choose one type. Start website builds a ready layout for you. Customize is only if you want to pick sections yourself.</p>
                 <input value={purposeSearch} onChange={e => setPurposeSearch(e.target.value)}
                   placeholder="Search: shop, restaurant, portfolio, SaaS…"
                   className="w-full mb-4 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500" />
@@ -430,7 +450,18 @@ export default function CreateProjectWizard({ open, onClose }: Props) {
             <ChevronLeft className="w-4 h-4" /> {step === 0 ? 'Cancel' : 'Back'}
           </button>
           <div className="flex-1" />
-          {step < STEPS.length - 1 ? (
+          {step === 0 ? (
+            <>
+              <button type="button" disabled={!purpose} onClick={() => setStep(1)}
+                className="px-4 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition text-sm">
+                Customize
+              </button>
+              <button type="button" disabled={!purpose} onClick={startRecommended}
+                className="flex items-center gap-1 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition text-sm">
+                <Check className="w-4 h-4" /> Start website
+              </button>
+            </>
+          ) : step < STEPS.length - 1 ? (
             <button type="button" disabled={!canNext()} onClick={() => setStep(s => s + 1)}
               className="flex items-center gap-1 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed font-semibold transition text-sm">
               Continue <ChevronRight className="w-4 h-4" />

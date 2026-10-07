@@ -453,7 +453,7 @@ export default function SectionEditor({ sectionId, variant = 'canvas' }: Props) 
               <span className="text-xs text-gray-500 capitalize bg-white/5 px-2 py-0.5 rounded shrink-0">{section.type}</span>
             </div>
             {isSidebar && (
-              <p className="text-[10px] text-blue-400/90 mt-1">Live preview · header links switch this panel</p>
+              <p className="text-[10px] text-blue-400/90 mt-1">Type in the fields below. The website preview updates as you type.</p>
             )}
           </div>
           <button onClick={() => setActiveSection(null)} className="text-gray-500 hover:text-white transition shrink-0 p-1 rounded-lg hover:bg-white/5">

@@ -69,6 +69,14 @@ export default function Builder() {
   }, []);
 
   useEffect(() => {
+    if (!portfolio?.sections.length) return;
+    const first = portfolio.sections.find(s => s.visible) || portfolio.sections[0];
+    if (!first) return;
+    focusSectionEditor(first.id);
+    if (window.innerWidth < 1024) setMobilePanel('settings');
+  }, [portfolio?.id, focusSectionEditor, setMobilePanel]);
+
+  useEffect(() => {
     if (!hasSeenBuilderTour) {
       const t = setTimeout(() => setShowTour(true), 600);
       return () => clearTimeout(t);
@@ -97,6 +105,10 @@ export default function Builder() {
   const handleTourComplete = () => {
     setShowTour(false);
     completeBuilderTour();
+    setRightTab('sections');
+    const first = portfolio?.sections.find(s => s.visible) || portfolio?.sections[0];
+    if (first) setActiveSection(first.id);
+    if (window.innerWidth < 1024) setMobilePanel('settings');
   };
 
   const restartTour = () => {
@@ -141,7 +153,7 @@ export default function Builder() {
         {([
           { id: 'sections' as const, icon: Layers, label: 'Sections' },
           { id: 'preview' as const, icon: Eye, label: 'Preview' },
-          { id: 'settings' as const, icon: Settings2, label: 'Settings' },
+          { id: 'settings' as const, icon: Settings2, label: 'Edit' },
         ]).map(({ id, icon: Icon, label }) => (
           <button
             key={id}

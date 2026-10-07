@@ -53,7 +53,7 @@ function SortableSection({ section, onSectionSelect }: { section: PortfolioSecti
       } ${!section.visible ? 'opacity-40' : ''}`}
       onClick={() => {
         onSectionSelect(section.id);
-        setMobilePanel('preview');
+        setMobilePanel('settings');
       }}
     >
       <button {...attributes} {...listeners} className="drag-handle text-gray-700 hover:text-gray-400 shrink-0 cursor-grab active:cursor-grabbing" onClick={e => e.stopPropagation()}>

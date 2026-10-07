@@ -12,7 +12,7 @@ export const DASHBOARD_TOUR_STEPS: TourStep[] = [
     target: 'new-portfolio',
     placement: 'bottom',
     title: 'Create Your First Portfolio',
-    description: 'Click "New Portfolio" to start. Pick a template, give it a name, and you are ready to customize.',
+    description: 'Click New Website, pick a type, then Start website. A ready layout opens in the editor.',
   },
   {
     target: 'stats',
@@ -25,15 +25,15 @@ export const DASHBOARD_TOUR_STEPS: TourStep[] = [
 export const BUILDER_TOUR_STEPS: TourStep[] = [
   {
     placement: 'center',
-    title: 'Welcome to the Builder!',
-    description: 'This is where you design your portfolio. Follow the steps to learn what each area does.',
+    title: 'This is where you edit',
+    description: 'The form on the right (Edit tab on a phone) changes the page. Type a new headline and the preview updates. Click another section on the left to edit that part.',
   },
   {
     target: 'sections-panel',
     placement: 'right',
     mobilePanel: 'sections',
     title: 'Sections Panel',
-    description: 'All your page sections live here. Click a section to edit it, drag the handle to reorder, or add new sections.',
+    description: 'Tap a section name, like Hero or About. Its text, images, and buttons open in the editor so you can change them.',
   },
   {
     target: 'canvas-preview',

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBuilderStore } from '@/lib/store';
 import { TEMPLATES } from '@/lib/templates';
@@ -30,7 +30,7 @@ export default function Dashboard() {
   const {
     portfolios, deletePortfolio, duplicatePortfolio,
     setActivePortfolio, activePortfolioId, logout, togglePublished,
-    hasSeenDashboardTour, completeDashboardTour, user, purgeExpiredProjects,
+    hasSeenDashboardTour, completeDashboardTour, user, purgeExpiredProjects, projectsLoaded,
   } = useBuilderStore();
   const [showPremium, setShowPremium] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterCategory, setFilterCategory] = useState('all');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const openedFirstCreate = useRef(false);
   const promo = usePromoStatus();
   const payHidden = shouldHidePayOptions(promo);
   const brand = useBrand();
@@ -51,11 +52,18 @@ export default function Dashboard() {
   }, [purgeExpiredProjects]);
 
   useEffect(() => {
-    if (!hasSeenDashboardTour) {
-      const t = setTimeout(() => setShowTour(true), 500);
-      return () => clearTimeout(t);
+    if (!projectsLoaded || openedFirstCreate.current) return;
+    if (portfolios.length === 0) {
+      openedFirstCreate.current = true;
+      setShowCreate(true);
     }
-  }, [hasSeenDashboardTour]);
+  }, [projectsLoaded, portfolios.length]);
+
+  useEffect(() => {
+    if (!projectsLoaded || hasSeenDashboardTour || portfolios.length === 0) return;
+    const t = setTimeout(() => setShowTour(true), 500);
+    return () => clearTimeout(t);
+  }, [hasSeenDashboardTour, projectsLoaded, portfolios.length]);
 
   useEffect(() => {
     if (search.trim().length >= 2) {
@@ -244,13 +252,15 @@ export default function Dashboard() {
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: isLight ? 'rgba(15,23,42,0.04)' : 'rgba(255,255,255,0.05)' }}>
               <Layers className="w-8 h-8" style={{ color: brand.textDim }} />
             </div>
-            <p className="text-lg font-medium" style={{ color: brand.textMuted }}>{search ? 'No results found' : 'No projects yet'}</p>
-            <p className="text-sm mt-1" style={{ color: brand.textDim }}>{search ? 'Try a different search term' : 'Create your first website — portfolio, business, shop, and more'}</p>
+            <p className="text-lg font-medium" style={{ color: brand.textMuted }}>{search ? 'No results found' : 'You have no website yet'}</p>
+            <p className="text-sm mt-1 max-w-md mx-auto" style={{ color: brand.textDim }}>
+              {search ? 'Try a different search term' : '1. Click New Website  2. Pick a type  3. Click Start website. The editor opens with a ready layout.'}
+            </p>
             {!search && (
               <button onClick={() => setShowCreate(true)}
                 className="mt-6 px-6 py-2.5 rounded-xl font-medium transition text-sm"
                 style={{ background: brand.accent, color: brand.onAccent }}>
-                Create Website
+                Create your first website
               </button>
             )}
           </motion.div>
