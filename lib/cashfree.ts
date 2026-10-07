@@ -2,8 +2,21 @@ import { APP_NAME } from './brand';
 
 const API_VERSION = '2023-08-01';
 
+/** Live merchant keys cannot authenticate against the sandbox host. */
+export function isCashfreeLive(): boolean {
+  const explicit = (process.env.CASHFREE_ENV || '').trim().toLowerCase();
+  const secret = process.env.CASHFREE_SECRET_KEY || '';
+  const productionKey = /_prod_/i.test(secret);
+
+  if (explicit === 'production' || explicit === 'prod' || explicit === 'live') return true;
+  if (explicit === 'sandbox' || explicit === 'test') {
+    return productionKey;
+  }
+  return productionKey;
+}
+
 function getBaseUrl() {
-  return process.env.CASHFREE_ENV === 'production'
+  return isCashfreeLive()
     ? 'https://api.cashfree.com/pg'
     : 'https://sandbox.cashfree.com/pg';
 }
@@ -94,5 +107,5 @@ export async function fetchCashfreeOrder(orderId: string) {
 }
 
 export function getCashfreeCheckoutMode() {
-  return process.env.CASHFREE_ENV === 'production' ? 'production' : 'sandbox';
+  return isCashfreeLive() ? 'production' : 'sandbox';
 }
